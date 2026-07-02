@@ -34,6 +34,8 @@ jobs:
             package_cmd: yarn package
           - os: windows-latest
             package_cmd: yarn package:win
+          - os: ubuntu-latest
+            package_cmd: yarn package:linux
 
     steps:
       - name: Check out Git repository
