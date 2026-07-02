@@ -1,10 +1,29 @@
-import { autoUpdater } from 'electron-updater';
+import { autoUpdater, UpdateInfo } from 'electron-updater';
 import log from 'electron-log';
 import { BrowserWindow, ipcMain } from 'electron';
 import { IpcUpdateAvailableResponse } from '../types';
 
 const RELEASES_URL =
   'https://github.com/tonygoldcrest/sightkick/releases/latest';
+
+function normalizeReleaseNotes(
+  releaseNotes: UpdateInfo['releaseNotes'],
+): string | undefined {
+  if (!releaseNotes) {
+    return undefined;
+  }
+
+  if (typeof releaseNotes === 'string') {
+    return releaseNotes.trim() || undefined;
+  }
+
+  const joined = releaseNotes
+    .map((entry) => entry.note?.trim())
+    .filter(Boolean)
+    .join('\n\n');
+
+  return joined || undefined;
+}
 
 export class AppUpdater {
   private updateInfo?: IpcUpdateAvailableResponse;
@@ -26,6 +45,7 @@ export class AppUpdater {
       this.updateInfo = {
         version: info.version,
         releaseUrl: RELEASES_URL,
+        releaseNotes: normalizeReleaseNotes(info.releaseNotes),
       };
 
       window.webContents.send('update-available', this.updateInfo);

@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { act, renderHook } from '@testing-library/react';
+import { act, render, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getNotification,
@@ -56,9 +56,46 @@ describe('useAppUpdate', () => {
     expect(notification.info).toHaveBeenCalledTimes(1);
     expect(notification.info.mock.calls[0][0]).toMatchObject({
       key: 'app-update',
-      description: 'Version 1.2.0 is available to download.',
       duration: 0,
     });
+
+    const { getByText } = render(
+      notification.info.mock.calls[0][0].description as ReactElement,
+    );
+
+    expect(
+      getByText('Version 1.2.0 is available to download.'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders release notes when provided', async () => {
+    await load();
+
+    act(() =>
+      ipc.emit('update-available', {
+        ...update,
+        releaseNotes: 'Fixed a bug\nAdded a feature',
+      }),
+    );
+
+    const { getByText } = render(
+      notification.info.mock.calls[0][0].description as ReactElement,
+    );
+
+    expect(getByText(/Fixed a bug/)).toBeInTheDocument();
+    expect(getByText(/Added a feature/)).toBeInTheDocument();
+  });
+
+  it('omits release notes when absent', async () => {
+    await load();
+
+    act(() => ipc.emit('update-available', update));
+
+    const { container } = render(
+      notification.info.mock.calls[0][0].description as ReactElement,
+    );
+
+    expect(container.querySelector('p')).toBeNull();
   });
 
   it('opens the release page and dismisses itself on download', async () => {

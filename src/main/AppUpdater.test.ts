@@ -63,8 +63,8 @@ function build() {
   return { send };
 }
 
-function emitUpdate(version: string) {
-  updater.handlers.get('update-available')?.({ version });
+function emitUpdate(version: string, releaseNotes?: unknown) {
+  updater.handlers.get('update-available')?.({ version, releaseNotes });
 }
 
 beforeEach(() => {
@@ -99,7 +99,37 @@ describe('AppUpdater', () => {
     expect(send).toHaveBeenCalledWith('update-available', {
       version: '1.2.0',
       releaseUrl: RELEASES_URL,
+      releaseNotes: undefined,
     });
+  });
+
+  it('forwards string release notes verbatim', () => {
+    const { send } = build();
+
+    emitUpdate('1.2.0', '  Fixed a bug  ');
+
+    expect(send.mock.calls[0][1].releaseNotes).toBe('Fixed a bug');
+  });
+
+  it('joins structured release notes into a single string', () => {
+    const { send } = build();
+
+    emitUpdate('1.2.0', [
+      { version: '1.2.0', note: 'Second change' },
+      { version: '1.1.0', note: 'First change' },
+    ]);
+
+    expect(send.mock.calls[0][1].releaseNotes).toBe(
+      'Second change\n\nFirst change',
+    );
+  });
+
+  it('leaves release notes undefined when absent', () => {
+    const { send } = build();
+
+    emitUpdate('1.2.0', null);
+
+    expect(send.mock.calls[0][1].releaseNotes).toBeUndefined();
   });
 
   it('does not reply to a request before any update is found', () => {

@@ -1,4 +1,4 @@
-import { useEffect, createElement } from 'react';
+import { useEffect } from 'react';
 import { App, Button } from 'antd';
 import { IpcUpdateAvailableResponse } from '../../types';
 
@@ -8,24 +8,34 @@ export function useAppUpdate() {
   useEffect(() => {
     const off = window.electron.ipcRenderer.on<IpcUpdateAvailableResponse>(
       'update-available',
-      ({ version, releaseUrl }) => {
+      ({ version, releaseUrl, releaseNotes }) => {
         notification.info({
           key: 'app-update',
           message: 'Update available',
-          description: `Version ${version} is available to download.`,
+          description: (
+            <div>
+              <div>Version {version} is available to download.</div>
+
+              {releaseNotes ? (
+                <p className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap text-xs">
+                  {releaseNotes}
+                </p>
+              ) : undefined}
+            </div>
+          ),
           placement: 'bottomRight',
           duration: 0,
-          btn: createElement(
-            Button,
-            {
-              type: 'primary',
-              size: 'small',
-              onClick: () => {
+          btn: (
+            <Button
+              type="primary"
+              size="small"
+              onClick={() => {
                 window.open(releaseUrl);
                 notification.destroy('app-update');
-              },
-            },
-            'Download',
+              }}
+            >
+              Download
+            </Button>
           ),
         });
       },

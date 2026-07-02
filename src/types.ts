@@ -110,6 +110,7 @@ export interface IpcDeleteStemToolsResponse {
 export interface IpcUpdateAvailableResponse {
   version: string;
   releaseUrl: string;
+  releaseNotes?: string;
 }
 
 export interface IpcSplitSongResponse {
