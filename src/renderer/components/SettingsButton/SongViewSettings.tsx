@@ -1,7 +1,11 @@
 import { ReactNode } from 'react';
 import { Button, Divider, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDrum, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import {
+  faDrum,
+  faFilePdf,
+  faInfoCircle,
+} from '@fortawesome/free-solid-svg-icons';
 import { PLAYHEAD_STYLES, PlayheadStyle } from '../../types';
 import { SettingLabel } from './SettingLabel';
 import { Tooltip } from '../Tooltip';
@@ -22,6 +26,8 @@ interface Props {
   onCountInChange: (value: boolean) => void;
   isDev: boolean;
   onSetupInput: () => void;
+  onExportPdf?: () => void;
+  isExporting?: boolean;
   volumeSliders?: ReactNode[];
   currentInputName?: string;
 }
@@ -41,6 +47,8 @@ export function SongViewSettings({
   onCountInChange,
   isDev,
   onSetupInput,
+  onExportPdf,
+  isExporting,
   volumeSliders,
   currentInputName,
 }: Props) {
@@ -50,10 +58,29 @@ export function SongViewSettings({
         title="Hook up your e-kit (or keyboard if you fancy) so we can score your hits"
         placement="bottom"
       >
-        <Button icon={<FontAwesomeIcon icon={faDrum} />} onClick={onSetupInput}>
+        <Button
+          className="grow"
+          icon={<FontAwesomeIcon icon={faDrum} />}
+          onClick={onSetupInput}
+        >
           {currentInputName ?? 'Setup input'}
         </Button>
       </Tooltip>
+
+      {onExportPdf && (
+        <Tooltip
+          title="Save the sheet music as a PDF you can print or share"
+          placement="bottom"
+        >
+          <Button
+            icon={<FontAwesomeIcon icon={faFilePdf} />}
+            loading={isExporting}
+            onClick={onExportPdf}
+          >
+            Export PDF
+          </Button>
+        </Tooltip>
+      )}
 
       <Divider />
 

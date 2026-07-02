@@ -69,8 +69,6 @@ export function SongListSettings({
         </div>
       )}
 
-      <Divider />
-
       <Tooltip
         title="Hook up your e-kit (or keyboard if you fancy) so we can score your hits"
         placement="bottom"

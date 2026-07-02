@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
 
     steps:
       - name: Check out Git repository
@@ -31,7 +31,12 @@ jobs:
         run: yarn install --mode=skip-build
 
       - name: Run Playwright e2e
+        if: runner.os != 'Linux'
         run: yarn test:e2e
+
+      - name: Run Playwright e2e (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum yarn test:e2e
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}

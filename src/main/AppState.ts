@@ -23,6 +23,7 @@ import { splitSong, cancelSplit } from './ipc/splitSong';
 import { listenMidi, loadMidiDeviceList, stopListenMidi } from './ipc/midi';
 import { updateSong } from './ipc/updateSong';
 import { rescanSongs } from './ipc/rescanSongs';
+import { exportPdf } from './ipc/exportPdf';
 
 class AppState {
   private static instance: AppState;
@@ -95,6 +96,7 @@ class AppState {
     ipcMain.on('cancel-split', cancelSplit);
 
     ipcMain.on('update-song', updateSong);
+    ipcMain.on('export-pdf', exportPdf);
     ipcMain.on('midi-device-list', loadMidiDeviceList);
     ipcMain.on('listen-midi', listenMidi);
     ipcMain.on('stop-listen-midi', stopListenMidi);

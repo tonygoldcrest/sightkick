@@ -74,8 +74,37 @@ jobs:
             release/build/*.exe.blockmap
             release/build/latest.yml
 
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch version in package.json
+        run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build and package
+        run: yarn package:linux
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: |
+            release/build/*.AppImage
+            release/build/latest-linux.yml
+
   create-release:
-    needs: [build-mac, build-windows]
+    needs: [build-mac, build-windows, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -93,6 +122,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: win-artifacts
+          path: artifacts
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-artifacts
           path: artifacts
 
       - name: Generate changelog

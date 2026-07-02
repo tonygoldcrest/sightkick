@@ -13,12 +13,16 @@ interface Props {
   volumeSliders?: ReactNode[];
   page: 'song-list' | 'song-view';
   scanPercent?: number;
+  onExportPdf?: () => void;
+  isExporting?: boolean;
 }
 
 export const SettingsButton = memo(function Settings({
   volumeSliders,
   page,
   scanPercent,
+  onExportPdf,
+  isExporting,
 }: Props) {
   const {
     difficulty,
@@ -102,6 +106,8 @@ export const SettingsButton = memo(function Settings({
                 onCountInChange={setCountIn}
                 isDev={isDev}
                 onSetupInput={openInput}
+                onExportPdf={onExportPdf}
+                isExporting={isExporting}
                 volumeSliders={volumeSliders}
                 currentInputName={currentInputName}
                 showReference={showReference}

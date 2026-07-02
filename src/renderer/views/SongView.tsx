@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Layout, Spin } from 'antd';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { App, Button, Layout, Spin } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Playback } from '../components/Playback';
@@ -22,6 +22,7 @@ import { ScoreSummary } from '../components/ScoreSummary';
 import { CountIn } from '../components/CountIn';
 import { MappingHint } from '../components/MappingHint';
 import { ScoreData } from '../../types';
+import { buildSheetPdfHtml } from '../services/pdf-export';
 
 export function SongView() {
   const {
@@ -34,9 +35,11 @@ export function SongView() {
     inputMapping,
     selectedDevice,
   } = useApp();
+  const { notification } = App.useApp();
   const [scoreData, setScoreData] = useState<ScoreData>();
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
   const [isDev, setIsDev] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
   const { fileData, format, songData, trackData } = useSongLoader(id);
@@ -129,6 +132,51 @@ export function SongView() {
     setIsScoreModalOpen(false);
     playFromTick(0);
   };
+  const onExportPdf = useCallback(() => {
+    if (!vexflowContainerRef.current || !songData) {
+      return;
+    }
+
+    const html = buildSheetPdfHtml({
+      name: songData.name,
+      artist: songData.artist,
+      charter: songData.charter,
+      vexflowContainer: vexflowContainerRef.current,
+    });
+    const fileName = `${songData.name} - ${songData.artist}.pdf`.replace(
+      /[/\\:*?"<>|]/g,
+      '-',
+    );
+
+    setIsExporting(true);
+    window.electron.ipcRenderer.once<{
+      ok?: boolean;
+      canceled?: boolean;
+      filePath?: string;
+      error?: string;
+    }>('export-pdf', (result) => {
+      setIsExporting(false);
+
+      if (result.error) {
+        notification.error({
+          message: 'Export failed',
+          description: result.error,
+          placement: 'bottomRight',
+        });
+
+        return;
+      }
+
+      if (result.ok) {
+        notification.success({
+          message: 'PDF exported',
+          description: result.filePath,
+          placement: 'bottomRight',
+        });
+      }
+    });
+    window.electron.ipcRenderer.sendMessage('export-pdf', { html, fileName });
+  }, [vexflowContainerRef, songData, notification]);
 
   useInputControls(
     inputMapping,
@@ -275,7 +323,12 @@ export function SongView() {
             seekSeconds((value / 100) * duration);
           }}
         />
-        <SettingsButton page="song-view" volumeSliders={volumeSliders} />
+        <SettingsButton
+          page="song-view"
+          volumeSliders={volumeSliders}
+          onExportPdf={onExportPdf}
+          isExporting={isExporting}
+        />
       </div>
 
       <div className="relative grow flex min-h-0">

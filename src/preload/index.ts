@@ -22,7 +22,8 @@ export type Channels =
   | 'stop-listen-midi'
   | 'check-update'
   | 'update-available'
-  | 'update-song';
+  | 'update-song'
+  | 'export-pdf';
 
 const electronHandler = {
   ipcRenderer: {
