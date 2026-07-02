@@ -50,6 +50,10 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
+      - name: Install ALSA headers
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
       - name: Install dependencies
         run: yarn install
 
