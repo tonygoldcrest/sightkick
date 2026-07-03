@@ -16,6 +16,8 @@ const updater = vi.hoisted(() => {
       handlers.delete(event);
     }),
     checkForUpdates: vi.fn(() => Promise.resolve()),
+    downloadUpdate: vi.fn(() => Promise.resolve()),
+    quitAndInstall: vi.fn(),
   };
 });
 const ipc = vi.hoisted(() => {
@@ -39,6 +41,8 @@ vi.mock('electron-updater', () => ({
     on: updater.on,
     removeAllListeners: updater.removeAllListeners,
     checkForUpdates: updater.checkForUpdates,
+    downloadUpdate: updater.downloadUpdate,
+    quitAndInstall: updater.quitAndInstall,
   },
 }));
 
@@ -96,7 +100,8 @@ describe('AppUpdater', () => {
 
     emitUpdate('1.2.0');
 
-    expect(send).toHaveBeenCalledWith('update-available', {
+    expect(send).toHaveBeenCalledWith('update-status', {
+      phase: 'available',
       version: '1.2.0',
       releaseUrl: RELEASES_URL,
       releaseNotes: undefined,
@@ -132,6 +137,55 @@ describe('AppUpdater', () => {
     expect(send.mock.calls[0][1].releaseNotes).toBeUndefined();
   });
 
+  it('downloads the update when the renderer requests it', () => {
+    build();
+
+    ipc.handlers.get('download-update')?.();
+
+    expect(updater.downloadUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('installs the update when the renderer requests it', () => {
+    build();
+
+    ipc.handlers.get('install-update')?.();
+
+    expect(updater.quitAndInstall).toHaveBeenCalledTimes(1);
+  });
+
+  it('forwards download progress to the renderer', () => {
+    const { send } = build();
+
+    updater.handlers.get('download-progress')?.({ percent: 42 });
+
+    expect(send).toHaveBeenCalledWith('update-status', {
+      phase: 'downloading',
+      percent: 42,
+    });
+  });
+
+  it('notifies the renderer once the update is downloaded', () => {
+    const { send } = build();
+
+    updater.handlers.get('update-downloaded')?.({ version: '1.2.0' });
+
+    expect(send).toHaveBeenCalledWith('update-status', {
+      phase: 'downloaded',
+      version: '1.2.0',
+    });
+  });
+
+  it('forwards updater errors to the renderer', () => {
+    const { send } = build();
+
+    updater.handlers.get('error')?.(new Error('Something broke'));
+
+    expect(send).toHaveBeenCalledWith('update-status', {
+      phase: 'error',
+      message: 'Something broke',
+    });
+  });
+
   it('does not reply to a request before any update is found', () => {
     build();
 
@@ -151,9 +205,11 @@ describe('AppUpdater', () => {
 
     ipc.handlers.get('check-update')?.(event);
 
-    expect(lastReply(event, 'update-available').args[0]).toEqual({
+    expect(lastReply(event, 'update-status').args[0]).toEqual({
+      phase: 'available',
       version: '1.2.0',
       releaseUrl: RELEASES_URL,
+      releaseNotes: undefined,
     });
   });
 });

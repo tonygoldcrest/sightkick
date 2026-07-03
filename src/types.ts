@@ -107,11 +107,18 @@ export interface IpcDeleteStemToolsResponse {
   error?: string;
 }
 
-export interface IpcUpdateAvailableResponse {
+export interface IpcUpdateAvailable {
+  phase: 'available';
   version: string;
   releaseUrl: string;
   releaseNotes?: string;
 }
+
+export type IpcUpdateStatus =
+  | IpcUpdateAvailable
+  | { phase: 'downloading'; percent: number }
+  | { phase: 'downloaded'; version: string }
+  | { phase: 'error'; message: string };
 
 export interface IpcSplitSongResponse {
   id: string;

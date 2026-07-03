@@ -42,6 +42,8 @@ jobs:
           path: |
             release/build/*.dmg
             release/build/*.dmg.blockmap
+            release/build/*.zip
+            release/build/*.zip.blockmap
             release/build/latest-mac.yml
 
   build-windows:

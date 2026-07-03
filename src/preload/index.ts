@@ -21,7 +21,9 @@ export type Channels =
   | 'listen-midi'
   | 'stop-listen-midi'
   | 'check-update'
-  | 'update-available'
+  | 'update-status'
+  | 'download-update'
+  | 'install-update'
   | 'update-song'
   | 'export-pdf';
 

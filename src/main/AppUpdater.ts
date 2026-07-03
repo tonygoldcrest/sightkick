@@ -1,7 +1,7 @@
 import { autoUpdater, UpdateInfo } from 'electron-updater';
 import log from 'electron-log';
 import { BrowserWindow, ipcMain } from 'electron';
-import { IpcUpdateAvailableResponse } from '../types';
+import { IpcUpdateAvailable } from '../types';
 
 const RELEASES_URL =
   'https://github.com/tonygoldcrest/sightkick/releases/latest';
@@ -26,7 +26,7 @@ function normalizeReleaseNotes(
 }
 
 export class AppUpdater {
-  private updateInfo?: IpcUpdateAvailableResponse;
+  private updateInfo?: IpcUpdateAvailable;
 
   constructor(window: BrowserWindow) {
     log.transports.file.level = 'info';
@@ -36,19 +36,56 @@ export class AppUpdater {
     ipcMain.removeAllListeners('check-update');
     ipcMain.on('check-update', (event) => {
       if (this.updateInfo) {
-        event.reply('update-available', this.updateInfo);
+        event.reply('update-status', this.updateInfo);
       }
+    });
+
+    ipcMain.removeAllListeners('download-update');
+    ipcMain.on('download-update', () => {
+      autoUpdater
+        .downloadUpdate()
+        .catch((err) => log.warn('Update download failed:', err));
+    });
+
+    ipcMain.removeAllListeners('install-update');
+    ipcMain.on('install-update', () => {
+      autoUpdater.quitAndInstall();
     });
 
     autoUpdater.removeAllListeners('update-available');
     autoUpdater.on('update-available', (info) => {
       this.updateInfo = {
+        phase: 'available',
         version: info.version,
         releaseUrl: RELEASES_URL,
         releaseNotes: normalizeReleaseNotes(info.releaseNotes),
       };
 
-      window.webContents.send('update-available', this.updateInfo);
+      window.webContents.send('update-status', this.updateInfo);
+    });
+
+    autoUpdater.removeAllListeners('download-progress');
+    autoUpdater.on('download-progress', (progress) => {
+      window.webContents.send('update-status', {
+        phase: 'downloading',
+        percent: progress.percent,
+      });
+    });
+
+    autoUpdater.removeAllListeners('update-downloaded');
+    autoUpdater.on('update-downloaded', (info) => {
+      window.webContents.send('update-status', {
+        phase: 'downloaded',
+        version: info.version,
+      });
+    });
+
+    autoUpdater.removeAllListeners('error');
+    autoUpdater.on('error', (err) => {
+      window.webContents.send('update-status', {
+        phase: 'error',
+        message: err.message,
+      });
     });
 
     autoUpdater
