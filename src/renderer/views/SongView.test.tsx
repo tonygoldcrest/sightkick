@@ -29,7 +29,10 @@ vi.mock('antd', async (importOriginal) => {
   };
 });
 
-vi.mock('scan-chart', () => ({ parseChartFile: vi.fn() }));
+vi.mock('scan-chart', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('scan-chart')>()),
+  parseChartFile: vi.fn(),
+}));
 vi.mock('../../chart-parser/parser', () => ({ ChartParser: vi.fn() }));
 vi.mock('../../chart-parser/renderer', () => ({ renderMusic: vi.fn() }));
 

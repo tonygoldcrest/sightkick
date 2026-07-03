@@ -23,6 +23,7 @@ import { CountIn } from '../components/CountIn';
 import { MappingHint } from '../components/MappingHint';
 import { ScoreData } from '../../types';
 import { buildSheetPdfHtml } from '../services/pdf-export';
+import { serializeMeasureToDsl } from '../components/SheetMusic/drumDsl';
 
 export function SongView() {
   const {
@@ -33,10 +34,11 @@ export function SongView() {
     showTempo,
     countIn,
     inputMapping,
+    showReference,
     selectedDevice,
     zoom,
   } = useApp();
-  const { notification } = App.useApp();
+  const { notification, message } = App.useApp();
   const [scoreData, setScoreData] = useState<ScoreData>();
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
   const [isDev, setIsDev] = useState(false);
@@ -341,8 +343,21 @@ export function SongView() {
               songData={songData}
               isDev={isDev}
               zoom={zoom}
+              enableColors={enableColors}
+              showReference={showReference}
               vexflowContainerRef={vexflowContainerRef}
-              onSelectMeasure={(measure) => playFromTick(measure.startTick)}
+              onSelectMeasure={(measure, event) => {
+                if ((event.ctrlKey || event.metaKey) && chart) {
+                  navigator.clipboard.writeText(
+                    serializeMeasureToDsl(chart, measure),
+                  );
+                  message.success('Measure DSL copied');
+
+                  return;
+                }
+
+                playFromTick(measure.startTick);
+              }}
             />
           )}
         </Content>

@@ -3321,16 +3321,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tonejs/midi@npm:^2.0.28":
-  version: 2.0.28
-  resolution: "@tonejs/midi@npm:2.0.28"
-  dependencies:
-    array-flatten: "npm:^3.0.0"
-    midi-file: "npm:^1.2.2"
-  checksum: 10c0/062d960c66fdf7ba1773aba6bc35c3035b5dc0dad0325c199f7e8e018125d9059dd85c362aa649eca8c98f61402ef8b24e6c1ee90b8e4b210a2c2100f0a077b4
-  languageName: node
-  linkType: hard
-
 "@tsconfig/node10@npm:^1.0.7":
   version: 1.0.9
   resolution: "@tsconfig/node10@npm:1.0.9"
@@ -4580,13 +4570,6 @@ __metadata:
     call-bound: "npm:^1.0.3"
     is-array-buffer: "npm:^3.0.5"
   checksum: 10c0/74e1d2d996941c7a1badda9cabb7caab8c449db9086407cad8a1b71d2604cc8abf105db8ca4e02c04579ec58b7be40279ddb09aea4784832984485499f48432d
-  languageName: node
-  linkType: hard
-
-"array-flatten@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "array-flatten@npm:3.0.0"
-  checksum: 10c0/202dae2bcee760f12e29958a0957bd166b3a9a8b41d0c942786d48857f903479c8a10fc7f55ed64904254dce7240f9fa50633504c925288fd051d9fb122cbb48
   languageName: node
   linkType: hard
 
@@ -9546,7 +9529,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"midi-file@npm:^1.2.2, midi-file@npm:^1.2.4":
+"midi-file@npm:^1.2.4":
   version: 1.2.4
   resolution: "midi-file@npm:1.2.4"
   checksum: 10c0/7095ae3244ff4d96b9d9adc07de5d71703b71b670872cfa8ec43be4aa14368313fdbd2f3c98dc0b6c4417dbcd61e3b15d6375ec038a5ada9be4d38c3942e7ca4
@@ -11618,7 +11601,6 @@ __metadata:
     "@testing-library/dom": "npm:^10.4.1"
     "@testing-library/jest-dom": "npm:^6.9.1"
     "@testing-library/react": "npm:^16.0.0"
-    "@tonejs/midi": "npm:^2.0.28"
     "@types/glob": "npm:^8.1.0"
     "@types/ini": "npm:^4.1.0"
     "@types/node": "npm:20.6.2"

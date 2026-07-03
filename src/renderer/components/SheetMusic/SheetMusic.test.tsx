@@ -1,19 +1,10 @@
 import { createRef } from 'react';
 import { fireEvent, render } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Measure, RenderData } from '../../../chart-parser/types';
 import { SongData } from '../../../types';
 import { GameEngine } from '../../services/game-engine';
 import { SheetMusic } from './SheetMusic';
-
-const appState = vi.hoisted(() => ({
-  enableColors: true,
-  showReference: false,
-}));
-
-vi.mock('../../context/AppContext', () => ({
-  useApp: () => appState,
-}));
 
 function makeStave(): RenderData['stave'] {
   return {
@@ -55,8 +46,10 @@ function renderSheet(
       renderData={[makeRenderData(0), makeRenderData(1920)]}
       vexflowContainerRef={createRef<HTMLDivElement>()}
       isDev={false}
-      zoom={1}
       onSelectMeasure={onSelectMeasure}
+      enableColors
+      showReference={false}
+      zoom={1}
       {...overrides}
     />,
   );
@@ -67,11 +60,6 @@ function renderSheet(
 function overlays(container: HTMLElement) {
   return Array.from(container.querySelectorAll('[class*="z-[-3]"]'));
 }
-
-beforeEach(() => {
-  appState.enableColors = true;
-  appState.showReference = false;
-});
 
 describe('SheetMusic', () => {
   it('renders the song title and credits', () => {
@@ -118,6 +106,14 @@ describe('SheetMusic', () => {
     expect(onSelectMeasure.mock.calls[0][0]).toMatchObject({ startTick: 1920 });
   });
 
+  it('forwards the click event so consumers can read modifier keys', () => {
+    const { container, onSelectMeasure } = renderSheet({ isDev: true });
+
+    fireEvent.click(overlays(container)[1], { ctrlKey: true });
+
+    expect(onSelectMeasure.mock.calls[0][1].ctrlKey).toBe(true);
+  });
+
   it('ignores overlay clicks when not in dev mode', () => {
     const { container, onSelectMeasure } = renderSheet({ isDev: false });
 
@@ -125,33 +121,42 @@ describe('SheetMusic', () => {
 
     expect(onSelectMeasure).not.toHaveBeenCalled();
   });
+
+  it('ignores modifier-clicks too when not in dev mode', () => {
+    const { container, onSelectMeasure } = renderSheet({ isDev: false });
+
+    fireEvent.click(overlays(container)[0], { ctrlKey: true });
+    fireEvent.click(overlays(container)[0], { metaKey: true });
+
+    expect(onSelectMeasure).not.toHaveBeenCalled();
+  });
 });
 
 describe('SheetMusic reference legend', () => {
   it('shows the reference when colors are on and the reference is enabled', () => {
-    appState.enableColors = true;
-    appState.showReference = true;
-
-    const { getByText } = renderSheet();
+    const { getByText } = renderSheet({
+      enableColors: true,
+      showReference: true,
+    });
 
     expect(getByText('Snare')).toBeInTheDocument();
     expect(getByText('Kick')).toBeInTheDocument();
   });
 
   it('hides the reference when it is disabled', () => {
-    appState.enableColors = true;
-    appState.showReference = false;
-
-    const { queryByText } = renderSheet();
+    const { queryByText } = renderSheet({
+      enableColors: true,
+      showReference: false,
+    });
 
     expect(queryByText('Snare')).not.toBeInTheDocument();
   });
 
   it('hides the reference when colors are off even if it is enabled', () => {
-    appState.enableColors = false;
-    appState.showReference = true;
-
-    const { queryByText } = renderSheet();
+    const { queryByText } = renderSheet({
+      enableColors: false,
+      showReference: true,
+    });
 
     expect(queryByText('Snare')).not.toBeInTheDocument();
   });

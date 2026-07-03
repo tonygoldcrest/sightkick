@@ -1,10 +1,16 @@
-import { RefObject, createRef, useEffect, useMemo, useRef } from 'react';
+import {
+  MouseEvent,
+  RefObject,
+  createRef,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { cn } from '../../cn';
 import { Measure, RenderData } from '../../../chart-parser/types';
 import { GameEngine } from '../../services/game-engine';
 import { SongData } from '../../../types';
 import { Reference } from './Reference';
-import { useApp } from '../../context/AppContext';
 
 export interface SheetMusicProps {
   engine: GameEngine | undefined;
@@ -12,7 +18,9 @@ export interface SheetMusicProps {
   renderData: RenderData[];
   vexflowContainerRef: RefObject<HTMLDivElement | null>;
   isDev: boolean;
-  onSelectMeasure: (measure: Measure) => void;
+  onSelectMeasure: (measure: Measure, event: MouseEvent) => void;
+  enableColors: boolean;
+  showReference: boolean;
   zoom: number;
 }
 
@@ -23,9 +31,10 @@ export function SheetMusic({
   vexflowContainerRef,
   isDev,
   onSelectMeasure,
+  showReference,
+  enableColors,
   zoom,
 }: SheetMusicProps) {
-  const { enableColors, showReference } = useApp();
   const cursorRef = useRef<HTMLDivElement>(null);
   const highlightsRef = useMemo(
     () => renderData.map(() => createRef<HTMLDivElement>()),
@@ -56,12 +65,12 @@ export function SheetMusic({
             isDev &&
               'cursor-pointer hover:bg-accent-soft-bg hover:shadow-accent-soft hover:border hover:border-accent-soft-border hover:z-[-1]',
           )}
-          onClick={() => {
+          onClick={(event) => {
             if (!isDev) {
               return;
             }
 
-            onSelectMeasure(measure);
+            onSelectMeasure(measure, event);
           }}
         />
       )),

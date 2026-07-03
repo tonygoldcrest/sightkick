@@ -63,7 +63,6 @@
     "@fortawesome/react-fontawesome": "^3.3.1",
     "@julusian/midi": "^3.6.1",
     "@tanstack/react-virtual": "^3.13.2",
-    "@tonejs/midi": "^2.0.28",
     "antd": "^6.4.4",
     "clsx": "^2.1.1",
     "dompurify": "^3.4.11",
