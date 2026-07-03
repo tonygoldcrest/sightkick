@@ -19,8 +19,7 @@ Linux CI runner, wrap the command in `xvfb-run`.
 
 `support.ts#launchApp` builds a throwaway library on disk for each run:
 
-- a `song.ini` + a `notes.mid` generated from the shared `drumMidiFixture` helper
-  (the same fixture the renderer unit tests use), so the chart parses with an
+- a `song.ini` + a hand-written `notes.chart` (plain-text `.chart`) with an
   Expert drums track and **no audio stems** — keeping `SongView` off the audio path.
 - a fresh `--user-data-dir` whose `config.json` optionally seeds
   `lastOpenedPath`, so the seeded-library test can rescan without the native folder

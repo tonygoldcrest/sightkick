@@ -2,11 +2,6 @@ import { mkdtempSync, writeFileSync, mkdirSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 import { _electron as electron, ElectronApplication } from '@playwright/test';
-import {
-  buildDrumMidi,
-  GEM,
-  hit,
-} from '../src/renderer/components/SheetMusic/drumMidiFixture';
 
 const MAIN_ENTRY = path.join(__dirname, '..', 'out', 'main', 'index.js');
 
@@ -42,26 +37,33 @@ function writeFixtureLibrary(): string {
     ].join('\n'),
   );
 
-  const midi = buildDrumMidi([
-    {
-      hits: [
-        hit(GEM.kick, 0),
-        hit(GEM.snare, 480),
-        hit(GEM.kick, 960),
-        hit(GEM.snare, 1440),
-      ],
-    },
-    {
-      hits: [
-        hit(GEM.kick, 0),
-        hit(GEM.yellow, 480),
-        hit(GEM.kick, 960),
-        hit(GEM.snare, 1440),
-      ],
-    },
-  ]);
-
-  writeFileSync(path.join(songDir, 'notes.mid'), midi);
+  writeFileSync(
+    path.join(songDir, 'notes.chart'),
+    [
+      '[Song]',
+      '{',
+      '  Resolution = 480',
+      '}',
+      '[SyncTrack]',
+      '{',
+      '  0 = TS 4',
+      '  0 = B 120000',
+      '}',
+      '[ExpertDrums]',
+      '{',
+      '  0 = N 0 0',
+      '  480 = N 1 0',
+      '  960 = N 0 0',
+      '  1440 = N 1 0',
+      '  1920 = N 0 0',
+      '  2400 = N 2 0',
+      '  2400 = N 66 0',
+      '  2880 = N 0 0',
+      '  3360 = N 1 0',
+      '}',
+      '',
+    ].join('\n'),
+  );
 
   return libraryDir;
 }
