@@ -359,6 +359,31 @@ describe('rhythm notation', () => {
     expect(measure.tuplets[0]).toMatchObject({ numNotes: 5, notesOccupied: 4 });
   });
 
+  it('keeps a partially filled sextuplet on its grid instead of snapping to sixteenths', () => {
+    const parser = parse({
+      groups: [
+        group(0, SNARE),
+        group(64, SNARE),
+        group(96, SNARE),
+        group(128, SNARE),
+      ],
+    });
+    const measure = parser.measures[0];
+
+    expect(nonRest(measure).map((n) => n.tick)).toEqual([0, 64, 96, 128]);
+    expect(measure.tuplets.some((t) => t.numNotes === 6)).toBe(true);
+  });
+
+  it('places thirty-second-triplet onsets exactly without displacing them', () => {
+    const parser = parse({
+      groups: [group(0, SNARE), group(160, SNARE), group(176, SNARE)],
+    });
+    const ticks = nonRest(parser.measures[0]).map((n) => n.tick);
+
+    expect(ticks).toContain(160);
+    expect(ticks).toContain(176);
+  });
+
   it('fills an empty measure with a single whole rest', () => {
     const parser = parse({
       groups: [group(0, SNARE), group(1536, SNARE)],

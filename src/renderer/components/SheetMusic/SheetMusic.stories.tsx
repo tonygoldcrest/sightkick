@@ -48,6 +48,7 @@ function SheetHarness({ measures }: { measures: MeasureSpec[] }) {
       vexflowContainerRef={vexflowContainerRef}
       isDev={false}
       onSelectMeasure={() => {}}
+      zoom={1}
     />
   );
 }

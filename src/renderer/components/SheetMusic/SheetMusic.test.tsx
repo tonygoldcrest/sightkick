@@ -55,6 +55,7 @@ function renderSheet(
       renderData={[makeRenderData(0), makeRenderData(1920)]}
       vexflowContainerRef={createRef<HTMLDivElement>()}
       isDev={false}
+      zoom={1}
       onSelectMeasure={onSelectMeasure}
       {...overrides}
     />,

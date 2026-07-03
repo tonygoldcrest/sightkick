@@ -29,6 +29,18 @@ export const antdTheme: ThemeConfig = {
       paddingBlock: 8,
       paddingInline: 16,
     },
+    InputNumber: {
+      activeBorderColor: themedark.color.border,
+      hoverBorderColor: themedark.color.border,
+      activeShadow: 'transparent',
+      colorBorder: themedark.color.border,
+      colorBgContainer: themedark.color.surfaceSunken,
+      handleBg: themedark.color.surfaceRaised,
+      handleActiveBg: themedark.color.fillStrong,
+      handleHoverColor: themedark.color.accentHover,
+      handleBorderColor: themedark.color.border,
+      colorTextDisabled: themedark.color.textFaint,
+    },
     Layout: {
       bodyBg: themedark.color.bg,
     },

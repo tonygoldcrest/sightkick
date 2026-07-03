@@ -40,6 +40,8 @@ export const SettingsButton = memo(function Settings({
     currentPath,
     showReference,
     setShowReference,
+    zoom,
+    setZoom,
   } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [inputConfigOpen, setInputConfigOpen] = useState(false);
@@ -112,6 +114,14 @@ export const SettingsButton = memo(function Settings({
                 currentInputName={currentInputName}
                 showReference={showReference}
                 onShowReferenceChange={setShowReference}
+                zoom={zoom}
+                onZoomChange={(newValue) => {
+                  if (newValue === null) {
+                    return;
+                  }
+
+                  setZoom(newValue);
+                }}
               />
             )}
           </div>

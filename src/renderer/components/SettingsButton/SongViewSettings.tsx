@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Button, Divider, Switch } from 'antd';
+import { Button, Divider, InputNumber, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faDrum,
@@ -30,6 +30,8 @@ interface Props {
   isExporting?: boolean;
   volumeSliders?: ReactNode[];
   currentInputName?: string;
+  zoom: number;
+  onZoomChange: (value: number | null) => void;
 }
 
 export function SongViewSettings({
@@ -51,6 +53,8 @@ export function SongViewSettings({
   isExporting,
   volumeSliders,
   currentInputName,
+  zoom,
+  onZoomChange,
 }: Props) {
   return (
     <>
@@ -170,6 +174,26 @@ export function SongViewSettings({
           tooltip="A few clicks before the song starts so you're not caught off guard."
         />
         <Switch size="small" checked={countIn} onChange={onCountInChange} />
+      </div>
+
+      <Divider />
+
+      <div className="flex items-center justify-between gap-3">
+        <SettingLabel label="Zoom" tooltip="Sheet music zoom" />
+        <InputNumber
+          mode="spinner"
+          size="small"
+          min={0.5}
+          max={2}
+          step={0.1}
+          value={zoom}
+          onChange={onZoomChange}
+          styles={{
+            input: {
+              width: '5ch',
+            },
+          }}
+        />
       </div>
 
       {volumeSliders ? (

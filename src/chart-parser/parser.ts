@@ -102,7 +102,7 @@ const W_FINE = 2.0;
 const W_VAR = 1.0;
 const W_EVT = 0.5;
 const W_SPLIT = 0.5;
-const LAMBDA = 15;
+const LAMBDA = 35;
 const BASE_DURATIONS: Array<[number, string]> = [
   [1, 'w'],
   [1 / 2, 'h'],
@@ -519,7 +519,11 @@ function notateSpan(
     // Only use a quintuplet/septuplet when the onsets actually fill it; a prime
     // tuplet held loosely (e.g. 6 even notes forced into a 7:4) is a misfit that
     // should decompose or use a binary grid instead.
-    if (info.tuplet && divisions >= 5 && onsets.length < divisions) {
+    if (
+      info.tuplet &&
+      (divisions === 5 || divisions === 7) &&
+      onsets.length < divisions
+    ) {
       return;
     }
 

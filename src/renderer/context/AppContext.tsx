@@ -41,6 +41,8 @@ interface AppContextValue {
   inputMapping: InputMapping;
   assignControl: (element: InputElement, controlId: string) => void;
   removeControl: (element: InputElement, controlId: string) => void;
+  zoom: number;
+  setZoom: (z: number) => void;
 }
 
 const EMPTY_INPUT_MAPPING: InputMapping = {
@@ -95,6 +97,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [inputMappings, setInputMappings] = usePersisted<
     Record<string, InputMapping>
   >('settings.inputMappings', {});
+  const [zoom, setZoom] = usePersisted<number>('settings.zoom', 1);
   const inputMapping: InputMapping = {
     ...EMPTY_INPUT_MAPPING,
     ...(selectedDevice ? inputMappings[selectedDevice.id] : undefined),
@@ -223,6 +226,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         removeControl,
         showReference,
         setShowReference,
+        zoom,
+        setZoom,
       }}
     >
       {children}

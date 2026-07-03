@@ -13,6 +13,7 @@ export interface SheetMusicProps {
   vexflowContainerRef: RefObject<HTMLDivElement | null>;
   isDev: boolean;
   onSelectMeasure: (measure: Measure) => void;
+  zoom: number;
 }
 
 export function SheetMusic({
@@ -22,6 +23,7 @@ export function SheetMusic({
   vexflowContainerRef,
   isDev,
   onSelectMeasure,
+  zoom,
 }: SheetMusicProps) {
   const { enableColors, showReference } = useApp();
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -67,7 +69,7 @@ export function SheetMusic({
   );
 
   return (
-    <>
+    <div className="min-w-max" style={{ zoom }}>
       <div className="flex flex-col items-center min-w-max bg-paper rounded-[11px] p-10">
         <h1 className="my-0 mx-auto text-4xl text-ink font-semibold">
           {songData.name}
@@ -99,6 +101,6 @@ export function SheetMusic({
       {enableColors && showReference && (
         <Reference className="fixed bottom-10 left-1/2 -translate-x-1/2" />
       )}
-    </>
+    </div>
   );
 }

@@ -34,6 +34,7 @@ export function SongView() {
     countIn,
     inputMapping,
     selectedDevice,
+    zoom,
   } = useApp();
   const { notification } = App.useApp();
   const [scoreData, setScoreData] = useState<ScoreData>();
@@ -339,6 +340,7 @@ export function SongView() {
               renderData={renderData}
               songData={songData}
               isDev={isDev}
+              zoom={zoom}
               vexflowContainerRef={vexflowContainerRef}
               onSelectMeasure={(measure) => playFromTick(measure.startTick)}
             />
