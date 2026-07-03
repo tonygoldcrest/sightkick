@@ -22,20 +22,13 @@ import {
 import { ChartParser } from './parser';
 import { Measure, RenderData } from './types';
 import themedark from '../renderer/theme';
+import { KEY_TO_ELEMENT } from '../renderer/drumColors';
 
 const STAVE_WIDTH = 600;
 const STAVE_PER_ROW = 2;
-const NOTE_COLOR_MAP: { [key: string]: string } = {
-  'e/4': themedark.color.orange,
-  'f/4': themedark.color.orange,
-  'c/5': themedark.color.red,
-  'g/5/x2': themedark.color.yellow,
-  'f/5/x2': themedark.color.blue,
-  'a/5/x2': themedark.color.green,
-  'e/5': themedark.color.yellow,
-  'd/5': themedark.color.blue,
-  'a/4': themedark.color.green,
-};
+const UNCOLORED_NOTE_CLASS = 'vf-note-uncolored';
+const UNCOLORED_ACCENT_CLASS = 'vf-accent-uncolored';
+const REST_NOTE_CLASS = 'vf-note-rest';
 const STEM_DIRECTION = -1;
 const REST_KEY = 'b/4';
 const ACCENT_SCALE = Flow.NOTATION_FONT_SCALE;
@@ -111,7 +104,7 @@ export function renderMusic(
   return renderData;
 }
 
-function buildVoice(measure: Measure, enableColors: boolean) {
+function buildVoice(measure: Measure) {
   const tupletGroups = new Map<number, StaveNote[]>();
   const staveNotes = measure.notes.map((note) => {
     const isMeasureRest = note.isRest && measure.notes.length === 1;
@@ -164,12 +157,6 @@ function buildVoice(measure: Measure, enableColors: boolean) {
       });
     }
 
-    if (enableColors && !note.isRest) {
-      staveNote.keys.forEach((key, keyIndex) => {
-        staveNote.setKeyStyle(keyIndex, { fillStyle: NOTE_COLOR_MAP[key] });
-      });
-    }
-
     if (note.tupletId !== undefined) {
       const group = tupletGroups.get(note.tupletId) ?? [];
 
@@ -207,6 +194,49 @@ function buildVoice(measure: Measure, enableColors: boolean) {
   return { voice, beams, tuplets, staveNotes };
 }
 
+function noteClassFor(key: string, enableColors: boolean): string | undefined {
+  const element = KEY_TO_ELEMENT[key];
+
+  if (!element) {
+    return undefined;
+  }
+
+  return enableColors ? `vf-note-${element}` : UNCOLORED_NOTE_CLASS;
+}
+
+function accentClassFor(
+  key: string | undefined,
+  enableColors: boolean,
+): string {
+  const element = key ? KEY_TO_ELEMENT[key] : undefined;
+
+  return enableColors && element
+    ? `vf-accent-${element}`
+    : UNCOLORED_ACCENT_CLASS;
+}
+
+function applyNoteClasses(staveNotes: StaveNote[], enableColors: boolean) {
+  staveNotes.forEach((staveNote) => {
+    if (staveNote.isRest()) {
+      staveNote.noteHeads.forEach(
+        (noteHead) => noteHead?.getSVGElement()?.classList.add(REST_NOTE_CLASS),
+      );
+
+      return;
+    }
+
+    staveNote.getKeys().forEach((key, keyIndex) => {
+      const noteClass = noteClassFor(key, enableColors);
+
+      if (noteClass) {
+        staveNote.noteHeads[keyIndex]
+          ?.getSVGElement()
+          ?.classList.add(noteClass);
+      }
+    });
+  });
+}
+
 function drawAccentGlyph(
   context: RenderContext,
   x: number,
@@ -214,14 +244,17 @@ function drawAccentGlyph(
   originX: number,
   originY: number,
   scale: number,
-  color: string,
+  accentClass: string,
 ) {
   const glyph = new Glyph('articAccentAbove', scale);
 
   glyph.setOrigin(originX, originY);
-  context.openGroup('accent');
-  context.setFillStyle(color);
-  context.setStrokeStyle(color);
+
+  const group = context.openGroup('accent') as SVGGElement;
+
+  group.classList.add(accentClass);
+  context.setFillStyle(themedark.color.ink);
+  context.setStrokeStyle(themedark.color.ink);
   glyph.render(context, x, y);
   context.closeGroup();
 }
@@ -235,8 +268,6 @@ function drawAccents(
 ) {
   const gap = stave.getSpacingBetweenLines();
   const topLineY = stave.getYForLine(0);
-  const colorOf = (key: string) =>
-    enableColors ? NOTE_COLOR_MAP[key] : themedark.color.ink;
 
   context.save();
 
@@ -252,8 +283,10 @@ function drawAccents(
 
     if (wholeChord) {
       const { x } = staveNote.getModifierStartXY(ModifierPosition.ABOVE, 0);
-      const color =
-        note.notes.length === 1 ? colorOf(note.notes[0]) : themedark.color.ink;
+      const accentClass = accentClassFor(
+        note.notes.length === 1 ? note.notes[0] : undefined,
+        enableColors,
+      );
 
       drawAccentGlyph(
         context,
@@ -262,7 +295,7 @@ function drawAccents(
         0.5,
         1,
         ACCENT_SCALE,
-        color,
+        accentClass,
       );
 
       return;
@@ -287,7 +320,7 @@ function drawAccents(
         0.2,
         0.5,
         ACCENT_SCALE_RIGHT,
-        colorOf(key),
+        accentClassFor(key, enableColors),
       );
     });
   });
@@ -338,10 +371,7 @@ function renderMeasure(
     .setContext(context)
     .draw();
 
-  const { voice, beams, tuplets, staveNotes } = buildVoice(
-    measure,
-    enableColors,
-  );
+  const { voice, beams, tuplets, staveNotes } = buildVoice(measure);
 
   new Formatter().joinVoices([voice]).format([voice], STAVE_WIDTH - 40);
   voice.draw(context, stave);
@@ -351,6 +381,8 @@ function renderMeasure(
   tuplets.forEach((tuplet) => {
     tuplet.setContext(context).draw();
   });
+
+  applyNoteClasses(staveNotes, enableColors);
   drawAccents(context, stave, measure, staveNotes, enableColors);
 
   const renderedNotes = staveNotes.map((staveNote, i) => ({

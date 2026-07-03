@@ -87,11 +87,11 @@ export const themedark = {
     ink: '#1c1a14',
     inkSoft: '#4a463c',
 
-    green: '#2f8f5b',
-    orange: '#e0651c',
-    blue: '#1f6fb2',
-    yellow: '#c79019',
-    red: '#cf3b2e',
+    green: '#1f8a4c',
+    orange: '#d15a12',
+    blue: '#1b6fc0',
+    yellow: '#C8930F',
+    red: '#c62828',
   },
 
   font: {

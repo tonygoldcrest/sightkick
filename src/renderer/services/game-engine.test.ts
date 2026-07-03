@@ -49,8 +49,6 @@ type MockPlayer = {
   destroy: ReturnType<typeof vi.fn>;
 };
 
-const HIT_RGBA = 'rgba(0, 0, 0, 0)';
-const MISSED = 'rgb(160, 152, 144)';
 const TRACKS: TrackConfig[] = [{ name: 'drums', urls: ['d.ogg'] }];
 const CHART = {
   resolution: 480,
@@ -113,8 +111,17 @@ function measureData(
   };
 }
 
-function fill(note: StaveNote, head = 0): string {
-  return (note.noteHeads[head].getSVGElement() as SVGElement).style.fill;
+function hasClass(note: StaveNote, cls: string, head = 0): boolean {
+  return (
+    note.noteHeads[head].getSVGElement() as SVGElement
+  ).classList.contains(cls);
+}
+
+function uncolored(note: StaveNote, head = 0): boolean {
+  return (
+    !hasClass(note, 'vf-note-hit', head) &&
+    !hasClass(note, 'vf-note-missed', head)
+  );
 }
 
 async function getPlayerClass() {
@@ -292,9 +299,9 @@ describe('GameEngine', () => {
     });
     engine.timeStore.set(0.5);
 
-    expect(fill(n0)).toBe(MISSED);
-    expect(fill(n1)).toBe(MISSED);
-    expect(fill(n2)).toBe('');
+    expect(hasClass(n0, 'vf-note-missed')).toBe(true);
+    expect(hasClass(n1, 'vf-note-missed')).toBe(true);
+    expect(uncolored(n2)).toBe(true);
   });
 
   it('registers an input hit and hides the struck note head', async () => {
@@ -320,7 +327,7 @@ describe('GameEngine', () => {
 
     emitInput('midi:38');
 
-    expect(fill(note)).toBe(HIT_RGBA);
+    expect(hasClass(note, 'vf-note-hit')).toBe(true);
 
     player.onEnded();
     expect(onEnded).toHaveBeenCalledWith(
@@ -364,7 +371,7 @@ describe('GameEngine', () => {
 
     emitInput('midi:38');
 
-    expect(fill(note)).toBe('');
+    expect(uncolored(note)).toBe(true);
   });
 
   it('does not score input during the count-in, only once playing', async () => {
@@ -391,13 +398,13 @@ describe('GameEngine', () => {
     engine.timeStore.set(0.5);
     emitInput('midi:38');
 
-    expect(fill(note)).toBe('');
+    expect(uncolored(note)).toBe(true);
 
     vi.advanceTimersByTime(5000);
     engine.timeStore.set(0.5);
     emitInput('midi:38');
 
-    expect(fill(note)).toBe(HIT_RGBA);
+    expect(hasClass(note, 'vf-note-hit')).toBe(true);
   });
 
   it('stops scoring input after dispose', async () => {

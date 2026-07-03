@@ -1,0 +1,179 @@
+.vf-notehead {
+  transition: transform 0.12s ease-out;
+
+  & path {
+    stroke-linejoin: round;
+  }
+}
+
+.vf-note-kick path,
+.vf-note-snare path,
+.vf-note-tom1 path,
+.vf-note-tom2 path,
+.vf-note-tom3 path {
+  paint-order: normal;
+  stroke-width: 2px;
+}
+
+.vf-note-hihat path,
+.vf-note-ride path,
+.vf-note-crash path {
+  paint-order: stroke;
+  stroke-width: 3px;
+}
+
+.vf-note-kick {
+  fill: var(--color-orange);
+
+  & path {
+    stroke: var(--color-orange-dark);
+  }
+}
+
+.vf-note-snare {
+  fill: var(--color-red);
+
+  & path {
+    stroke: var(--color-red-dark);
+  }
+}
+
+.vf-note-hihat,
+.vf-note-tom1 {
+  fill: var(--color-yellow);
+
+  & path {
+    stroke: var(--color-yellow-dark);
+  }
+}
+
+.vf-note-ride,
+.vf-note-tom2 {
+  fill: var(--color-blue);
+
+  & path {
+    stroke: var(--color-blue-dark);
+  }
+}
+
+.vf-note-crash,
+.vf-note-tom3 {
+  fill: var(--color-green);
+
+  & path {
+    stroke: var(--color-green-dark);
+  }
+}
+
+.vf-accent-kick {
+  fill: var(--color-orange);
+}
+
+.vf-accent-snare {
+  fill: var(--color-red);
+}
+
+.vf-accent-hihat,
+.vf-accent-tom1 {
+  fill: var(--color-yellow);
+}
+
+.vf-accent-ride,
+.vf-accent-tom2 {
+  fill: var(--color-blue);
+}
+
+.vf-accent-crash,
+.vf-accent-tom3 {
+  fill: var(--color-green);
+}
+
+.vf-accent-uncolored {
+  fill: var(--color-ink);
+}
+
+.vf-note-hit {
+  fill: #00000000;
+}
+
+.vf-note-missed {
+  fill: #a09890;
+}
+
+.vf-note-uncolored {
+  fill: var(--color-ink);
+}
+
+.vf-note-rest path,
+.vf-note-uncolored path,
+.vf-note-pop path,
+.vf-note-miss path,
+.vf-note-hit path,
+.vf-note-missed path {
+  stroke: none;
+}
+
+.vf-note-active {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sk-note-pulse 0.7s ease-in-out infinite;
+}
+
+@keyframes sk-note-pulse {
+  0%,
+  100% {
+    transform: scale(1.35);
+  }
+  50% {
+    transform: scale(1.62);
+  }
+}
+
+.vf-note-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sk-note-pop 0.42s cubic-bezier(0.22, 0.9, 0.28, 1);
+}
+
+@keyframes sk-note-pop {
+  0% {
+    fill: var(--color-accent-bright);
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  35% {
+    fill: color-mix(in srgb, var(--color-accent-bright), white 9%);
+    transform: scale(1.9);
+    opacity: 1;
+    filter: drop-shadow(0 0 12px var(--color-accent-bright));
+  }
+  100% {
+    fill: color-mix(in srgb, var(--color-accent-bright), white 18%);
+    transform: scale(2.8);
+    opacity: 0;
+    filter: drop-shadow(0 0 20px transparent);
+  }
+}
+
+.vf-note-miss {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sk-note-miss 0.4s ease-out;
+}
+
+@keyframes sk-note-miss {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-2.5px);
+  }
+  50% {
+    transform: translateX(2.5px);
+  }
+  80% {
+    transform: translateX(-1.5px);
+  }
+}

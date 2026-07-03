@@ -8,8 +8,6 @@ import {
 } from '../../chart-parser/types';
 import { GameRenderer } from './game-renderer';
 
-const HIT = 'rgba(0, 0, 0, 0)';
-const MISSED = 'rgb(160, 152, 144)';
 const CHART = {
   resolution: 480,
   tempos: [{ tick: 0, beatsPerMinute: 120, msTime: 0 }],
@@ -74,14 +72,17 @@ function div(): HTMLElement {
   return document.createElement('div');
 }
 
-function fill(note: StaveNote, head = 0): string {
-  return (note.noteHeads[head].getSVGElement() as SVGElement).style.fill;
-}
-
 function hasClass(note: StaveNote, cls: string, head = 0): boolean {
   return (
     note.noteHeads[head].getSVGElement() as SVGElement
   ).classList.contains(cls);
+}
+
+function uncolored(note: StaveNote, head = 0): boolean {
+  return (
+    !hasClass(note, 'vf-note-hit', head) &&
+    !hasClass(note, 'vf-note-missed', head)
+  );
 }
 
 interface SetupOptions {
@@ -213,7 +214,7 @@ describe('GameRenderer', () => {
     view.render(0, 240);
 
     expect(hasClass(n0, 'vf-note-miss')).toBe(false);
-    expect(fill(n0)).toBe(HIT);
+    expect(hasClass(n0, 'vf-note-hit')).toBe(true);
   });
 
   it('progress-colours notes before the active note', () => {
@@ -230,9 +231,9 @@ describe('GameRenderer', () => {
 
     view.render(0, 480);
 
-    expect(fill(n0)).toBe(MISSED);
-    expect(fill(n1)).toBe(MISSED);
-    expect(fill(n2)).toBe('');
+    expect(hasClass(n0, 'vf-note-missed')).toBe(true);
+    expect(hasClass(n1, 'vf-note-missed')).toBe(true);
+    expect(uncolored(n2)).toBe(true);
   });
 
   it('clears colouring when the playhead is seeked backward', () => {
@@ -248,11 +249,11 @@ describe('GameRenderer', () => {
     ]);
 
     view.render(0, 480);
-    expect(fill(n0)).toBe(MISSED);
+    expect(hasClass(n0, 'vf-note-missed')).toBe(true);
 
     view.render(0, 0);
-    expect(fill(n0)).toBe('');
-    expect(fill(n1)).toBe('');
+    expect(uncolored(n0)).toBe(true);
+    expect(uncolored(n1)).toBe(true);
   });
 
   it('uses the isHit predicate to colour passed notes hit or missed', () => {
@@ -267,7 +268,7 @@ describe('GameRenderer', () => {
 
     view.render(0, 240);
 
-    expect(fill(n0)).toBe(HIT);
+    expect(hasClass(n0, 'vf-note-hit')).toBe(true);
   });
 
   it('paints a struck note head only for the matching prefix', () => {
@@ -276,8 +277,8 @@ describe('GameRenderer', () => {
 
     view.paintHit(note, ['c/5']);
 
-    expect(fill(note, 0)).toBe(HIT);
-    expect(fill(note, 1)).toBe('');
+    expect(hasClass(note, 'vf-note-hit', 0)).toBe(true);
+    expect(uncolored(note, 1)).toBe(true);
   });
 
   it('clears colouring while the playhead sits on a note-head-less rest', () => {
@@ -296,9 +297,9 @@ describe('GameRenderer', () => {
     );
 
     view.render(0, 240);
-    expect(fill(n0)).toBe(MISSED);
+    expect(hasClass(n0, 'vf-note-missed')).toBe(true);
 
     view.render(0, 480);
-    expect(fill(n0)).toBe('');
+    expect(uncolored(n0)).toBe(true);
   });
 });

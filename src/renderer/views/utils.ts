@@ -3,10 +3,6 @@ import { StaveNote } from 'vexflow';
 import { Measure, ParsedChart, RenderData } from '../../chart-parser/types';
 import { ScoreData } from '../../types';
 
-export const HIT_NOTE_COLOR = '#00000000';
-
-export const MISSED_NOTE_COLOR = '#a09890';
-
 export function ticksToSeconds(
   tick: number,
   resolution: number,

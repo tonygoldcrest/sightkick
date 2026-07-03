@@ -1,0 +1,66 @@
+.ant-input-prefix {
+  margin-inline-end: 12px !important;
+}
+
+@keyframes sk-mapping-hint-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 1px currentColor);
+  }
+}
+
+body {
+  height: 100vh;
+  padding: 0;
+  margin: 0;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable='true'],
+.ant-notification,
+.ant-message {
+  user-select: text;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.ant-modal:focus,
+.ant-modal:focus-visible,
+.ant-modal-container:focus,
+.ant-modal-container:focus-visible {
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #141517;
+  border: 1px solid #232428;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  border: 2px solid #16140f;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-accent) 50%, transparent);
+}
+
+::-webkit-scrollbar-corner {
+  background: #141517;
+}

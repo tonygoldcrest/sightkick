@@ -4,7 +4,6 @@ import { Stave } from 'vexflow';
 import { renderMusic } from './renderer';
 import { ChartParser } from './parser';
 import { Measure, Note, ParsedChart } from './types';
-import themedark from '../renderer/theme';
 
 beforeAll(() => {
   (
@@ -145,7 +144,9 @@ describe('renderMusic', () => {
       true,
     );
 
-    expect(div.querySelector('svg')!.innerHTML).toContain(themedark.color.red);
+    expect(div.querySelector('.vf-notehead')!.classList).toContain(
+      'vf-note-snare',
+    );
   });
 
   it('does not colour note heads when colours are disabled', () => {
@@ -158,9 +159,29 @@ describe('renderMusic', () => {
       false,
     );
 
-    expect(div.querySelector('svg')!.innerHTML).not.toContain(
-      themedark.color.red,
+    expect(div.querySelector('.vf-notehead')!.classList).toContain(
+      'vf-note-uncolored',
     );
+  });
+
+  it('classes rests so they are excluded from the note-head outline', () => {
+    const div = container();
+
+    renderMusic(
+      ref(div),
+      song([
+        measure([note({ notes: ['b/4'], duration: 'w', isRest: true })], {
+          timeSig: [4, 4],
+        }),
+      ]),
+      true,
+      true,
+    );
+
+    const noteHead = div.querySelector('.vf-notehead')!;
+
+    expect(noteHead.classList).toContain('vf-note-rest');
+    expect(noteHead.classList).not.toContain('vf-note-uncolored');
   });
 
   it('renders bar numbers when requested and omits them otherwise', () => {
@@ -243,29 +264,38 @@ describe('renderMusic', () => {
     expect(accents[0].left).toBeGreaterThan(noteHead.note.getAbsoluteX());
   });
 
-  it('colours a single-note accent like the note', () => {
-    const plain = container();
-    const accented = container();
-    const redCount = (div: HTMLDivElement) =>
-      div.querySelector('svg')!.innerHTML.split(themedark.color.red).length - 1;
+  it('classes a single-note accent like the note', () => {
+    const div = container();
 
     renderMusic(
-      ref(plain),
-      song([measure([note({ notes: ['c/5'] })])]),
-      true,
-      true,
-    );
-    renderMusic(
-      ref(accented),
+      ref(div),
       song([measure([note({ notes: ['c/5'], accents: ['c/5'] })])]),
       true,
       true,
     );
 
-    expect(redCount(accented)).toBeGreaterThan(redCount(plain));
+    expect(div.querySelector('.vf-accent')!.classList).toContain(
+      'vf-accent-snare',
+    );
   });
 
-  it('colours a partial-chord accent like its note', () => {
+  it('classes an accent as uncolored when colours are disabled', () => {
+    const div = container();
+
+    renderMusic(
+      ref(div),
+      song([measure([note({ notes: ['c/5'], accents: ['c/5'] })])]),
+      true,
+      false,
+    );
+
+    const accent = div.querySelector('.vf-accent')!;
+
+    expect(accent.classList).toContain('vf-accent-uncolored');
+    expect(accent.classList).not.toContain('vf-accent-snare');
+  });
+
+  it('classes a partial-chord accent like its note', () => {
     const div = container();
 
     renderMusic(
@@ -275,12 +305,12 @@ describe('renderMusic', () => {
       true,
     );
 
-    expect(div.querySelector('.vf-accent')!.innerHTML).toContain(
-      themedark.color.red,
+    expect(div.querySelector('.vf-accent')!.classList).toContain(
+      'vf-accent-snare',
     );
   });
 
-  it('draws a fully accented chord accent in ink, not a note colour', () => {
+  it('classes a fully accented chord accent as uncolored, not a note colour', () => {
     const div = container();
 
     renderMusic(
@@ -294,10 +324,9 @@ describe('renderMusic', () => {
       true,
     );
 
-    const accent = div.querySelector('.vf-accent')!.innerHTML;
-
-    expect(accent).not.toContain(themedark.color.red);
-    expect(accent).not.toContain(themedark.color.yellow);
+    expect(div.querySelector('.vf-accent')!.classList).toContain(
+      'vf-accent-uncolored',
+    );
   });
 
   it('parenthesises a ghosted note head', () => {

@@ -2,12 +2,7 @@ import { StaveNote } from 'vexflow';
 import { ParsedChart, RenderData } from '../../chart-parser/types';
 import { PlayheadStyle } from '../types';
 import { keyPrefix } from './judge';
-import {
-  HIT_NOTE_COLOR,
-  MISSED_NOTE_COLOR,
-  getCursorX,
-  getNoteSvg,
-} from '../views/utils';
+import { getCursorX, getNoteSvg } from '../views/utils';
 
 export type IsHit = (tick: number, prefix: string) => boolean;
 
@@ -41,6 +36,8 @@ function samePos(a: NotePos | undefined, b: NotePos | undefined): boolean {
 const ACTIVE_CLASS = 'vf-note-active';
 const POP_CLASS = 'vf-note-pop';
 const MISS_CLASS = 'vf-note-miss';
+const HIT_CLASS = 'vf-note-hit';
+const MISSED_CLASS = 'vf-note-missed';
 
 function flashClass(el: SVGElement, cls: string): void {
   if (el.classList.contains(cls)) {
@@ -150,7 +147,8 @@ export class GameRenderer {
         return;
       }
 
-      (el as SVGGraphicsElement).style.fill = HIT_NOTE_COLOR;
+      el.classList.remove(MISSED_CLASS);
+      el.classList.add(HIT_CLASS);
       this.filledEls.add(el);
       flashClass(el, POP_CLASS);
     });
@@ -165,6 +163,9 @@ export class GameRenderer {
     this.cursorHeight = -1;
     this.activeEls.forEach((el) => el.classList.remove(ACTIVE_CLASS));
     this.activeEls = [];
+    this.filledEls.forEach((el) =>
+      el.classList.remove(HIT_CLASS, MISSED_CLASS),
+    );
     this.filledEls.clear();
   }
 
@@ -262,7 +263,7 @@ export class GameRenderer {
   private applyColoring(target: ActiveNote | undefined): void {
     const clearAll = () => {
       this.filledEls.forEach((el) => {
-        (el as SVGGraphicsElement).style.fill = '';
+        el.classList.remove(HIT_CLASS, MISSED_CLASS);
       });
       this.filledEls.clear();
     };
@@ -290,9 +291,8 @@ export class GameRenderer {
     ) => {
       const hit = this.isHit(tick, key);
 
-      (el as SVGGraphicsElement).style.fill = hit
-        ? HIT_NOTE_COLOR
-        : MISSED_NOTE_COLOR;
+      el.classList.remove(hit ? MISSED_CLASS : HIT_CLASS);
+      el.classList.add(hit ? HIT_CLASS : MISSED_CLASS);
       this.filledEls.add(el);
 
       if (flashMisses && !hit && !isRest) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSheetPdfHtml } from './pdf-export';
+import themedark from '../theme';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -96,6 +97,16 @@ describe('buildSheetPdfHtml', () => {
     expect(doc.querySelectorAll('.music > div')).toHaveLength(3);
     expect(html).toContain('size: A4 portrait');
     expect(html).toContain('background: #ffffff');
+  });
+
+  it('embeds the drum note and accent colours in the stylesheet', () => {
+    const html = buildSheetPdfHtml({
+      ...baseParams,
+      vexflowContainer: makeContainer(),
+    });
+
+    expect(html).toContain(`.vf-note-snare, .vf-accent-snare`);
+    expect(html).toContain(themedark.color.red);
   });
 
   it('does not mutate the source container', () => {
