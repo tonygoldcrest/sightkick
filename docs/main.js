@@ -3,18 +3,28 @@
   const RELEASES = 'https://github.com/' + REPO + '/releases';
   const heroMac = document.getElementById('hero-btn-mac');
   const heroWin = document.getElementById('hero-btn-win');
+  const heroLinux = document.getElementById('hero-btn-linux');
 
-  function applyPlatform(macUrl, winUrl) {
-    const isWindows =
-      /Win/.test(navigator.platform) || /Windows/.test(navigator.userAgent);
+  function applyPlatform(macUrl, winUrl, linuxUrl) {
+    const ua = navigator.userAgent;
+    const isWindows = /Win/.test(navigator.platform) || /Windows/.test(ua);
+    const isLinux =
+      !isWindows &&
+      /Linux/.test(navigator.platform + ua) &&
+      !/Android/.test(ua);
 
     heroMac.href = macUrl;
     heroWin.href = winUrl;
-    heroMac.className = isWindows ? 'btn-secondary' : 'btn-primary';
-    heroWin.className = isWindows ? 'btn-primary' : 'btn-secondary';
+    heroLinux.href = linuxUrl;
+
+    const primary = isWindows ? heroWin : isLinux ? heroLinux : heroMac;
+
+    [heroMac, heroWin, heroLinux].forEach((btn) => {
+      btn.className = btn === primary ? 'btn-primary' : 'btn-secondary';
+    });
   }
 
-  applyPlatform(RELEASES, RELEASES);
+  applyPlatform(RELEASES, RELEASES, RELEASES);
 
   fetch('https://api.github.com/repos/' + REPO + '/releases/latest')
     .then((r) => r.json())
@@ -32,11 +42,13 @@
         (n) => /\.dmg$/.test(n) && !/arm64/.test(n) && !/blockmap/.test(n),
       );
       const win = urlFor((n) => /\.exe$/.test(n) && !/blockmap/.test(n));
+      const linux = urlFor((n) => /\.AppImage$/.test(n));
 
-      applyPlatform(macArm, win);
+      applyPlatform(macArm, win, linux);
       document.getElementById('dl-mac-arm').href = macArm;
       document.getElementById('dl-mac-x64').href = macX64;
       document.getElementById('dl-win').href = win;
+      document.getElementById('dl-linux').href = linux;
     })
     .catch(() => {});
 
