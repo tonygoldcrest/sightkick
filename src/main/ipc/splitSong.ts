@@ -13,6 +13,10 @@ let processing = false;
 let activeProc: ReturnType<typeof spawn> | null = null;
 let activeId: string | null = null;
 
+export function killActiveSplit() {
+  activeProc?.kill();
+}
+
 export function cancelSplit(_event: Electron.IpcMainEvent, id: string) {
   if (activeId === id && activeProc) {
     activeProc.kill();

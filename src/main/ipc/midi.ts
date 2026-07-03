@@ -12,6 +12,8 @@ export async function loadMidiDeviceList(event: Electron.IpcMainEvent) {
     deviceList.push({ port: i, name: input.getPortName(i) });
   }
 
+  input.closePort();
+
   event.reply('midi-device-list', deviceList);
 }
 

@@ -74,7 +74,7 @@ vi.mock('child_process', () => {
   return { spawn, default: { spawn } };
 });
 
-const { splitSong, cancelSplit } = await import('./splitSong');
+const { splitSong, cancelSplit, killActiveSplit } = await import('./splitSong');
 
 function makeSongDir(root: string) {
   const dir = path.join(root, 'My Song');
@@ -273,6 +273,26 @@ describe('splitSong', () => {
         cancelled: true,
       }),
     );
+  });
+
+  it('kills the running split on shutdown', async () => {
+    const dir = makeSongDir(library);
+
+    storeHolder.current = makeStore({ songs: { 'song-1': songEntry(dir) } });
+
+    const event = makeEvent();
+
+    splitSong(event as never, 'song-1');
+
+    const proc = await waitForProc(0);
+
+    killActiveSplit();
+
+    expect(proc.killed).toBe(true);
+  });
+
+  it('does not throw when killing with no active split', () => {
+    expect(() => killActiveSplit()).not.toThrow();
   });
 
   it('cancels a queued split without killing the running one', async () => {
