@@ -11,5 +11,10 @@ export default defineConfig({
   },
   renderer: {
     plugins: [tailwindcss(), react()],
+    server: {
+      watch: {
+        ignored: ['**/*.test.*', '**/*.stories.*'],
+      },
+    },
   },
 });
