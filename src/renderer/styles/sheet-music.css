@@ -92,16 +92,16 @@
   fill: var(--color-ink);
 }
 
+.vf-note-uncolored {
+  fill: var(--color-ink);
+}
+
 .vf-note-hit {
   fill: #00000000;
 }
 
 .vf-note-missed {
   fill: #a09890;
-}
-
-.vf-note-uncolored {
-  fill: var(--color-ink);
 }
 
 .vf-note-rest path,
