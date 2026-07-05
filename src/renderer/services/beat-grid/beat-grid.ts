@@ -1,19 +1,7 @@
-import { Measure, ParsedChart } from '../../chart-parser/types';
-import { ticksToSeconds } from '../views/utils';
-
-export interface Beat {
-  timeSeconds: number;
-  isDownbeat: boolean;
-}
-
-export interface CountInInfo {
-  beats: number;
-  beatDurationSeconds: number;
-}
-
-type TimingChart = Pick<ParsedChart, 'resolution' | 'tempos'>;
-
-const DEFAULT_COUNT_IN: CountInInfo = { beats: 4, beatDurationSeconds: 0.5 };
+import { Measure } from '../../../chart-parser/types';
+import { ticksToSeconds } from '../../views/utils';
+import { Beat, CountInInfo, TimingChart } from './types';
+import { DEFAULT_COUNT_IN } from './constants';
 
 export function beatCountFor(measure: Measure): number {
   const numerator = measure.timeSig?.[0] ?? 4;

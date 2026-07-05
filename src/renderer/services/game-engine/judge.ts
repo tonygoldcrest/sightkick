@@ -1,36 +1,15 @@
-import { StaveNote } from 'vexflow';
-import { ParsedChart, RenderData } from '../../chart-parser/types';
-import { InputElement, InputMapping } from '../../types';
-import { InputEvent } from '../input/types';
-import { secondsToTicks, ticksToSeconds } from '../views/utils';
-
-export type JudgeHitHandler = (note: StaveNote, prefixes: string[]) => void;
-
-export interface JudgeContext {
-  chart: ParsedChart | undefined;
-  renderData: RenderData[];
-  mapping: InputMapping;
-}
-
-const ELEMENT_TO_KEYS: Partial<Record<InputElement, string[]>> = {
-  kick: ['f/4', 'e/4'],
-  snare: ['c/5'],
-  hihat: ['g/5'],
-  tom1: ['e/5'],
-  ride: ['f/5'],
-  tom2: ['d/5'],
-  crash: ['a/5'],
-  tom3: ['a/4'],
-};
-const HIT_TOLERANCE_SECONDS = 0.1;
-const ACCENT_VALUE_THRESHOLD = 90;
-const GHOST_VALUE_THRESHOLD = 50;
-
-export function keyPrefix(key: string): string {
-  const [pitch, octave] = key.split('/');
-
-  return `${pitch}/${octave}`;
-}
+import { ParsedChart, RenderData } from '../../../chart-parser/types';
+import { InputElement, InputMapping } from '../../../types';
+import { InputEvent } from '../../input/types';
+import { secondsToTicks, ticksToSeconds } from '../../views/utils';
+import { JudgeContext, JudgeHitHandler } from './types';
+import {
+  ACCENT_VALUE_THRESHOLD,
+  ELEMENT_TO_KEYS,
+  GHOST_VALUE_THRESHOLD,
+  HIT_TOLERANCE_SECONDS,
+} from './constants';
+import { keyPrefix } from './helpers';
 
 export class Judge {
   private chart: ParsedChart | undefined;

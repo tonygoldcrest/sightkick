@@ -35,8 +35,7 @@ vi.mock('scan-chart', async (importOriginal) => ({
 }));
 vi.mock('../../chart-parser/parser', () => ({ ChartParser: vi.fn() }));
 vi.mock('../../chart-parser/renderer', () => ({ renderMusic: vi.fn() }));
-vi.mock('../services/metronome', () => ({
-  DEFAULT_CLICK_TONE: 0.5,
+vi.mock('../services/click-track/metronome', () => ({
   renderClickBuffers: () => ({ downbeat: {}, beat: {} }),
 }));
 

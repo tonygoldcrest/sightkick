@@ -1,8 +1,6 @@
-import {
-  ClickBuffers,
-  DEFAULT_CLICK_TONE,
-  renderClickBuffers,
-} from './metronome';
+import { renderClickBuffers } from './metronome';
+import { ClickBuffers } from './types';
+import { DEFAULT_CLICK_TONE } from './constants';
 
 export class ClickTrack {
   private gain: GainNode;

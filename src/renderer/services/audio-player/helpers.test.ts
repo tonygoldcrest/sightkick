@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { trimTrailingSilence } from './utils';
+import { trimTrailingSilence } from './helpers';
 import { FakeAudioBuffer, makeBuffer } from './test-support';
 
 const context = {

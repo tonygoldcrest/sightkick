@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Measure, ParsedChart } from '../../chart-parser/types';
+import { Measure, ParsedChart } from '../../../chart-parser/types';
 import { beatCountFor, getBeatGrid, getCountInInfo } from './beat-grid';
 
 const CHART = {

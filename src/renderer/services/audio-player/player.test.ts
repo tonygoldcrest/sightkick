@@ -18,7 +18,7 @@ const trimSpy = vi.hoisted(() =>
   ),
 );
 
-vi.mock('./utils', () => ({
+vi.mock('./helpers', () => ({
   trimTrailingSilence: trimSpy,
 }));
 

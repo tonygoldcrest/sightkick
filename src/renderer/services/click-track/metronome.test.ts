@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FakeAudioContext, installWebAudio } from './audio-player/test-support';
+import {
+  FakeAudioContext,
+  installWebAudio,
+} from '../audio-player/test-support';
 import { renderClickBuffers } from './metronome';
 
 describe('metronome', () => {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FakeAudioContext } from './audio-player/test-support';
+import { FakeAudioContext } from '../audio-player/test-support';
 import { ClickTrack } from './click-track';
 
 vi.mock('./metronome', () => ({

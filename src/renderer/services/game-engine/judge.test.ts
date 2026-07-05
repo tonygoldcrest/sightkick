@@ -4,9 +4,10 @@ import {
   ParsedChart,
   RenderData,
   RenderedNote,
-} from '../../chart-parser/types';
-import { InputEvent } from '../input/types';
-import { JudgeContext, Judge, JudgeHitHandler } from './judge';
+} from '../../../chart-parser/types';
+import { InputEvent } from '../../input/types';
+import { Judge } from './judge';
+import { JudgeContext, JudgeHitHandler } from './types';
 
 const CHART = {
   resolution: 480,

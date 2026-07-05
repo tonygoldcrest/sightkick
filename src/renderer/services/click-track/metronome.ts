@@ -1,41 +1,15 @@
-interface Mode {
-  frequency: number;
-  amplitude: number;
-  toneWeight?: number;
-}
-
-interface ClickSpec {
-  modes: Mode[];
-  attackGain: number;
-  gain: number;
-}
-
-const DEFAULT_SAMPLE_RATE = 44100;
-
-export const DEFAULT_CLICK_TONE = 0.5;
-
-const DECAY_MIN_SECONDS = 0.0004;
-const DECAY_MAX_SECONDS = 0.05;
-const DECAY_CURVE = 1.7;
-const ATTACK_DECAY_SECONDS = 0.0006;
-const MAX_DURATION_SECONDS = 0.35;
-const MASTER_GAIN = 2;
-const DOWNBEAT_CLICK: ClickSpec = {
-  modes: [
-    { frequency: 698, amplitude: 1 },
-    { frequency: 1046, amplitude: 0.6, toneWeight: 0.9 },
-  ],
-  attackGain: 0.7,
-  gain: 1,
-};
-const BEAT_CLICK: ClickSpec = {
-  modes: [
-    { frequency: 1046, amplitude: 1 },
-    { frequency: 2092, amplitude: 0.18, toneWeight: 0.9 },
-  ],
-  attackGain: 0.5,
-  gain: 0.6,
-};
+import { ClickBuffers, ClickSpec } from './types';
+import {
+  ATTACK_DECAY_SECONDS,
+  BEAT_CLICK,
+  DECAY_CURVE,
+  DECAY_MAX_SECONDS,
+  DECAY_MIN_SECONDS,
+  DEFAULT_SAMPLE_RATE,
+  DOWNBEAT_CLICK,
+  MASTER_GAIN,
+  MAX_DURATION_SECONDS,
+} from './constants';
 
 function decaySeconds(tone: number): number {
   const shaped = tone ** DECAY_CURVE;
@@ -78,11 +52,6 @@ function renderClick(
   }
 
   return buffer;
-}
-
-export interface ClickBuffers {
-  downbeat: AudioBuffer;
-  beat: AudioBuffer;
 }
 
 export function renderClickBuffers(

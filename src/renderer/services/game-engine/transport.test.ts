@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TrackConfig } from './audio-player/types';
-import { Measure, ParsedChart } from '../../chart-parser/types';
-import { Transport, TransportContext } from './transport';
+import { TrackConfig } from '../audio-player';
+import { Measure, ParsedChart } from '../../../chart-parser/types';
+import { Transport } from './transport';
+import { TransportContext } from './types';
 
-vi.mock('./metronome', () => ({
-  DEFAULT_CLICK_TONE: 0.5,
+vi.mock('../click-track/metronome', () => ({
   renderClickBuffers: () => ({ downbeat: {}, beat: {} }),
 }));
 
-vi.mock('./audio-player/player', () => {
+vi.mock('../audio-player/player', () => {
   const fakeContext = () => ({
     state: 'running',
     currentTime: 0,
@@ -91,7 +91,7 @@ type MockPlayer = {
 };
 
 async function getPlayerClass() {
-  const mod = await import('./audio-player/player');
+  const mod = await import('../audio-player/player');
 
   return mod.AudioPlayer as unknown as {
     instances: MockPlayer[];

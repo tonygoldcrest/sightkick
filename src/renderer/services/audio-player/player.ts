@@ -1,6 +1,6 @@
 import { AudioTrack } from './track';
 import { TrackConfig } from './types';
-import { trimTrailingSilence } from './utils';
+import { trimTrailingSilence } from './helpers';
 
 export class AudioPlayer {
   context: AudioContext;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSheetPdfHtml } from './pdf-export';
-import themedark from '../theme';
+import themedark from '../../theme';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 

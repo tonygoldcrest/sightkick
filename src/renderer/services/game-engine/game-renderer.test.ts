@@ -5,7 +5,7 @@ import {
   ParsedChart,
   RenderData,
   RenderedNote,
-} from '../../chart-parser/types';
+} from '../../../chart-parser/types';
 import { GameRenderer } from './game-renderer';
 
 const CHART = {

@@ -1,88 +1,28 @@
 import { StaveNote } from 'vexflow';
-import { ParsedChart, RenderData } from '../../chart-parser/types';
-import { PlayheadStyle } from '../types';
-import { keyPrefix } from './judge';
-import { getCursorX, getNoteSvg } from '../views/utils';
-
-export type IsHit = (tick: number, prefix: string) => boolean;
-
-export interface GameRendererContext {
-  chart: ParsedChart | undefined;
-  renderData: RenderData[];
-}
-
-export interface GameRendererRefs {
-  cursorEl: HTMLElement | undefined;
-  highlightEls: (HTMLElement | undefined)[];
-}
-
-interface NotePos {
-  measureIdx: number;
-  noteIdx: number;
-}
-
-interface ActiveNote extends NotePos {
-  noteHeadEls: SVGElement[];
-}
-
-function samePos(a: NotePos | undefined, b: NotePos | undefined): boolean {
-  if (!a || !b) {
-    return a === b;
-  }
-
-  return a.measureIdx === b.measureIdx && a.noteIdx === b.noteIdx;
-}
-
-const ACTIVE_CLASS = 'vf-note-active';
-const POP_CLASS = 'vf-note-pop';
-const MISS_CLASS = 'vf-note-miss';
-const HIT_CLASS = 'vf-note-hit';
-const MISSED_CLASS = 'vf-note-missed';
-
-function flashClass(el: SVGElement, cls: string): void {
-  if (el.classList.contains(cls)) {
-    return;
-  }
-
-  el.classList.add(cls);
-  el.addEventListener('animationend', () => el.classList.remove(cls), {
-    once: true,
-  });
-}
-
-function forEachNoteHead(
-  note: StaveNote,
-  cb: (el: SVGElement, prefix: string) => void,
-): void {
-  note.getKeys().forEach((key, i) => {
-    const el = note.noteHeads[i]?.getSVGElement();
-
-    if (el) {
-      cb(el, keyPrefix(key));
-    }
-  });
-}
-
-function getScrollParent(
-  node: HTMLElement | undefined,
-): HTMLElement | undefined {
-  let el = node?.parentElement ?? undefined;
-
-  while (el) {
-    const { overflowY } = getComputedStyle(el);
-
-    if (
-      (overflowY === 'auto' || overflowY === 'scroll') &&
-      el.scrollHeight > el.clientHeight
-    ) {
-      return el;
-    }
-
-    el = el.parentElement ?? undefined;
-  }
-
-  return undefined;
-}
+import { ParsedChart, RenderData } from '../../../chart-parser/types';
+import { PlayheadStyle } from '../../types';
+import { getCursorX, getNoteSvg } from '../../views/utils';
+import {
+  ActiveNote,
+  GameRendererContext,
+  GameRendererRefs,
+  IsHit,
+  NotePos,
+} from './types';
+import {
+  ACTIVE_CLASS,
+  HIT_CLASS,
+  MISS_CLASS,
+  MISSED_CLASS,
+  POP_CLASS,
+} from './constants';
+import {
+  flashClass,
+  forEachNoteHead,
+  getScrollParent,
+  keyPrefix,
+  samePos,
+} from './helpers';
 
 export class GameRenderer {
   private chart: ParsedChart | undefined;

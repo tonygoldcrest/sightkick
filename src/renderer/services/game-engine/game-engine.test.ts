@@ -1,22 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Stave, StaveNote } from 'vexflow';
-import { TrackConfig } from './audio-player/types';
+import { TrackConfig } from '../audio-player';
 import {
   Measure,
   Note,
   ParsedChart,
   RenderData,
   RenderedNote,
-} from '../../chart-parser/types';
-import { InputEvent } from '../input/types';
-import { GameEngine, GameContext } from './game-engine';
+} from '../../../chart-parser/types';
+import { InputEvent } from '../../input/types';
+import { GameEngine } from './game-engine';
+import { GameContext } from './types';
 
-vi.mock('./metronome', () => ({
-  DEFAULT_CLICK_TONE: 0.5,
+vi.mock('../click-track/metronome', () => ({
   renderClickBuffers: vi.fn(() => ({ downbeat: {}, beat: {} })),
 }));
 
-vi.mock('./audio-player/player', () => {
+vi.mock('../audio-player/player', () => {
   const fakeContext = () => ({
     state: 'running',
     currentTime: 0,
@@ -160,7 +160,7 @@ function uncolored(note: StaveNote, head = 0): boolean {
 }
 
 async function getPlayerClass() {
-  const mod = await import('./audio-player/player');
+  const mod = await import('../audio-player/player');
 
   return mod.AudioPlayer as unknown as { instances: MockPlayer[] };
 }

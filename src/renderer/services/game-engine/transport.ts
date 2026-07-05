@@ -1,61 +1,20 @@
-import { AudioPlayer } from './audio-player/player';
-import { TrackConfig } from './audio-player/types';
-import { TimeStore } from './time-store';
-import { Measure, ParsedChart } from '../../chart-parser/types';
-import { secondsToTicks, ticksToSeconds } from '../views/utils';
-import { ClickTrack } from './click-track';
-import { Beat, getBeatGrid, getCountInInfo } from './beat-grid';
-import { DEFAULT_CLICK_TONE } from './metronome';
-
-const LOOKAHEAD_SECONDS = 0.2;
-const COUNT_IN_MIN_VOLUME = 0.7;
-
-export type PlaybackState =
-  | 'idle'
-  | 'parked'
-  | 'counting-in'
-  | 'playing'
-  | 'ended';
-
-export interface TransportContext {
-  chart: ParsedChart | undefined;
-  measures: Measure[];
-  delaySeconds: number;
-  countInEnabled: boolean;
-  minDurationSeconds: number;
-}
-
-export interface PlaybackSnapshot {
-  state: PlaybackState;
-  isPlaying: boolean;
-  isCounting: boolean;
-  isStarted: boolean;
-  isEnded: boolean;
-  countInBeat: number | undefined;
-  countInBeatMs: number | undefined;
-  isReady: boolean;
-  duration: number;
-}
-
-export interface TransportOptions {
-  trackData: TrackConfig[];
-  isDev: boolean;
-  onEnded: () => void;
-  onError: () => void;
-  onSeek?: (tick: number) => void;
-}
-
-const SNAPSHOT_KEYS: (keyof PlaybackSnapshot)[] = [
-  'state',
-  'isPlaying',
-  'isCounting',
-  'isStarted',
-  'isEnded',
-  'countInBeat',
-  'countInBeatMs',
-  'isReady',
-  'duration',
-];
+import { Measure, ParsedChart } from '../../../chart-parser/types';
+import { AudioPlayer, TrackConfig } from '../audio-player';
+import { TimeStore } from '../time-store';
+import { secondsToTicks, ticksToSeconds } from '../../views/utils';
+import { ClickTrack, DEFAULT_CLICK_TONE } from '../click-track';
+import { Beat, getBeatGrid, getCountInInfo } from '../beat-grid';
+import {
+  PlaybackSnapshot,
+  PlaybackState,
+  TransportContext,
+  TransportOptions,
+} from './types';
+import {
+  COUNT_IN_MIN_VOLUME,
+  LOOKAHEAD_SECONDS,
+  SNAPSHOT_KEYS,
+} from './constants';
 
 export class Transport {
   readonly timeStore = new TimeStore();

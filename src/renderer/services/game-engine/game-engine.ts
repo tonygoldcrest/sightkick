@@ -1,34 +1,17 @@
-import { TrackConfig } from './audio-player/types';
-import { TimeStore } from './time-store';
-import { Measure, ParsedChart, RenderData } from '../../chart-parser/types';
-import { InputMapping, ScoreData } from '../../types';
-import { PlayheadStyle } from '../types';
-import { InputEvent } from '../input/types';
-import { Transport, PlaybackSnapshot } from './transport';
+import { ParsedChart, RenderData } from '../../../chart-parser/types';
+import { InputMapping, ScoreData } from '../../../types';
+import { secondsToTicks } from '../../views/utils';
+import { TimeStore } from '../time-store';
+import { Transport } from './transport';
 import { Judge } from './judge';
-import { GameRenderer, GameRendererRefs } from './game-renderer';
-import { secondsToTicks } from '../views/utils';
-
-export interface GameEngineOptions {
-  trackData: TrackConfig[];
-  isDev: boolean;
-  subscribeInput: (listener: (event: InputEvent) => void) => () => void;
-  onEnded: (score: ScoreData) => void;
-  onError: () => void;
-}
-
-export interface GameContext {
-  chart: ParsedChart | undefined;
-  measures: Measure[];
-  renderData: RenderData[];
-  delaySeconds: number;
-  countInEnabled: boolean;
-  minDurationSeconds: number;
-}
-
-export interface GameSettings {
-  playheadStyle: PlayheadStyle;
-}
+import { GameRenderer } from './game-renderer';
+import {
+  GameContext,
+  GameEngineOptions,
+  GameRendererRefs,
+  GameSettings,
+  PlaybackSnapshot,
+} from './types';
 
 export class GameEngine {
   private transport: Transport;
