@@ -50,6 +50,7 @@ interface UseGameEngineResult {
   cancel: () => void;
   seekSeconds: (seconds: number) => void;
   setStemVolume: (name: string, gain: number) => void;
+  setMasterVolume: (gain: number) => void;
 }
 
 const IDLE_SNAPSHOT: PlaybackSnapshot = {
@@ -166,6 +167,10 @@ export function useGameEngine({
     (name: string, gain: number) => engine?.setStemVolume(name, gain),
     [engine],
   );
+  const setMasterVolume = useCallback(
+    (gain: number) => engine?.setMasterVolume(gain),
+    [engine],
+  );
 
   return {
     engine,
@@ -185,5 +190,6 @@ export function useGameEngine({
     cancel,
     seekSeconds,
     setStemVolume,
+    setMasterVolume,
   };
 }

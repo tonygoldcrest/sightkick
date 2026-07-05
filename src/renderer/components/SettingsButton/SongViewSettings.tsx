@@ -19,6 +19,7 @@ interface Props {
   isExporting?: boolean;
   volumeSliders?: ReactNode[];
   clickControls?: ReactNode;
+  masterVolumeControl?: ReactNode;
 }
 
 export function SongViewSettings({
@@ -28,6 +29,7 @@ export function SongViewSettings({
   isExporting,
   volumeSliders,
   clickControls,
+  masterVolumeControl,
 }: Props) {
   const {
     playheadStyle,
@@ -228,6 +230,8 @@ export function SongViewSettings({
             />
           </div>
           <div className="grid grid-cols-[max-content_1fr_max-content_max-content] items-center gap-x-2 gap-y-1">
+            {masterVolumeControl}
+
             {volumeSliders}
           </div>
         </>

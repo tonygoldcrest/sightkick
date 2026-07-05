@@ -57,6 +57,8 @@ vi.mock('../audio-player/player', () => {
       this.isInitialised = false;
     });
 
+    setMasterVolume = vi.fn();
+
     destroy = vi.fn();
 
     contextTimeForSongTime(songTime: number) {
@@ -87,6 +89,7 @@ type MockPlayer = {
   start: ReturnType<typeof vi.fn>;
   pause: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
+  setMasterVolume: ReturnType<typeof vi.fn>;
   destroy: ReturnType<typeof vi.fn>;
 };
 
@@ -197,6 +200,20 @@ describe('Transport', () => {
 
     expect(engine.getSnapshot().isReady).toBe(true);
     expect(engine.getSnapshot().duration).toBe(100);
+  });
+
+  it('forwards master volume changes to the player', async () => {
+    const { engine, player } = await setup();
+
+    engine.setMasterVolume(0.3);
+
+    expect(player.setMasterVolume).toHaveBeenCalledWith(0.3);
+  });
+
+  it('ignores master volume changes before a player exists', async () => {
+    const { engine } = await setup({ trackData: [] });
+
+    expect(() => engine.setMasterVolume(0.3)).not.toThrow();
   });
 
   it('reports an error and stays player-less when loading fails', async () => {

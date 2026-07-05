@@ -35,6 +35,23 @@ describe('AudioTrack', () => {
     );
   });
 
+  it('routes its gain nodes to a provided destination node', () => {
+    const destination = context.createGain();
+    const buffers = [makeBuffer([new Array(100).fill(0)], 100)];
+
+    new AudioTrack(
+      buffers as unknown as AudioBuffer[],
+      'drums',
+      context as unknown as AudioContext,
+      destination as unknown as AudioNode,
+    );
+
+    const trackGain = context.gainNodes.at(-1) as FakeGainNode;
+
+    expect(trackGain.connectedTo).toContain(destination);
+    expect(trackGain.connectedTo).not.toContain(context.destination);
+  });
+
   it('reports the longest buffer as its duration', () => {
     const track = makeTrack([1, 3, 2]);
 

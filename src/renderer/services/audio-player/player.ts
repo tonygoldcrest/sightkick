@@ -4,6 +4,7 @@ import { trimTrailingSilence } from './helpers';
 
 export class AudioPlayer {
   context: AudioContext;
+  masterGain: GainNode;
   audioTracks: AudioTrack[] = [];
   ready: Promise<AudioTrack[]>;
   isInitialised: boolean = false;
@@ -19,6 +20,8 @@ export class AudioPlayer {
     getMinDurationSeconds: () => number = () => 0,
   ) {
     this.context = new AudioContext({ latencyHint: 'playback' });
+    this.masterGain = this.context.createGain();
+    this.masterGain.connect(this.context.destination);
     this.getMinDurationSeconds = getMinDurationSeconds;
     this.ready = this.createTracks(trackConfigs);
     this.onEnded = onEnded;
@@ -49,7 +52,12 @@ export class AudioPlayer {
             minDurationSeconds,
           ),
         );
-        const audioTrack = new AudioTrack(audioBuffers, name, this.context);
+        const audioTrack = new AudioTrack(
+          audioBuffers,
+          name,
+          this.context,
+          this.masterGain,
+        );
 
         audioTrack.endedListener = this.trackEndedListener;
         this.audioTracks.push(audioTrack);
@@ -115,9 +123,14 @@ export class AudioPlayer {
     );
   }
 
+  setMasterVolume(volume: number) {
+    this.masterGain.gain.setValueAtTime(volume, this.context.currentTime);
+  }
+
   destroy() {
     this.audioTracks.forEach((track) => track.destroy());
     this.audioTracks = [];
+    this.masterGain.disconnect();
     this.onEnded = null;
     this.context.close();
   }

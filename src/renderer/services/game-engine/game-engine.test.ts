@@ -58,6 +58,7 @@ vi.mock('../audio-player/player', () => {
     });
     pause = vi.fn();
     stop = vi.fn();
+    setMasterVolume = vi.fn();
     destroy = vi.fn();
 
     contextTimeForSongTime(songTime: number) {
@@ -81,6 +82,7 @@ type MockPlayer = {
   currentTime: number;
   start: ReturnType<typeof vi.fn>;
   pause: ReturnType<typeof vi.fn>;
+  setMasterVolume: ReturnType<typeof vi.fn>;
   destroy: ReturnType<typeof vi.fn>;
 };
 
@@ -257,6 +259,16 @@ describe('GameEngine', () => {
 
     expect(player.start).toHaveBeenCalledTimes(1);
     expect(engine.getSnapshot().isPlaying).toBe(true);
+  });
+
+  it('forwards master volume changes to the player', async () => {
+    const { engine, player } = await setup({
+      renderData: [measureData(0, 1920, [])],
+    });
+
+    engine.setMasterVolume(0.6);
+
+    expect(player.setMasterVolume).toHaveBeenCalledWith(0.6);
   });
 
   it('forwards the score on ended, counting only non-rest model notes', async () => {

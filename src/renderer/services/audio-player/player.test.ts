@@ -3,6 +3,7 @@ import { AudioPlayer } from './player';
 import { TrackConfig } from './types';
 import {
   FakeAudioContext,
+  FakeGainNode,
   installFetchByByteLength,
   installWebAudio,
 } from './test-support';
@@ -58,6 +59,39 @@ describe('AudioPlayer', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(player.audioTracks).toHaveLength(2);
     expect(player.duration).toBe(500);
+  });
+
+  it('routes every track through a master gain node wired to the destination', async () => {
+    const { player } = await makePlayer();
+    const master = player.masterGain as unknown as FakeGainNode;
+
+    expect(master.connectedTo).toContain(context.destination);
+    context.gainNodes
+      .filter((node) => node !== master)
+      .forEach((node) => {
+        expect(node.connectedTo).toContain(master);
+        expect(node.connectedTo).not.toContain(context.destination);
+      });
+  });
+
+  it('sets the master gain at the current time', async () => {
+    const { player } = await makePlayer();
+    const master = player.masterGain as unknown as FakeGainNode;
+
+    context.currentTime = 3.5;
+    player.setMasterVolume(0.4);
+
+    expect(master.gain.value).toBe(0.4);
+    expect(master.gain.calls.at(-1)).toEqual({ value: 0.4, time: 3.5 });
+  });
+
+  it('disconnects the master gain node on destroy', async () => {
+    const { player } = await makePlayer();
+    const master = player.masterGain as unknown as FakeGainNode;
+
+    player.destroy();
+
+    expect(master.disconnected).toBe(true);
   });
 
   it('trims each decoded buffer with the provided minimum duration', async () => {

@@ -15,11 +15,12 @@ export class AudioTrack {
     public buffers: AudioBuffer[],
     public name: string,
     public context: AudioContext,
+    destination: AudioNode = context.destination,
   ) {
     this.gainNodes = new Array(buffers.length).fill(null).map(() => {
       const gainNode = context.createGain();
 
-      gainNode.connect(this.context.destination);
+      gainNode.connect(destination);
 
       return gainNode;
     });

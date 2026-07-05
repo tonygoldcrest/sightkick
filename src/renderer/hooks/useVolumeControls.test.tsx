@@ -62,7 +62,13 @@ function mute(result: Result, name: string) {
 }
 
 function solo(result: Result, name: string) {
-  act(() => sliderProps(result, name).onSoloClick());
+  const { onSoloClick } = sliderProps(result, name);
+
+  if (!onSoloClick) {
+    throw new Error(`no solo handler for ${name}`);
+  }
+
+  act(() => onSoloClick());
 }
 
 function setVolume(result: Result, name: string, value: number) {

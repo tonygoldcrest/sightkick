@@ -19,6 +19,7 @@ import { usePersisted } from '../hooks/usePersisted';
 import { useSongLoader } from '../hooks/useSongLoader';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { useVolumeControls } from '../hooks/useVolumeControls';
+import { useMuteToggle } from '../hooks/useMuteToggle';
 import { calculateAccuracy, ticksToSeconds } from './utils';
 import { useSheetMusic } from '../hooks/useSheetMusic';
 import { useInputControls } from '../hooks/useInputControls';
@@ -28,6 +29,7 @@ import { MappingHint } from '../components/MappingHint';
 import { ScoreData } from '../../types';
 import { buildSheetPdfHtml } from '../services/pdf-export';
 import { serializeMeasureToDsl } from '../components/SheetMusic/drumDsl';
+import { AudioVolume } from '../components/AudioVolume';
 
 export function SongView() {
   const { difficulty } = useApp();
@@ -94,6 +96,7 @@ export function SongView() {
     cancel,
     seekSeconds,
     setStemVolume,
+    setMasterVolume: setEngineMasterVolume,
   } = useGameEngine({
     trackData,
     isDev,
@@ -130,11 +133,15 @@ export function SongView() {
   );
   const [clickVolume, setClickVolume] = usePersisted('settings.clickVolume', 0);
   const [clickTone, setClickTone] = usePersisted('settings.clickTone', 50);
-
-  useEffect(() => {
-    engine?.setClickSettings(clickVolume / 100, clickTone / 100);
-  }, [engine, clickVolume, clickTone]);
-
+  const [masterVolume, setMasterVolume] = usePersisted(
+    'settings.masterVolume',
+    100,
+  );
+  const {
+    isMuted: isMasterMuted,
+    toggleMute: handleMasterMute,
+    handleChange: handleMasterChange,
+  } = useMuteToggle(masterVolume, setMasterVolume, 100);
   const audioLoading = trackData.length > 0 && !isReady;
   const isLoading = !songData || audioLoading;
   const onNextSong = () => {
@@ -247,6 +254,16 @@ export function SongView() {
     });
   }, []);
 
+  useEffect(() => {
+    engine?.setClickSettings(clickVolume / 100, clickTone / 100);
+  }, [engine, clickVolume, clickTone]);
+
+  useEffect(() => {
+    if (isReady) {
+      setEngineMasterVolume(masterVolume / 100);
+    }
+  }, [setEngineMasterVolume, masterVolume, isReady]);
+
   return (
     <Layout className="h-full pointer-events-auto">
       <ScoreSummary
@@ -345,6 +362,16 @@ export function SongView() {
               onVolumeChange={setClickVolume}
               tone={clickTone}
               onToneChange={setClickTone}
+            />
+          }
+          masterVolumeControl={
+            <AudioVolume
+              name="Master"
+              volume={masterVolume}
+              onChange={handleMasterChange}
+              canSolo={false}
+              onMuteClick={handleMasterMute}
+              isMuted={isMasterMuted}
             />
           }
           onExportPdf={onExportPdf}

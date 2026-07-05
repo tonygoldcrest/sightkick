@@ -127,6 +127,8 @@ vi.mock('../services/audio-player/player', () => {
 
     stop = vi.fn();
 
+    setMasterVolume = vi.fn();
+
     destroy = vi.fn();
 
     contextTimeForSongTime(songTime: number) {

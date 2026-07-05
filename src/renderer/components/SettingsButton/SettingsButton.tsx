@@ -11,6 +11,7 @@ import { SongViewSettings } from './SongViewSettings';
 interface Props {
   volumeSliders?: ReactNode[];
   clickControls?: ReactNode;
+  masterVolumeControl?: ReactNode;
   page: 'song-list' | 'song-view';
   scanPercent?: number;
   onExportPdf?: () => void;
@@ -20,6 +21,7 @@ interface Props {
 export const SettingsButton = memo(function Settings({
   volumeSliders,
   clickControls,
+  masterVolumeControl,
   page,
   scanPercent,
   onExportPdf,
@@ -65,6 +67,7 @@ export const SettingsButton = memo(function Settings({
                 currentInputName={currentInputName}
                 onExportPdf={onExportPdf}
                 isExporting={isExporting}
+                masterVolumeControl={masterVolumeControl}
                 volumeSliders={volumeSliders}
                 clickControls={clickControls}
               />

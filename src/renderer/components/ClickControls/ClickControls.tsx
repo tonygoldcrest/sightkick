@@ -1,10 +1,11 @@
-import { useRef } from 'react';
-import { faInfoCircle, faVolumeMute } from '@fortawesome/free-solid-svg-icons';
+import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Button, Slider } from 'antd';
+import { Slider } from 'antd';
 import { Tooltip } from '../Tooltip';
 import themedark from '../../theme';
 import { DEFAULT_UNMUTE_VOLUME } from './constants';
+import { AudioVolume } from '../AudioVolume';
+import { useMuteToggle } from '../../hooks/useMuteToggle';
 
 export interface ClickControlsProps {
   volume: number;
@@ -19,16 +20,11 @@ export function ClickControls({
   tone,
   onToneChange,
 }: ClickControlsProps) {
-  const lastAudibleVolume = useRef(DEFAULT_UNMUTE_VOLUME);
-  const isMuted = volume === 0;
-  const handleMute = () => {
-    if (isMuted) {
-      onVolumeChange(lastAudibleVolume.current);
-    } else {
-      lastAudibleVolume.current = volume;
-      onVolumeChange(0);
-    }
-  };
+  const { isMuted, toggleMute, handleChange } = useMuteToggle(
+    volume,
+    onVolumeChange,
+    DEFAULT_UNMUTE_VOLUME,
+  );
 
   return (
     <>
@@ -54,28 +50,18 @@ export function ClickControls({
           style={{ background: 'var(--gradient-faint-fade)' }}
         />
       </div>
-      <div className="grid grid-cols-[max-content_1fr_max-content] items-center gap-x-2 gap-y-1">
-        <div className="text-xs text-text">Volume</div>
-        <Slider
-          value={volume}
-          onChange={(value) => {
-            if (value > 0) {
-              lastAudibleVolume.current = value;
-            }
-
-            onVolumeChange(value);
-          }}
-        />
-
-        <Button
-          type={isMuted ? 'primary' : 'default'}
-          size="small"
-          icon={<FontAwesomeIcon size="xs" icon={faVolumeMute} />}
-          onClick={handleMute}
+      <div className="grid grid-cols-[max-content_1fr_max-content_max-content] items-center gap-x-2 gap-y-1">
+        <AudioVolume
+          name="Volume"
+          volume={volume}
+          onChange={handleChange}
+          isMuted={isMuted}
+          canSolo={false}
+          onMuteClick={toggleMute}
         />
 
         <div className="text-xs text-text">Tone</div>
-        <Slider value={tone} onChange={onToneChange} className="col-span-2" />
+        <Slider value={tone} onChange={onToneChange} className="col-span-3" />
       </div>
     </>
   );

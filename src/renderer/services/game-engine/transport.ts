@@ -281,6 +281,10 @@ export class Transport {
       ?.setVolume(gain);
   }
 
+  setMasterVolume(gain: number): void {
+    this.audioPlayer?.setMasterVolume(gain);
+  }
+
   dispose(): void {
     this.disposed = true;
     this.clearScheduling();

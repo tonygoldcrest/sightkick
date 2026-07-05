@@ -1,14 +1,16 @@
 import { faS, faVolumeMute } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Button, Slider } from 'antd';
+import { cn } from '../../cn';
 
 export interface AudioVolumeProps {
   name: string;
   volume: number;
   isMuted: boolean;
-  isSoloed: boolean;
+  canSolo?: boolean;
+  isSoloed?: boolean;
   onChange: (value: number) => void;
-  onSoloClick: () => void;
+  onSoloClick?: () => void;
   onMuteClick: () => void;
 }
 
@@ -17,6 +19,7 @@ export function AudioVolume({
   volume,
   onChange,
   isMuted,
+  canSolo = true,
   isSoloed,
   onSoloClick,
   onMuteClick,
@@ -24,19 +27,25 @@ export function AudioVolume({
   return (
     <>
       <div className="capitalize text-xs text-text">{name}</div>
-      <Slider value={volume} onChange={onChange} />
+      <Slider
+        value={volume}
+        onChange={onChange}
+        className={cn({ 'col-span-2': !canSolo })}
+      />
       <Button
         type={isMuted ? 'primary' : 'default'}
         size="small"
         icon={<FontAwesomeIcon size="xs" icon={faVolumeMute} />}
         onClick={onMuteClick}
       />
-      <Button
-        type={isSoloed ? 'primary' : 'default'}
-        size="small"
-        icon={<FontAwesomeIcon size="xs" icon={faS} />}
-        onClick={onSoloClick}
-      />
+      {canSolo && (
+        <Button
+          type={isSoloed ? 'primary' : 'default'}
+          size="small"
+          icon={<FontAwesomeIcon size="xs" icon={faS} />}
+          onClick={onSoloClick}
+        />
+      )}
     </>
   );
 }

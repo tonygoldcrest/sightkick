@@ -131,6 +131,10 @@ export class GameEngine {
     this.transport.setStemVolume(name, gain);
   }
 
+  setMasterVolume(gain: number): void {
+    this.transport.setMasterVolume(gain);
+  }
+
   renderFrame(): void {
     if (!this.chart) {
       return;
