@@ -1,10 +1,11 @@
 import { Button, Divider, Input } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faGlobe, faSearch } from '@fortawesome/free-solid-svg-icons';
-import { Difficulty } from 'scan-chart';
 import { cn } from '../../cn';
 import { Tooltip } from '../Tooltip';
 import { MappingHint } from '../MappingHint';
+import { ALL_DIFFICULTIES } from '../../../constants';
+import { Difficulty } from 'scan-chart';
 
 export type Mode = 'local' | 'online';
 
@@ -12,11 +13,12 @@ export interface SongFilterProps {
   onChangeFilter: (value: string) => void;
   nameFilter: string;
   className?: string;
-  difficulty: Difficulty;
   filteredSongsCount: number;
   mode: Mode;
   onChangeMode: (value: Mode) => void;
   showHints?: boolean;
+  difficulty: Difficulty;
+  setDifficulty: (newDifficulty: Difficulty) => void;
 }
 
 export function SongFilter({
@@ -26,6 +28,7 @@ export function SongFilter({
   nameFilter,
   className,
   difficulty,
+  setDifficulty,
   filteredSongsCount,
   showHints,
 }: SongFilterProps) {
@@ -55,20 +58,27 @@ export function SongFilter({
         }}
         suffix={
           <div className="flex gap-1 items-center">
-            <MappingHint
-              element={showHints ? 'crash' : undefined}
-              className="pr-2"
-            >
-              <div className="text-text-faint text-[13.5px] capitalize">
-                {difficulty}
-              </div>
-            </MappingHint>
-
-            <Divider vertical />
-
             <div className="text-text-faint text-[13.5px]">
               {filteredSongsCount} results
             </div>
+
+            <Divider vertical />
+
+            <Tooltip title="Charts come in Easy to Expert versions - easier ones have fewer notes to play. Songs without the version you pick won't show up.">
+              <div className="flex gap-2">
+                {ALL_DIFFICULTIES.map((d) => (
+                  <Button
+                    key={d}
+                    className="grow capitalize"
+                    type={difficulty === d ? 'primary' : 'default'}
+                    data-testid={`difficulty-${d}`}
+                    onClick={() => setDifficulty(d)}
+                  >
+                    {d}
+                  </Button>
+                ))}
+              </div>
+            </Tooltip>
 
             <Divider vertical />
 

@@ -210,6 +210,7 @@ export function SongListView() {
               nameFilter={nameFilter}
               onChangeFilter={setNameFilter}
               difficulty={difficulty}
+              setDifficulty={setDifficulty}
               filteredSongsCount={
                 mode === 'online' && onlineTotal !== undefined
                   ? onlineTotal

@@ -308,6 +308,32 @@ describe('SongListView — difficulty selection', () => {
 
     expect(filledStarsIn('a')).toBe(2);
   });
+
+  it('persists the selected difficulty', () => {
+    renderView();
+
+    selectDifficulty('hard');
+
+    expect(
+      JSON.parse(window.localStorage.getItem('settings.difficulty')!),
+    ).toBe('hard');
+  });
+
+  it('marks the active difficulty as primary', () => {
+    window.localStorage.setItem(
+      'settings.difficulty',
+      JSON.stringify('medium'),
+    );
+
+    renderView();
+
+    expect(screen.getByTestId('difficulty-medium').className).toContain(
+      'ant-btn-primary',
+    );
+    expect(screen.getByTestId('difficulty-easy').className).not.toContain(
+      'ant-btn-primary',
+    );
+  });
 });
 
 describe('SongListView — liking', () => {

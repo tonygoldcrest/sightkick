@@ -190,32 +190,6 @@ describe('SettingsButton — song-view parameters', () => {
 });
 
 describe('SettingsButton — song-list parameters', () => {
-  it('selects a difficulty and persists it', () => {
-    renderSongList();
-    open();
-
-    fireEvent.click(screen.getByTestId('difficulty-hard'));
-
-    expect(persisted('settings.difficulty')).toBe('hard');
-  });
-
-  it('marks the active difficulty as primary', () => {
-    window.localStorage.setItem(
-      'settings.difficulty',
-      JSON.stringify('medium'),
-    );
-
-    renderSongList();
-    open();
-
-    expect(screen.getByTestId('difficulty-medium').className).toContain(
-      'ant-btn-primary',
-    );
-    expect(screen.getByTestId('difficulty-easy').className).not.toContain(
-      'ant-btn-primary',
-    );
-  });
-
   it('shows only the folder name for a Windows-style library path', () => {
     function SeedPath() {
       const { setCurrentPath } = useApp();

@@ -11,6 +11,7 @@ const meta: Meta<typeof SongFilter> = {
     mode: 'local',
     onChangeFilter: () => {},
     onChangeMode: () => {},
+    setDifficulty: () => {},
   },
   argTypes: {
     mode: { control: 'radio', options: ['local', 'online'] },

@@ -7,8 +7,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { StemToolsPanel } from '../../context/StemToolsContext';
 import { useApp } from '../../context/AppContext';
-import { ALL_DIFFICULTIES } from '../../../constants';
-import { SettingLabel } from './SettingLabel';
 import { Tooltip } from '../Tooltip';
 
 interface Props {
@@ -22,7 +20,7 @@ export function SongListSettings({
   onSetupInput,
   currentInputName,
 }: Props) {
-  const { difficulty, setDifficulty, currentPath } = useApp();
+  const { currentPath } = useApp();
   const selectFolder = () =>
     window.electron.ipcRenderer.sendMessage('rescan-songs');
   const rescan = () =>
@@ -73,28 +71,6 @@ export function SongListSettings({
           {currentInputName ?? 'Setup input'}
         </Button>
       </Tooltip>
-
-      <Divider />
-
-      <div className="flex flex-col gap-3">
-        <SettingLabel
-          label="Difficulty"
-          tooltip="Charts come in Easy to Expert versions - easier ones have fewer notes to play. Songs without the version you pick won't show up."
-        />
-        <div className="flex gap-2">
-          {ALL_DIFFICULTIES.map((d) => (
-            <Button
-              key={d}
-              className="grow capitalize"
-              type={difficulty === d ? 'primary' : 'default'}
-              data-testid={`difficulty-${d}`}
-              onClick={() => setDifficulty(d)}
-            >
-              {d}
-            </Button>
-          ))}
-        </div>
-      </div>
 
       <Divider />
 
