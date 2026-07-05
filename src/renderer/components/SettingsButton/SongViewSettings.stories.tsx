@@ -1,5 +1,5 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
-import { AppProvider } from '../../context/AppContext';
+import { SongViewSettingsProvider } from '../../context/SongViewSettingsContext';
 import { AudioVolume } from '../AudioVolume';
 import { SongViewSettings } from './SongViewSettings';
 
@@ -35,13 +35,13 @@ function withSettings(overrides: Record<string, unknown> = {}): Decorator {
     });
 
     return (
-      <AppProvider>
+      <SongViewSettingsProvider>
         <div className="p-6">
           <div className="border border-border rounded-xl shadow-panel bg-bg p-3 flex flex-col gap-3 min-w-90 w-max">
             <Story />
           </div>
         </div>
-      </AppProvider>
+      </SongViewSettingsProvider>
     );
   };
 }
