@@ -79,7 +79,7 @@ export function SongListSettings({
       <div className="flex flex-col gap-3">
         <SettingLabel
           label="Difficulty"
-          tooltip="Pick how hard you wanna go. Songs that don't have this difficulty just won't show up."
+          tooltip="Charts come in Easy to Expert versions - easier ones have fewer notes to play. Songs without the version you pick won't show up."
         />
         <div className="flex gap-2">
           {ALL_DIFFICULTIES.map((d) => (
