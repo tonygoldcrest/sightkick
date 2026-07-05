@@ -8,7 +8,7 @@ import { calculateAccuracy, getStarRating } from '../../views/utils';
 import { MODAL_ABOVE_POPOVER_Z_INDEX, modalStyles } from '../../overlayStyles';
 import { Stars } from '../Stars';
 import { MappingHint } from '../MappingHint';
-import { useApp } from '../../context/AppContext';
+import { useInput } from '../../context/InputContext';
 
 interface Props {
   isOpen: boolean;
@@ -27,7 +27,7 @@ export function ScoreSummary({
   difficulty,
   scoreData,
 }: Props) {
-  const { selectedDevice } = useApp();
+  const { selectedDevice } = useInput();
   const starRating = useMemo(() => {
     if (!scoreData) {
       return 0;

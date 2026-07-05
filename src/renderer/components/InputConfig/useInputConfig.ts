@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useInput } from '../../context/InputContext';
 import { InputElement } from '../../../types';
 import { controlSource, InputDevice, inputBus } from '../../input';
 
@@ -10,7 +10,7 @@ export function useInputConfig(isOpen: boolean) {
     inputMapping,
     assignControl,
     removeControl,
-  } = useApp();
+  } = useInput();
   const [devices, setDevices] = useState<InputDevice[]>([]);
   const [listeningTo, setListeningTo] = useState<InputElement>();
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);

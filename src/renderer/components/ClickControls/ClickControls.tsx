@@ -4,8 +4,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Button, Slider } from 'antd';
 import { Tooltip } from '../Tooltip';
 import themedark from '../../theme';
-import { ClickControlsProps } from './types';
 import { DEFAULT_UNMUTE_VOLUME } from './constants';
+
+export interface ClickControlsProps {
+  volume: number;
+  onVolumeChange: (value: number) => void;
+  tone: number;
+  onToneChange: (value: number) => void;
+}
 
 export function ClickControls({
   volume,

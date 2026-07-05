@@ -12,6 +12,10 @@ import {
   faPlay,
 } from '@fortawesome/free-solid-svg-icons';
 import { useApp } from '../context/AppContext';
+import { useInput } from '../context/InputContext';
+import { useSongViewSettings } from '../context/SongViewSettingsContext';
+import { ClickControls } from '../components/ClickControls';
+import { usePersisted } from '../hooks/usePersisted';
 import { useSongLoader } from '../hooks/useSongLoader';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { useVolumeControls } from '../hooks/useVolumeControls';
@@ -26,20 +30,17 @@ import { buildSheetPdfHtml } from '../services/pdf-export';
 import { serializeMeasureToDsl } from '../components/SheetMusic/drumDsl';
 
 export function SongView() {
+  const { difficulty } = useApp();
+  const { inputMapping, selectedDevice } = useInput();
   const {
-    difficulty,
     playheadStyle,
     enableColors,
     showBarNumbers,
     showTempo,
     countIn,
-    clickVolume,
-    clickTone,
-    inputMapping,
     showReference,
-    selectedDevice,
     zoom,
-  } = useApp();
+  } = useSongViewSettings();
   const { notification, message } = App.useApp();
   const [scoreData, setScoreData] = useState<ScoreData>();
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
@@ -103,8 +104,6 @@ export function SongView() {
     minDurationSeconds,
     countInEnabled: countIn,
     playheadStyle,
-    clickVolume: clickVolume / 100,
-    clickTone: clickTone / 100,
     mapping: inputMapping,
     onEnded: (score) => {
       setScoreData(score);
@@ -129,6 +128,13 @@ export function SongView() {
     setStemVolume,
     isReady,
   );
+  const [clickVolume, setClickVolume] = usePersisted('settings.clickVolume', 0);
+  const [clickTone, setClickTone] = usePersisted('settings.clickTone', 50);
+
+  useEffect(() => {
+    engine?.setClickSettings(clickVolume / 100, clickTone / 100);
+  }, [engine, clickVolume, clickTone]);
+
   const audioLoading = trackData.length > 0 && !isReady;
   const isLoading = !songData || audioLoading;
   const onNextSong = () => {
@@ -333,6 +339,14 @@ export function SongView() {
         <SettingsButton
           page="song-view"
           volumeSliders={volumeSliders}
+          clickControls={
+            <ClickControls
+              volume={clickVolume}
+              onVolumeChange={setClickVolume}
+              tone={clickTone}
+              onToneChange={setClickTone}
+            />
+          }
           onExportPdf={onExportPdf}
           isExporting={isExporting}
         />

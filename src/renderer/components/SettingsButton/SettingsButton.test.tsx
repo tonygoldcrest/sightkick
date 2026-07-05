@@ -4,6 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InputEvent } from '../../input/types';
 import { AppProvider, useApp } from '../../context/AppContext';
+import { InputProvider } from '../../context/InputContext';
+import { SongViewSettingsProvider } from '../../context/SongViewSettingsContext';
 import {
   installIpcMock,
   installLocalStorage,
@@ -29,7 +31,11 @@ let ipc: IpcMock;
 function wrapper({ children }: { children: ReactNode }) {
   return (
     <AppProvider>
-      <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
+      <InputProvider>
+        <SongViewSettingsProvider>
+          <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
+        </SongViewSettingsProvider>
+      </InputProvider>
     </AppProvider>
   );
 }

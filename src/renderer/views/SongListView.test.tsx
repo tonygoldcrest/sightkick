@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SongData } from '../../types';
 import { AppProvider } from '../context/AppContext';
+import { InputProvider } from '../context/InputContext';
 import {
   getNotification,
   installIpcMock,
@@ -105,13 +106,15 @@ function SongViewStub() {
 function wrapper({ children }: { children: ReactNode }) {
   return (
     <AppProvider>
-      <MemoryRouter initialEntries={['/']}>
-        <Routes>
-          <Route path="/" element={children}>
-            <Route path=":id" element={<SongViewStub />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
+      <InputProvider>
+        <MemoryRouter initialEntries={['/']}>
+          <Routes>
+            <Route path="/" element={children}>
+              <Route path=":id" element={<SongViewStub />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </InputProvider>
     </AppProvider>
   );
 }
@@ -485,16 +488,18 @@ describe('SongListView input control gating', () => {
   function renderAt(path: string) {
     return render(
       <AppProvider>
-        <MemoryRouter initialEntries={[path]}>
-          <Routes>
-            <Route path="/" element={<SongListView />}>
-              <Route
-                path=":id"
-                element={<div data-testid="song-view-stub" />}
-              />
-            </Route>
-          </Routes>
-        </MemoryRouter>
+        <InputProvider>
+          <MemoryRouter initialEntries={[path]}>
+            <Routes>
+              <Route path="/" element={<SongListView />}>
+                <Route
+                  path=":id"
+                  element={<div data-testid="song-view-stub" />}
+                />
+              </Route>
+            </Routes>
+          </MemoryRouter>
+        </InputProvider>
       </AppProvider>,
     );
   }

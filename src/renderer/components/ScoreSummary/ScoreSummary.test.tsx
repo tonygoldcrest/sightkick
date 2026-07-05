@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InputEvent } from '../../input/types';
-import { AppProvider } from '../../context/AppContext';
+import { InputProvider } from '../../context/InputContext';
 import { installIpcMock, installLocalStorage } from '../../hooks/test-support';
 import { ScoreData, SongData } from '../../../types';
 import { ScoreSummary } from './ScoreSummary';
@@ -35,9 +35,9 @@ function selectKeyboardDevice() {
 
 function wrapper({ children }: { children: ReactNode }) {
   return (
-    <AppProvider>
+    <InputProvider>
       <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
-    </AppProvider>
+    </InputProvider>
   );
 }
 

@@ -9,6 +9,8 @@ import { IpcLoadSongResponse, SongData } from '../../types';
 import { InputEvent } from '../input/types';
 import { TrackConfig } from '../services/audio-player/types';
 import { AppProvider } from '../context/AppContext';
+import { InputProvider } from '../context/InputContext';
+import { SongViewSettingsProvider } from '../context/SongViewSettingsContext';
 import {
   getNotification,
   installIpcMock,
@@ -174,12 +176,16 @@ function makeSong(extra: Partial<SongData> = {}): SongData {
 function wrapper({ children }: { children: ReactNode }) {
   return (
     <AppProvider>
-      <MemoryRouter initialEntries={['/song-1']}>
-        <Routes>
-          <Route path="/" element={<div data-testid="song-list-stub" />} />
-          <Route path=":id" element={children} />
-        </Routes>
-      </MemoryRouter>
+      <InputProvider>
+        <SongViewSettingsProvider>
+          <MemoryRouter initialEntries={['/song-1']}>
+            <Routes>
+              <Route path="/" element={<div data-testid="song-list-stub" />} />
+              <Route path=":id" element={children} />
+            </Routes>
+          </MemoryRouter>
+        </SongViewSettingsProvider>
+      </InputProvider>
     </AppProvider>
   );
 }

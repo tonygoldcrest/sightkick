@@ -37,8 +37,8 @@ const { settings, busListeners, listDevicesMock } = vi.hoisted(() => ({
   listDevicesMock: vi.fn(),
 }));
 
-vi.mock('../../context/AppContext', () => ({
-  useApp: () => settings,
+vi.mock('../../context/InputContext', () => ({
+  useInput: () => settings,
 }));
 
 vi.mock('../../input', () => ({

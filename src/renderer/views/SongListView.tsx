@@ -12,6 +12,7 @@ import {
 import { SplittingQueue } from '../components/SplittingQueue';
 import { EmptySongState } from '../components/EmptySongState';
 import { useApp } from '../context/AppContext';
+import { useInput } from '../context/InputContext';
 import { StemToolsProvider } from '../context/StemToolsContext';
 import { useStemTools } from '../hooks/useStemTools';
 import { useSongList } from '../hooks/useSongList';
@@ -21,13 +22,8 @@ import { useInputControls } from '../hooks/useInputControls';
 import { ALL_DIFFICULTIES } from '../../constants';
 
 export function SongListView() {
-  const {
-    currentPath,
-    inputMapping,
-    difficulty,
-    setDifficulty,
-    selectedDevice,
-  } = useApp();
+  const { currentPath, difficulty, setDifficulty } = useApp();
+  const { inputMapping, selectedDevice } = useInput();
   const navigate = useNavigate();
   const songOpen = useOutlet() !== null;
   const stemTools = useStemTools();

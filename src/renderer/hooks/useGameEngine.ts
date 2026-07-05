@@ -28,8 +28,6 @@ interface UseGameEngineParams {
   minDurationSeconds: number;
   countInEnabled: boolean;
   playheadStyle: PlayheadStyle;
-  clickVolume: number;
-  clickTone: number;
   mapping: InputMapping;
   onEnded: (score: ScoreData) => void;
 }
@@ -76,8 +74,6 @@ export function useGameEngine({
   minDurationSeconds,
   countInEnabled,
   playheadStyle,
-  clickVolume,
-  clickTone,
   mapping,
   onEnded,
 }: UseGameEngineParams): UseGameEngineResult {
@@ -141,10 +137,6 @@ export function useGameEngine({
   useEffect(() => {
     engine?.setSettings({ playheadStyle });
   }, [engine, playheadStyle]);
-
-  useEffect(() => {
-    engine?.setClickSettings(clickVolume, clickTone);
-  }, [engine, clickVolume, clickTone]);
 
   useEffect(() => {
     engine?.setMapping(mapping);

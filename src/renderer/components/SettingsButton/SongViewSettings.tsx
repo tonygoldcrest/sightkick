@@ -7,10 +7,9 @@ import {
   faInfoCircle,
 } from '@fortawesome/free-solid-svg-icons';
 import { PLAYHEAD_STYLES } from '../../types';
-import { useApp } from '../../context/AppContext';
+import { useSongViewSettings } from '../../context/SongViewSettingsContext';
 import { SettingLabel } from './SettingLabel';
 import { Tooltip } from '../Tooltip';
-import { ClickControls } from '../ClickControls';
 import themedark from '../../theme';
 
 interface Props {
@@ -19,6 +18,7 @@ interface Props {
   onExportPdf?: () => void;
   isExporting?: boolean;
   volumeSliders?: ReactNode[];
+  clickControls?: ReactNode;
 }
 
 export function SongViewSettings({
@@ -27,6 +27,7 @@ export function SongViewSettings({
   onExportPdf,
   isExporting,
   volumeSliders,
+  clickControls,
 }: Props) {
   const {
     playheadStyle,
@@ -41,13 +42,9 @@ export function SongViewSettings({
     setShowReference,
     countIn,
     setCountIn,
-    clickVolume,
-    setClickVolume,
-    clickTone,
-    setClickTone,
     zoom,
     setZoom,
-  } = useApp();
+  } = useSongViewSettings();
   const [isDev, setIsDev] = useState(false);
 
   useEffect(() => {
@@ -236,12 +233,7 @@ export function SongViewSettings({
         </>
       ) : null}
 
-      <ClickControls
-        volume={clickVolume}
-        onVolumeChange={setClickVolume}
-        tone={clickTone}
-        onToneChange={setClickTone}
-      />
+      {clickControls}
     </>
   );
 }
