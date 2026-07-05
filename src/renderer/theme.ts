@@ -88,7 +88,7 @@ export const themedark = {
     inkSoft: '#4a463c',
 
     green: '#1f8a4c',
-    orange: '#d15a12',
+    orange: '#E8641A',
     blue: '#1b6fc0',
     yellow: '#C8930F',
     red: '#c62828',
