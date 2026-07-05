@@ -5,33 +5,29 @@ import {
   faDrum,
   faFolder,
 } from '@fortawesome/free-solid-svg-icons';
-import { Difficulty } from 'scan-chart';
 import { StemToolsPanel } from '../../context/StemToolsContext';
+import { useApp } from '../../context/AppContext';
 import { ALL_DIFFICULTIES } from '../../../constants';
 import { SettingLabel } from './SettingLabel';
 import { Tooltip } from '../Tooltip';
 
 interface Props {
-  difficulty: Difficulty;
-  onDifficultyChange: (difficulty: Difficulty) => void;
-  currentPath: string | null;
-  onSelectFolder: () => void;
-  onRescan: () => void;
   scanPercent?: number;
   onSetupInput: () => void;
   currentInputName?: string;
 }
 
 export function SongListSettings({
-  difficulty,
-  onDifficultyChange,
-  currentPath,
-  onSelectFolder,
-  onRescan,
   scanPercent,
   onSetupInput,
   currentInputName,
 }: Props) {
+  const { difficulty, setDifficulty, currentPath } = useApp();
+  const selectFolder = () =>
+    window.electron.ipcRenderer.sendMessage('rescan-songs');
+  const rescan = () =>
+    window.electron.ipcRenderer.sendMessage('rescan-songs', false);
+
   return (
     <>
       <div className="flex gap-2 grow">
@@ -43,7 +39,7 @@ export function SongListSettings({
         >
           <Button
             icon={<FontAwesomeIcon icon={faFolder} />}
-            onClick={onSelectFolder}
+            onClick={selectFolder}
             className="grow"
           >
             {currentPath ? currentPath.split(/[\\/]/).pop() : 'Select folder'}
@@ -57,7 +53,7 @@ export function SongListSettings({
             <Button
               icon={<FontAwesomeIcon icon={faArrowsRotate} />}
               data-testid="rescan-folder"
-              onClick={onRescan}
+              onClick={rescan}
             />
           </Tooltip>
         ) : null}
@@ -92,7 +88,7 @@ export function SongListSettings({
               className="grow capitalize"
               type={difficulty === d ? 'primary' : 'default'}
               data-testid={`difficulty-${d}`}
-              onClick={() => onDifficultyChange(d)}
+              onClick={() => setDifficulty(d)}
             >
               {d}
             </Button>

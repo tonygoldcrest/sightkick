@@ -59,7 +59,7 @@ export class AudioPlayer {
     );
   }
 
-  async start(offset: number = 0) {
+  async start(offset: number = 0, startAt?: number) {
     if (this.isInitialised) {
       this.stop();
     }
@@ -70,11 +70,22 @@ export class AudioPlayer {
       await this.context.resume().catch(() => {});
     }
 
-    const time = this.context.currentTime;
+    const time = Math.max(
+      startAt ?? this.context.currentTime,
+      this.context.currentTime,
+    );
 
     this.startedAt = time;
     this.audioTracks.forEach((track) => track.start(time, offset));
     this.isInitialised = true;
+  }
+
+  contextTimeForSongTime(songTime: number): number {
+    if (this.startedAt < 0) {
+      return this.context.currentTime;
+    }
+
+    return this.startedAt + (songTime - this.offset);
   }
 
   stop() {

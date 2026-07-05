@@ -34,6 +34,10 @@ interface AppContextValue {
   setShowReference: (v: boolean) => void;
   countIn: boolean;
   setCountIn: (v: boolean) => void;
+  clickVolume: number;
+  setClickVolume: (v: number) => void;
+  clickTone: number;
+  setClickTone: (v: number) => void;
   currentPath: string | null;
   setCurrentPath: (p: string | null) => void;
   selectedDevice: InputDevice | null;
@@ -68,13 +72,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     'settings.playheadStyle',
     PLAYHEAD_STYLES[0],
   );
-
-  useEffect(() => {
-    if (!PLAYHEAD_STYLES.includes(playheadStyle)) {
-      setPlayheadStyle(PLAYHEAD_STYLES[0]);
-    }
-  }, [playheadStyle, setPlayheadStyle]);
-
   const [enableColors, setEnableColors] = usePersisted(
     'settings.enableColors',
     true,
@@ -89,6 +86,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     true,
   );
   const [countIn, setCountIn] = usePersisted('settings.countIn', true);
+  const [clickVolume, setClickVolume] = usePersisted('settings.clickVolume', 0);
+  const [clickTone, setClickTone] = usePersisted('settings.clickTone', 50);
   const [currentPath, setCurrentPath] = useState<string | null>(null);
   const [selectedDevice, setSelectedDevice] = usePersisted<InputDevice | null>(
     'settings.selectedDevice',
@@ -143,6 +142,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     [updateMapping],
   );
+
+  useEffect(() => {
+    if (!PLAYHEAD_STYLES.includes(playheadStyle)) {
+      setPlayheadStyle(PLAYHEAD_STYLES[0]);
+    }
+  }, [playheadStyle, setPlayheadStyle]);
 
   useEffect(() => {
     inputBus.start();
@@ -217,6 +222,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setShowTempo,
         countIn,
         setCountIn,
+        clickVolume,
+        setClickVolume,
+        clickTone,
+        setClickTone,
         currentPath,
         setCurrentPath,
         selectedDevice,

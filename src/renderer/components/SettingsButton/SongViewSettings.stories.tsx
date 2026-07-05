@@ -1,4 +1,5 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Decorator, Meta, StoryObj } from '@storybook/react';
+import { AppProvider } from '../../context/AppContext';
 import { AudioVolume } from '../AudioVolume';
 import { SongViewSettings } from './SongViewSettings';
 
@@ -25,34 +26,33 @@ const volumeSliders = [
     onSoloClick={noop}
   />,
 ];
+
+function withSettings(overrides: Record<string, unknown> = {}): Decorator {
+  return (Story) => {
+    window.localStorage.clear();
+    Object.entries(overrides).forEach(([key, value]) => {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    });
+
+    return (
+      <AppProvider>
+        <div className="p-6">
+          <div className="border border-border rounded-xl shadow-panel bg-bg p-3 flex flex-col gap-3 min-w-90 w-max">
+            <Story />
+          </div>
+        </div>
+      </AppProvider>
+    );
+  };
+}
+
 const meta: Meta<typeof SongViewSettings> = {
   title: 'Settings/Song View Settings',
   component: SongViewSettings,
   args: {
-    playheadStyle: 'Cursor',
-    enableColors: true,
-    showBarNumbers: false,
-    showTempo: true,
-    showReference: true,
-    countIn: true,
-    isDev: false,
-    onPlayheadStyleChange: noop,
-    onEnableColorsChange: noop,
-    onShowBarNumbersChange: noop,
-    onShowTempoChange: noop,
-    onShowReferenceChange: noop,
-    onCountInChange: noop,
     onSetupInput: noop,
   },
-  decorators: [
-    (Story) => (
-      <div className="p-6">
-        <div className="border border-border rounded-xl shadow-panel bg-bg p-3 flex flex-col gap-3 min-w-90 w-max">
-          <Story />
-        </div>
-      </div>
-    ),
-  ],
+  decorators: [withSettings()],
 };
 
 export default meta;
@@ -61,8 +61,8 @@ type Story = StoryObj<typeof SongViewSettings>;
 
 export const Default: Story = {};
 
-export const DevMode: Story = { args: { isDev: true } };
-
 export const WithMixer: Story = { args: { volumeSliders } };
 
-export const ColorsOff: Story = { args: { enableColors: false } };
+export const ColorsOff: Story = {
+  decorators: [withSettings({ 'settings.enableColors': false })],
+};

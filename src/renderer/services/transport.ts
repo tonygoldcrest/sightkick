@@ -2,8 +2,13 @@ import { AudioPlayer } from './audio-player/player';
 import { TrackConfig } from './audio-player/types';
 import { TimeStore } from './time-store';
 import { Measure, ParsedChart } from '../../chart-parser/types';
-import { getCountIn, secondsToTicks, ticksToSeconds } from '../views/utils';
-import { playMetronome, preloadMetronome } from './metronome';
+import { secondsToTicks, ticksToSeconds } from '../views/utils';
+import { ClickTrack } from './click-track';
+import { Beat, getBeatGrid, getCountInInfo } from './beat-grid';
+import { DEFAULT_CLICK_TONE } from './metronome';
+
+const LOOKAHEAD_SECONDS = 0.2;
+const COUNT_IN_MIN_VOLUME = 0.7;
 
 export type PlaybackState =
   | 'idle'
@@ -70,8 +75,15 @@ export class Transport {
   private position = 0;
   private countInBeat: number | undefined;
   private countInBeatMs: number | undefined;
-  private countRunId = 0;
-  private countTimer: ReturnType<typeof setTimeout> | undefined;
+  private clickTrack: ClickTrack | undefined;
+  private clickVolume = 0;
+  private clickTone = DEFAULT_CLICK_TONE;
+  private beatGrid: Beat[] = [];
+  private nextBeatIndex = 0;
+  private countInStartCtx: number | undefined;
+  private countInBeatDuration: number | undefined;
+  private countInBeats: number | undefined;
+  private songStartCtx: number | undefined;
   private raf: number | undefined;
   private disposed = false;
   private listeners = new Set<() => void>();
@@ -83,8 +95,6 @@ export class Transport {
     this.onErrorCb = options.onError;
     this.onSeekCb = options.onSeek ?? (() => {});
     this.snapshot = this.buildSnapshot();
-
-    preloadMetronome();
 
     if (options.trackData.length > 0) {
       this.initAudio(options.trackData);
@@ -99,6 +109,34 @@ export class Transport {
     this.delaySeconds = context.delaySeconds;
     this.countInEnabled = context.countInEnabled;
     this.minDurationSeconds = context.minDurationSeconds;
+    this.beatGrid = context.chart
+      ? getBeatGrid(context.measures, context.chart)
+      : [];
+  }
+
+  setClickSettings(volume: number, tone: number): void {
+    this.clickVolume = Math.max(0, Math.min(1, volume));
+    this.clickTone = tone;
+    this.clickTrack?.setTone(tone);
+    this.applyClickVolume();
+  }
+
+  private applyClickVolume(): void {
+    if (!this.clickTrack || !this.audioPlayer) {
+      return;
+    }
+
+    if (this.state === 'playing') {
+      this.clickTrack.cancelGain();
+      this.clickTrack.setGain(this.clickVolume);
+    } else if (
+      this.state === 'counting-in' &&
+      this.songStartCtx !== undefined
+    ) {
+      this.clickTrack.cancelGain();
+      this.clickTrack.setGain(Math.max(this.clickVolume, COUNT_IN_MIN_VOLUME));
+      this.clickTrack.setGain(this.clickVolume, this.songStartCtx);
+    }
   }
 
   setDev(isDev: boolean): void {
@@ -137,32 +175,75 @@ export class Transport {
       return;
     }
 
-    this.cancelCountIn();
+    this.clearScheduling();
     this.audioPlayer.stop();
 
     const startTime = this.tickToTime(tick);
 
     this.setPosition(startTime);
     this.onSeekCb(tick);
+    this.nextBeatIndex = this.firstBeatIndexAtOrAfter(startTime);
 
-    const begin = () => {
-      this.isStarted = true;
-      this.state = 'playing';
-      void this.audioPlayer?.start(startTime);
-      this.emit();
-    };
+    void this.beginPlayback(tick, startTime);
+  }
+
+  private async beginPlayback(tick: number, startTime: number): Promise<void> {
+    if (!this.chart || !this.audioPlayer || !this.clickTrack) {
+      return;
+    }
+
+    const ctx = this.audioPlayer.context;
+
+    if (ctx.state === 'suspended') {
+      await ctx.resume().catch(() => {});
+    }
+
+    if (this.disposed) {
+      return;
+    }
 
     if (!this.countInEnabled) {
-      begin();
+      this.songStartCtx = ctx.currentTime;
+      this.clickTrack.cancelGain();
+      this.clickTrack.setGain(this.clickVolume);
+      void this.audioPlayer.start(startTime);
+      this.isStarted = true;
+      this.state = 'playing';
+      this.emit();
 
       return;
     }
 
-    const { beats, beatMs } = getCountIn(tick, this.measures, this.chart);
+    const { beats, beatDurationSeconds } = getCountInInfo(
+      tick,
+      this.measures,
+      this.chart,
+    );
+    const now = ctx.currentTime;
+    const songStart = now + beats * beatDurationSeconds;
+
+    this.songStartCtx = songStart;
+    this.countInStartCtx = now;
+    this.countInBeatDuration = beatDurationSeconds;
+    this.countInBeats = beats;
+    this.countInBeat = 1;
+    this.countInBeatMs = beatDurationSeconds * 1000;
+
+    this.clickTrack.cancelGain();
+    this.clickTrack.setGain(
+      Math.max(this.clickVolume, COUNT_IN_MIN_VOLUME),
+      now,
+    );
+    this.clickTrack.setGain(this.clickVolume, songStart);
+
+    for (let i = 0; i < beats; i += 1) {
+      this.clickTrack.scheduleClick(now + i * beatDurationSeconds, i === 0);
+    }
 
     this.state = 'counting-in';
     this.emit();
-    this.startCountIn(beats, beatMs, begin);
+
+    void this.audioPlayer.start(startTime, songStart);
   }
 
   pause(): void {
@@ -172,6 +253,7 @@ export class Transport {
 
     this.setPosition(this.audioPlayer.currentTime);
     this.audioPlayer.pause();
+    this.clickTrack?.clearPending();
     this.state = 'parked';
     this.emit();
   }
@@ -181,7 +263,8 @@ export class Transport {
       return;
     }
 
-    this.cancelCountIn();
+    this.clearScheduling();
+    this.audioPlayer?.stop();
     this.state = 'parked';
     this.emit();
   }
@@ -191,10 +274,11 @@ export class Transport {
       return;
     }
 
-    this.cancelCountIn();
+    this.clearScheduling();
     this.isStarted = true;
     this.state = 'playing';
     this.setPosition(seconds);
+    this.nextBeatIndex = this.firstBeatIndexAtOrAfter(seconds);
 
     if (this.chart) {
       this.onSeekCb(
@@ -206,8 +290,30 @@ export class Transport {
       );
     }
 
+    this.songStartCtx = this.audioPlayer.context.currentTime;
+    this.clickTrack?.cancelGain();
+    this.clickTrack?.setGain(this.clickVolume);
     void this.audioPlayer.start(seconds);
     this.emit();
+  }
+
+  private firstBeatIndexAtOrAfter(songTime: number): number {
+    const index = this.beatGrid.findIndex(
+      (beat) => beat.timeSeconds + this.delaySeconds >= songTime - 1e-4,
+    );
+
+    return index < 0 ? this.beatGrid.length : index;
+  }
+
+  private clearScheduling(): void {
+    this.clickTrack?.clearPending();
+    this.clickTrack?.cancelGain();
+    this.countInBeat = undefined;
+    this.countInBeatMs = undefined;
+    this.countInStartCtx = undefined;
+    this.countInBeatDuration = undefined;
+    this.countInBeats = undefined;
+    this.songStartCtx = undefined;
   }
 
   setStemVolume(name: string, gain: number): void {
@@ -218,7 +324,8 @@ export class Transport {
 
   dispose(): void {
     this.disposed = true;
-    this.cancelCountIn();
+    this.clearScheduling();
+    this.clickTrack?.dispose();
 
     if (this.raf !== undefined && typeof cancelAnimationFrame === 'function') {
       cancelAnimationFrame(this.raf);
@@ -251,6 +358,8 @@ export class Transport {
         }
 
         this.audioPlayer = player;
+        this.clickTrack = new ClickTrack(player.context);
+        this.clickTrack.setTone(this.clickTone);
         this.emit();
       })
       .catch(() => {
@@ -276,65 +385,82 @@ export class Transport {
         this.setPosition(this.audioPlayer.currentTime);
       }
 
+      this.scheduleClicks();
+      this.updateCountIn();
+
       this.raf = requestAnimationFrame(poll);
     };
 
     this.raf = requestAnimationFrame(poll);
   }
 
-  private handleEnded(): void {
-    this.state = 'ended';
-    this.emit();
-    this.onEndedCb();
-  }
-
-  private startCountIn(
-    beats: number,
-    beatMs: number,
-    onComplete: () => void,
-  ): void {
-    this.countRunId += 1;
-
-    const runId = this.countRunId;
-
-    this.countInBeat = 1;
-    this.countInBeatMs = beatMs;
-    playMetronome();
-    this.emit();
-
-    const advance = () => {
-      if (runId !== this.countRunId) {
-        return;
-      }
-
-      if ((this.countInBeat ?? 0) >= beats) {
-        this.countTimer = undefined;
-        this.countInBeat = undefined;
-        this.countInBeatMs = undefined;
-        onComplete();
-
-        return;
-      }
-
-      this.countInBeat = (this.countInBeat ?? 0) + 1;
-      playMetronome();
-      this.emit();
-      this.countTimer = setTimeout(advance, beatMs);
-    };
-
-    this.countTimer = setTimeout(advance, beatMs);
-  }
-
-  private cancelCountIn(): void {
-    this.countRunId += 1;
-
-    if (this.countTimer !== undefined) {
-      clearTimeout(this.countTimer);
-      this.countTimer = undefined;
+  private scheduleClicks(): void {
+    if (
+      !this.clickTrack ||
+      !this.audioPlayer?.isInitialised ||
+      (this.state !== 'playing' && this.state !== 'counting-in')
+    ) {
+      return;
     }
 
-    this.countInBeat = undefined;
-    this.countInBeatMs = undefined;
+    const ctx = this.audioPlayer.context;
+    const horizon = ctx.currentTime + LOOKAHEAD_SECONDS;
+
+    while (this.nextBeatIndex < this.beatGrid.length) {
+      const beat = this.beatGrid[this.nextBeatIndex];
+      const songTime = beat.timeSeconds + this.delaySeconds;
+      const contextTime = this.audioPlayer.contextTimeForSongTime(songTime);
+
+      if (contextTime > horizon) {
+        break;
+      }
+
+      this.clickTrack.scheduleClick(contextTime, beat.isDownbeat);
+      this.nextBeatIndex += 1;
+    }
+  }
+
+  private updateCountIn(): void {
+    if (
+      this.state !== 'counting-in' ||
+      !this.audioPlayer ||
+      this.countInStartCtx === undefined ||
+      this.countInBeatDuration === undefined ||
+      this.songStartCtx === undefined
+    ) {
+      return;
+    }
+
+    const now = this.audioPlayer.context.currentTime;
+
+    if (now >= this.songStartCtx) {
+      this.countInBeat = undefined;
+      this.countInBeatMs = undefined;
+      this.countInStartCtx = undefined;
+      this.isStarted = true;
+      this.state = 'playing';
+      this.emit();
+
+      return;
+    }
+
+    const elapsed = now - this.countInStartCtx;
+    const beat = Math.min(
+      this.countInBeats ?? 1,
+      Math.max(1, Math.floor(elapsed / this.countInBeatDuration) + 1),
+    );
+
+    if (beat !== this.countInBeat) {
+      this.countInBeat = beat;
+      this.emit();
+    }
+  }
+
+  private handleEnded(): void {
+    this.state = 'ended';
+    this.clickTrack?.clearPending();
+    this.emit();
+    this.onEndedCb();
   }
 
   private tickToTime(tick: number): number {

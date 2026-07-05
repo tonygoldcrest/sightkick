@@ -33,6 +33,8 @@ export function SongView() {
     showBarNumbers,
     showTempo,
     countIn,
+    clickVolume,
+    clickTone,
     inputMapping,
     showReference,
     selectedDevice,
@@ -101,6 +103,8 @@ export function SongView() {
     minDurationSeconds,
     countInEnabled: countIn,
     playheadStyle,
+    clickVolume: clickVolume / 100,
+    clickTone: clickTone / 100,
     mapping: inputMapping,
     onEnded: (score) => {
       setScoreData(score);

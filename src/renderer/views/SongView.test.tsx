@@ -35,6 +35,10 @@ vi.mock('scan-chart', async (importOriginal) => ({
 }));
 vi.mock('../../chart-parser/parser', () => ({ ChartParser: vi.fn() }));
 vi.mock('../../chart-parser/renderer', () => ({ renderMusic: vi.fn() }));
+vi.mock('../services/metronome', () => ({
+  DEFAULT_CLICK_TONE: 0.5,
+  renderClickBuffers: () => ({ downbeat: {}, beat: {} }),
+}));
 
 const { busListeners } = vi.hoisted(() => ({
   busListeners: new Set<(event: InputEvent) => void>(),
@@ -64,6 +68,29 @@ function pressInput(controlId: string) {
 }
 
 vi.mock('../services/audio-player/player', () => {
+  const fakeContext = () => ({
+    state: 'running',
+    currentTime: 0,
+    destination: {},
+    resume: () => Promise.resolve(),
+    createGain: () => ({
+      gain: {
+        value: 0,
+        setValueAtTime: () => {},
+        cancelScheduledValues: () => {},
+      },
+      connect: () => {},
+      disconnect: () => {},
+    }),
+    createBufferSource: () => ({
+      buffer: undefined,
+      connect: () => {},
+      start: () => {},
+      stop: () => {},
+      addEventListener: () => {},
+    }),
+  });
+
   class MockAudioPlayer {
     static instances: MockAudioPlayer[] = [];
 
@@ -73,16 +100,24 @@ vi.mock('../services/audio-player/player', () => {
 
     ready = Promise.resolve([]);
 
+    context = fakeContext();
+
     currentTime = 0;
 
     duration = 100;
 
     isInitialised = false;
 
+    startedAt = -1;
+
+    offset = 0;
+
     audioTracks: { name: string; setVolume: () => void }[] = [];
 
-    start = vi.fn(() => {
+    start = vi.fn((offset = 0, startAt?: number) => {
       this.isInitialised = true;
+      this.offset = offset;
+      this.startedAt = startAt ?? this.context.currentTime;
     });
 
     resume = vi.fn();
@@ -92,6 +127,12 @@ vi.mock('../services/audio-player/player', () => {
     stop = vi.fn();
 
     destroy = vi.fn();
+
+    contextTimeForSongTime(songTime: number) {
+      return this.startedAt < 0
+        ? this.context.currentTime
+        : this.startedAt + (songTime - this.offset);
+    }
 
     constructor(trackData: TrackConfig[], onEnded: () => void) {
       this.trackData = trackData;
@@ -214,12 +255,11 @@ describe('SongView — loading', () => {
 });
 
 describe('SongView — playback', () => {
-  async function runCountIn() {
-    for (let i = 0; i < 4; i += 1) {
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(500);
-      });
-    }
+  async function completeCountIn(player: { context: { currentTime: number } }) {
+    await act(async () => {
+      player.context.currentTime = 5;
+      await vi.advanceTimersByTimeAsync(50);
+    });
   }
 
   it('counts in before starting, then pauses, from the play button', async () => {
@@ -230,22 +270,23 @@ describe('SongView — playback', () => {
       await loadSong();
 
       const [player] = await getInstances();
-      const start = (player as unknown as { start: ReturnType<typeof vi.fn> })
-        .start;
+      const mock = player as unknown as {
+        start: ReturnType<typeof vi.fn>;
+        pause: ReturnType<typeof vi.fn>;
+        context: { currentTime: number };
+      };
 
       fireEvent.click(screen.getByTestId('play-toggle'));
 
-      expect(start).not.toHaveBeenCalled();
       expect(screen.getByText('1')).toBeInTheDocument();
 
-      await runCountIn();
+      await completeCountIn(mock);
 
-      expect(start).toHaveBeenCalledTimes(1);
+      expect(mock.start).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText('1')).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByTestId('play-toggle'));
-      expect(
-        (player as unknown as { pause: ReturnType<typeof vi.fn> }).pause,
-      ).toHaveBeenCalledTimes(1);
+      expect(mock.pause).toHaveBeenCalledTimes(1);
     } finally {
       vi.useRealTimers();
     }
@@ -259,18 +300,20 @@ describe('SongView — playback', () => {
       await loadSong();
 
       const [player] = await getInstances();
-      const start = (player as unknown as { start: ReturnType<typeof vi.fn> })
-        .start;
+      const mock = player as unknown as {
+        pause: ReturnType<typeof vi.fn>;
+        context: { currentTime: number };
+      };
 
       fireEvent.click(screen.getByTestId('play-toggle'));
       expect(screen.getByText('1')).toBeInTheDocument();
 
       fireEvent.click(screen.getByTestId('play-toggle'));
 
-      await runCountIn();
+      await completeCountIn(mock);
 
-      expect(start).not.toHaveBeenCalled();
       expect(screen.queryByText('1')).not.toBeInTheDocument();
+      expect(mock.pause).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

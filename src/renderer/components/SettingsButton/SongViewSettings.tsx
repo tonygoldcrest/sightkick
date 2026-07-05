@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Button, Divider, InputNumber, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -6,56 +6,57 @@ import {
   faFilePdf,
   faInfoCircle,
 } from '@fortawesome/free-solid-svg-icons';
-import { PLAYHEAD_STYLES, PlayheadStyle } from '../../types';
+import { PLAYHEAD_STYLES } from '../../types';
+import { useApp } from '../../context/AppContext';
 import { SettingLabel } from './SettingLabel';
 import { Tooltip } from '../Tooltip';
+import { ClickControls } from '../ClickControls';
 import themedark from '../../theme';
 
 interface Props {
-  playheadStyle: PlayheadStyle;
-  onPlayheadStyleChange: (style: PlayheadStyle) => void;
-  enableColors: boolean;
-  onEnableColorsChange: (value: boolean) => void;
-  showBarNumbers: boolean;
-  onShowBarNumbersChange: (value: boolean) => void;
-  showReference: boolean;
-  onShowReferenceChange: (value: boolean) => void;
-  showTempo: boolean;
-  onShowTempoChange: (value: boolean) => void;
-  countIn: boolean;
-  onCountInChange: (value: boolean) => void;
-  isDev: boolean;
   onSetupInput: () => void;
+  currentInputName?: string;
   onExportPdf?: () => void;
   isExporting?: boolean;
   volumeSliders?: ReactNode[];
-  currentInputName?: string;
-  zoom: number;
-  onZoomChange: (value: number | null) => void;
 }
 
 export function SongViewSettings({
-  playheadStyle,
-  onPlayheadStyleChange,
-  enableColors,
-  onEnableColorsChange,
-  showBarNumbers,
-  onShowBarNumbersChange,
-  showTempo,
-  onShowTempoChange,
-  showReference,
-  onShowReferenceChange,
-  countIn,
-  onCountInChange,
-  isDev,
   onSetupInput,
+  currentInputName,
   onExportPdf,
   isExporting,
   volumeSliders,
-  currentInputName,
-  zoom,
-  onZoomChange,
 }: Props) {
+  const {
+    playheadStyle,
+    setPlayheadStyle,
+    enableColors,
+    setEnableColors,
+    showBarNumbers,
+    setShowBarNumbers,
+    showTempo,
+    setShowTempo,
+    showReference,
+    setShowReference,
+    countIn,
+    setCountIn,
+    clickVolume,
+    setClickVolume,
+    clickTone,
+    setClickTone,
+    zoom,
+    setZoom,
+  } = useApp();
+  const [isDev, setIsDev] = useState(false);
+
+  useEffect(() => {
+    window.electron.ipcRenderer.sendMessage('check-dev');
+    window.electron.ipcRenderer.once('check-dev', (dev: boolean) => {
+      setIsDev(dev);
+    });
+  }, []);
+
   return (
     <>
       <Tooltip
@@ -100,7 +101,7 @@ export function SongViewSettings({
               key={s}
               className="grow"
               type={playheadStyle === s ? 'primary' : 'default'}
-              onClick={() => onPlayheadStyleChange(s)}
+              onClick={() => setPlayheadStyle(s)}
             >
               {s}
             </Button>
@@ -118,7 +119,7 @@ export function SongViewSettings({
         <Switch
           size="small"
           checked={enableColors}
-          onChange={onEnableColorsChange}
+          onChange={setEnableColors}
         />
       </div>
       {isDev && (
@@ -132,7 +133,7 @@ export function SongViewSettings({
             <Switch
               size="small"
               checked={showBarNumbers}
-              onChange={onShowBarNumbersChange}
+              onChange={setShowBarNumbers}
             />
           </div>
         </>
@@ -145,7 +146,7 @@ export function SongViewSettings({
           label="Show tempo"
           tooltip="Write the BPM into the sheet wherever the tempo changes."
         />
-        <Switch size="small" checked={showTempo} onChange={onShowTempoChange} />
+        <Switch size="small" checked={showTempo} onChange={setShowTempo} />
       </div>
 
       <Divider />
@@ -160,7 +161,7 @@ export function SongViewSettings({
             <Switch
               size="small"
               checked={showReference}
-              onChange={onShowReferenceChange}
+              onChange={setShowReference}
             />
           </div>
 
@@ -173,7 +174,7 @@ export function SongViewSettings({
           label="Count-in"
           tooltip="A few clicks before the song starts so you're not caught off guard."
         />
-        <Switch size="small" checked={countIn} onChange={onCountInChange} />
+        <Switch size="small" checked={countIn} onChange={setCountIn} />
       </div>
 
       <Divider />
@@ -187,7 +188,13 @@ export function SongViewSettings({
           max={2}
           step={0.1}
           value={zoom}
-          onChange={onZoomChange}
+          onChange={(newValue) => {
+            if (newValue === null) {
+              return;
+            }
+
+            setZoom(newValue);
+          }}
           styles={{
             input: {
               width: '5ch',
@@ -228,6 +235,13 @@ export function SongViewSettings({
           </div>
         </>
       ) : null}
+
+      <ClickControls
+        volume={clickVolume}
+        onVolumeChange={setClickVolume}
+        tone={clickTone}
+        onToneChange={setClickTone}
+      />
     </>
   );
 }

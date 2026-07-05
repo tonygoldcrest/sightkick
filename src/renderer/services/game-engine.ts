@@ -102,6 +102,10 @@ export class GameEngine {
     this.renderFrame();
   }
 
+  setClickSettings(volume: number, tone: number): void {
+    this.transport.setClickSettings(volume, tone);
+  }
+
   setMapping(mapping: InputMapping): void {
     this.mapping = mapping;
     this.judge.setContext({

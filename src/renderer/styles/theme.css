@@ -92,6 +92,16 @@
     rgba(255, 255, 255, 0.04),
     color-mix(in srgb, var(--color-accent) 35%, transparent)
   );
+  --gradient-faint-fade: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-text-faint) 35%, transparent),
+    rgba(255, 255, 255, 0.04)
+  );
+  --gradient-faint-fade-reverse: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04),
+    color-mix(in srgb, var(--color-text-faint) 35%, transparent)
+  );
   --gradient-slider-fill: linear-gradient(
     90deg,
     var(--color-accent-deep),

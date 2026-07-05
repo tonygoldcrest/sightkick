@@ -1,6 +1,7 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
 import { StemToolsStatus } from '../../../types';
 import { StemToolsProvider } from '../../context/StemToolsContext';
+import { AppProvider } from '../../context/AppContext';
 import { SongListSettings } from './SongListSettings';
 
 const noop = () => {};
@@ -38,23 +39,20 @@ const meta: Meta<typeof SongListSettings> = {
   title: 'Settings/Song List Settings',
   component: SongListSettings,
   args: {
-    difficulty: 'expert',
-    currentPath: '/Users/me/Clone Hero/Songs',
     scanPercent: undefined,
-    onDifficultyChange: () => {},
-    onSelectFolder: () => {},
-    onRescan: () => {},
     onSetupInput: () => {},
   },
   decorators: [
     (Story) => (
-      <StemToolsProvider value={stemTools()}>
-        <div className="p-6">
-          <div className="border border-border rounded-xl shadow-panel bg-bg p-3 flex flex-col gap-3 min-w-90 w-max">
-            <Story />
+      <AppProvider>
+        <StemToolsProvider value={stemTools()}>
+          <div className="p-6">
+            <div className="border border-border rounded-xl shadow-panel bg-bg p-3 flex flex-col gap-3 min-w-90 w-max">
+              <Story />
+            </div>
           </div>
-        </div>
-      </StemToolsProvider>
+        </StemToolsProvider>
+      </AppProvider>
     ),
   ],
 };
@@ -63,9 +61,7 @@ export default meta;
 
 type Story = StoryObj<typeof SongListSettings>;
 
-export const WithFolder: Story = {};
-
-export const NoFolder: Story = { args: { currentPath: null } };
+export const NoFolder: Story = {};
 
 export const Scanning: Story = { args: { scanPercent: 42 } };
 

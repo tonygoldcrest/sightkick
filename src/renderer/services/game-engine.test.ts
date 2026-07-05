@@ -12,25 +12,59 @@ import { InputEvent } from '../input/types';
 import { GameEngine, GameContext } from './game-engine';
 
 vi.mock('./metronome', () => ({
-  preloadMetronome: vi.fn(),
-  playMetronome: vi.fn(),
+  DEFAULT_CLICK_TONE: 0.5,
+  renderClickBuffers: vi.fn(() => ({ downbeat: {}, beat: {} })),
 }));
 
 vi.mock('./audio-player/player', () => {
+  const fakeContext = () => ({
+    state: 'running',
+    currentTime: 0,
+    destination: {},
+    resume: () => Promise.resolve(),
+    createGain: () => ({
+      gain: {
+        value: 0,
+        setValueAtTime: () => {},
+        cancelScheduledValues: () => {},
+      },
+      connect: () => {},
+      disconnect: () => {},
+    }),
+    createBufferSource: () => ({
+      buffer: undefined,
+      connect: () => {},
+      start: () => {},
+      stop: () => {},
+      addEventListener: () => {},
+    }),
+  });
+
   class MockAudioPlayer {
     static instances: MockAudioPlayer[] = [];
     onEnded: () => void;
     ready = Promise.resolve([]);
+    context = fakeContext();
     currentTime = 0;
     duration = 100;
     isInitialised = false;
-    start = vi.fn((offset = 0) => {
+    startedAt = -1;
+    offset = 0;
+    start = vi.fn((offset = 0, startAt?: number) => {
       this.isInitialised = true;
+      this.offset = offset;
+      this.startedAt = startAt ?? this.context.currentTime;
       this.currentTime = offset;
     });
     pause = vi.fn();
     stop = vi.fn();
     destroy = vi.fn();
+
+    contextTimeForSongTime(songTime: number) {
+      return this.startedAt < 0
+        ? this.context.currentTime
+        : this.startedAt + (songTime - this.offset);
+    }
 
     constructor(_trackData: TrackConfig[], onEnded: () => void) {
       this.onEnded = onEnded;
@@ -43,6 +77,7 @@ vi.mock('./audio-player/player', () => {
 
 type MockPlayer = {
   onEnded: () => void;
+  context: { currentTime: number };
   currentTime: number;
   start: ReturnType<typeof vi.fn>;
   pause: ReturnType<typeof vi.fn>;
@@ -177,14 +212,39 @@ async function setup(over: Partial<GameContext> = {}) {
   return { engine, onEnded, player };
 }
 
+let frameQueue: FrameRequestCallback[] = [];
+
+function flushFrame() {
+  const callbacks = frameQueue;
+
+  frameQueue = [];
+  callbacks.forEach((cb) => cb(0));
+}
+
+function advanceClockTo(
+  player: { context: { currentTime: number } },
+  t: number,
+) {
+  player.context.currentTime = t;
+  flushFrame();
+}
+
 beforeEach(async () => {
   inputListeners = new Set();
+  frameQueue = [];
   (await getPlayerClass()).instances.length = 0;
   vi.useFakeTimers();
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    frameQueue.push(cb);
+
+    return frameQueue.length;
+  });
+  vi.stubGlobal('cancelAnimationFrame', () => {});
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('GameEngine', () => {
@@ -376,7 +436,7 @@ describe('GameEngine', () => {
 
   it('does not score input during the count-in, only once playing', async () => {
     const note = staveNote(['c/5']);
-    const { engine } = await setup({
+    const { engine, player } = await setup({
       renderData: [
         measureData(
           0,
@@ -400,7 +460,8 @@ describe('GameEngine', () => {
 
     expect(uncolored(note)).toBe(true);
 
-    vi.advanceTimersByTime(5000);
+    advanceClockTo(player, 5);
+    flushFrame();
     engine.timeStore.set(0.5);
     emitInput('midi:38');
 

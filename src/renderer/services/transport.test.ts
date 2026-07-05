@@ -4,22 +4,50 @@ import { Measure, ParsedChart } from '../../chart-parser/types';
 import { Transport, TransportContext } from './transport';
 
 vi.mock('./metronome', () => ({
-  preloadMetronome: vi.fn(),
-  playMetronome: vi.fn(),
+  DEFAULT_CLICK_TONE: 0.5,
+  renderClickBuffers: () => ({ downbeat: {}, beat: {} }),
 }));
 
 vi.mock('./audio-player/player', () => {
+  const fakeContext = () => ({
+    state: 'running',
+    currentTime: 0,
+    destination: {},
+    resume: () => Promise.resolve(),
+    createGain: () => ({
+      gain: {
+        value: 0,
+        setValueAtTime: () => {},
+        cancelScheduledValues: () => {},
+      },
+      connect: () => {},
+      disconnect: () => {},
+    }),
+    createBufferSource: () => ({
+      buffer: undefined,
+      connect: () => {},
+      start: () => {},
+      stop: () => {},
+      addEventListener: () => {},
+    }),
+  });
+
   class MockAudioPlayer {
     static instances: MockAudioPlayer[] = [];
     static failNext = false;
     onEnded: () => void;
     ready: Promise<unknown>;
+    context = fakeContext();
     currentTime = 0;
     duration = 100;
     isInitialised = false;
+    startedAt = -1;
+    offset = 0;
 
-    start = vi.fn((offset = 0) => {
+    start = vi.fn((offset = 0, startAt?: number) => {
       this.isInitialised = true;
+      this.offset = offset;
+      this.startedAt = startAt ?? this.context.currentTime;
       this.currentTime = offset;
     });
 
@@ -30,6 +58,12 @@ vi.mock('./audio-player/player', () => {
     });
 
     destroy = vi.fn();
+
+    contextTimeForSongTime(songTime: number) {
+      return this.startedAt < 0
+        ? this.context.currentTime
+        : this.startedAt + (songTime - this.offset);
+    }
 
     constructor(_trackData: TrackConfig[], onEnded: () => void) {
       this.onEnded = onEnded;
@@ -46,6 +80,7 @@ vi.mock('./audio-player/player', () => {
 
 type MockPlayer = {
   onEnded: () => void;
+  context: { currentTime: number };
   currentTime: number;
   duration: number;
   isInitialised: boolean;
@@ -70,8 +105,8 @@ const CHART = {
   tempos: [{ tick: 0, beatsPerMinute: 120, msTime: 0 }],
 } as unknown as ParsedChart;
 const MEASURES = [
-  { startTick: 0, endTick: 1920, timeSig: [4, 4] },
-  { startTick: 1920, endTick: 3840, timeSig: [4, 4] },
+  { startTick: 0, endTick: 1920, timeSig: [4, 4], isCompound: false },
+  { startTick: 1920, endTick: 3840, timeSig: [4, 4], isCompound: false },
 ] as unknown as Measure[];
 const CTX: TransportContext = {
   chart: CHART,
@@ -80,6 +115,19 @@ const CTX: TransportContext = {
   countInEnabled: false,
   minDurationSeconds: 0,
 };
+let frameQueue: FrameRequestCallback[] = [];
+
+function flushFrame() {
+  const callbacks = frameQueue;
+
+  frameQueue = [];
+  callbacks.forEach((cb) => cb(0));
+}
+
+function advanceClockTo(player: MockPlayer, time: number) {
+  player.context.currentTime = time;
+  flushFrame();
+}
 
 async function flush() {
   await Promise.resolve();
@@ -109,22 +157,23 @@ async function setup(
   return { engine, onEnded, onError, player };
 }
 
-function runCountIn(beats = 4, beatMs = 500) {
-  for (let i = 0; i < beats; i += 1) {
-    vi.advanceTimersByTime(beatMs);
-  }
-}
-
 beforeEach(async () => {
+  frameQueue = [];
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    frameQueue.push(cb);
+
+    return frameQueue.length;
+  });
+  vi.stubGlobal('cancelAnimationFrame', () => {});
+
   const Cls = await getPlayerClass();
 
   Cls.instances.length = 0;
   Cls.failNext = false;
-  vi.useFakeTimers();
 });
 
 afterEach(() => {
-  vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('Transport', () => {
@@ -170,7 +219,7 @@ describe('Transport', () => {
     expect(engine.getSnapshot().isStarted).toBe(true);
   });
 
-  it('pins the cursor at the measure start and counts in before starting', async () => {
+  it('pins the cursor and schedules a future start during the count-in', async () => {
     const { engine, player } = await setup({}, { countInEnabled: true });
 
     engine.playFromTick(1920);
@@ -178,21 +227,32 @@ describe('Transport', () => {
     expect(engine.getSnapshot().state).toBe('counting-in');
     expect(engine.getSnapshot().countInBeat).toBe(1);
     expect(engine.timeStore.get()).toBeCloseTo(2);
-    expect(player.start).not.toHaveBeenCalled();
-
-    runCountIn();
-
     expect(player.start).toHaveBeenCalledTimes(1);
-    expect(player.start).toHaveBeenLastCalledWith(expect.closeTo(2));
+    expect(player.start).toHaveBeenLastCalledWith(
+      expect.closeTo(2),
+      expect.closeTo(2),
+    );
+
+    advanceClockTo(player, 2.5);
+
     expect(engine.getSnapshot().isPlaying).toBe(true);
   });
 
-  it('restarts the count-in from the first beat', async () => {
-    const { engine } = await setup({}, { countInEnabled: true });
+  it('advances the count-in beat number off the audio clock', async () => {
+    const { engine, player } = await setup({}, { countInEnabled: true });
 
     engine.playFromTick(0);
-    vi.advanceTimersByTime(500);
-    vi.advanceTimersByTime(500);
+    expect(engine.getSnapshot().countInBeat).toBe(1);
+
+    advanceClockTo(player, 1.25);
+    expect(engine.getSnapshot().countInBeat).toBe(3);
+  });
+
+  it('restarts the count-in from the first beat', async () => {
+    const { engine, player } = await setup({}, { countInEnabled: true });
+
+    engine.playFromTick(0);
+    advanceClockTo(player, 1.25);
     expect(engine.getSnapshot().countInBeat).toBe(3);
 
     engine.playFromTick(0);
@@ -203,44 +263,41 @@ describe('Transport', () => {
     const { engine, player } = await setup({}, { countInEnabled: true });
 
     engine.playFromTick(0);
-    runCountIn();
+    advanceClockTo(player, 2.5);
 
     expect(engine.getSnapshot().isPlaying).toBe(true);
-    expect(player.isInitialised).toBe(true);
 
+    player.stop.mockClear();
     engine.playFromTick(1920);
 
     expect(engine.getSnapshot().state).toBe('counting-in');
-    expect(player.isInitialised).toBe(false);
+    expect(player.stop).toHaveBeenCalledTimes(1);
   });
 
   it('leaves nothing playing when the play button cancels a mid-playback count-in', async () => {
     const { engine, player } = await setup({}, { countInEnabled: true });
 
     engine.playFromTick(0);
-    runCountIn();
-    player.start.mockClear();
+    advanceClockTo(player, 2.5);
 
     engine.playFromTick(1920);
     engine.cancel();
-    runCountIn();
 
     expect(engine.getSnapshot().state).toBe('parked');
     expect(player.isInitialised).toBe(false);
-    expect(player.start).not.toHaveBeenCalled();
   });
 
-  it('cancels an in-progress count-in without starting audio', async () => {
+  it('cancels an in-progress count-in without leaving audio initialised', async () => {
     const { engine, player } = await setup({}, { countInEnabled: true });
 
     engine.playFromTick(0);
     expect(engine.getSnapshot().isCounting).toBe(true);
 
     engine.cancel();
-    runCountIn();
+    advanceClockTo(player, 2.5);
 
-    expect(player.start).not.toHaveBeenCalled();
     expect(engine.getSnapshot().state).toBe('parked');
+    expect(player.isInitialised).toBe(false);
     expect(engine.getSnapshot().countInBeat).toBeUndefined();
   });
 
@@ -326,13 +383,14 @@ describe('Transport', () => {
     engine.playFromTick(0);
     expect(engine.getSnapshot().isCounting).toBe(true);
 
+    player.start.mockClear();
     engine.seekSeconds(5);
 
     expect(engine.getSnapshot().isPlaying).toBe(true);
     expect(player.start).toHaveBeenCalledTimes(1);
     expect(player.start).toHaveBeenLastCalledWith(5);
 
-    runCountIn();
+    advanceClockTo(player, 10);
 
     expect(player.start).toHaveBeenCalledTimes(1);
   });
@@ -341,7 +399,7 @@ describe('Transport', () => {
     const { engine, player } = await setup({}, { countInEnabled: true });
 
     engine.playFromTick(0);
-    runCountIn();
+    advanceClockTo(player, 2.5);
     player.currentTime = 1;
     engine.pause();
 
@@ -351,12 +409,10 @@ describe('Transport', () => {
     engine.playFromTick(1920);
 
     expect(engine.getSnapshot().state).toBe('counting-in');
-    expect(player.isInitialised).toBe(false);
-
-    runCountIn();
-
-    expect(player.start).toHaveBeenCalledTimes(1);
-    expect(player.start).toHaveBeenLastCalledWith(expect.closeTo(2));
+    expect(player.start).toHaveBeenLastCalledWith(
+      expect.closeTo(2),
+      expect.anything(),
+    );
   });
 
   it('jumps straight to a clicked measure when the count-in is disabled', async () => {
@@ -378,10 +434,13 @@ describe('Transport', () => {
     engine.playFromTick(0);
     engine.playFromTick(1920);
 
-    runCountIn();
+    advanceClockTo(player, 2.5);
 
-    expect(player.start).toHaveBeenCalledTimes(1);
-    expect(player.start).toHaveBeenLastCalledWith(expect.closeTo(2));
+    expect(engine.getSnapshot().isPlaying).toBe(true);
+    expect(player.start).toHaveBeenLastCalledWith(
+      expect.closeTo(2),
+      expect.closeTo(2),
+    );
   });
 
   it('can restart after the song ends', async () => {
