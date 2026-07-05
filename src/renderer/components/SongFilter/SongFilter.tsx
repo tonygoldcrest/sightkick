@@ -64,7 +64,21 @@ export function SongFilter({
 
             <Divider vertical />
 
-            <Tooltip title="Charts come in Easy to Expert versions - easier ones have fewer notes to play. Songs without the version you pick won't show up.">
+            <Tooltip
+              title={
+                <div>
+                  <p>
+                    Each song comes with several versions of its drum part, from
+                    Easy (simplified) to Expert (the real thing).
+                  </p>
+                  <br />
+                  <p>
+                    Pick the one you want to play. If a song disappears, it just
+                    doesn&apos;t include that version.
+                  </p>
+                </div>
+              }
+            >
               <div className="flex gap-2">
                 {ALL_DIFFICULTIES.map((d) => (
                   <Button

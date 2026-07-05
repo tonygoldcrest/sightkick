@@ -51,7 +51,7 @@ export const antdTheme: ThemeConfig = {
       colorTextDisabled: themedark.color.textFaint,
       primaryShadow: 'none',
       dangerColor: themedark.color.red,
-      colorBgContainer: themedark.color.surfaceRaised,
+      colorBgContainer: themedark.color.surface,
       colorBorder: themedark.color.border,
       colorBgContainerDisabled: themedark.control.iconButtonBg,
       colorPrimaryBgHover: themedark.control.iconButtonActiveBg,
@@ -87,6 +87,11 @@ export const antdTheme: ThemeConfig = {
       colorTextQuaternary: themedark.control.toggleOffTrack,
       colorTextTertiary: themedark.control.toggleOffTrack,
       handleBg: themedark.control.toggleKnobOn,
+    },
+    Collapse: {
+      headerBg: themedark.color.surface,
+      colorBorder: themedark.color.border,
+      contentBg: themedark.color.bg,
     },
     Divider: {
       colorSplit: themedark.color.divider,

@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Button, Divider, InputNumber, Switch } from 'antd';
+import { Button, Collapse, Divider, InputNumber, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faDrum,
@@ -110,97 +110,118 @@ export function SongViewSettings({
 
       <Divider />
 
-      <div className="flex items-center justify-between gap-3">
-        <SettingLabel
-          label="Enable colors"
-          tooltip="Color-code each drum so you can tell them apart at a glance."
-        />
-        <Switch
-          size="small"
-          checked={enableColors}
-          onChange={setEnableColors}
-        />
-      </div>
-      {isDev && (
-        <>
-          <Divider />
-          <div className="flex items-center justify-between gap-3">
-            <SettingLabel
-              label="Show bar numbers"
-              tooltip="Slap a number on every bar so you can find your spot fast."
-            />
-            <Switch
-              size="small"
-              checked={showBarNumbers}
-              onChange={setShowBarNumbers}
-            />
-          </div>
-        </>
-      )}
+      <Collapse
+        size="small"
+        items={[
+          {
+            key: '1',
+            label: 'More settings',
+            children: (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  <SettingLabel
+                    label="Enable colors"
+                    tooltip="Color-code each drum so you can tell them apart at a glance."
+                  />
+                  <Switch
+                    size="small"
+                    checked={enableColors}
+                    onChange={setEnableColors}
+                  />
+                </div>
+                {isDev && (
+                  <>
+                    <Divider />
+                    <div className="flex items-center justify-between gap-3">
+                      <SettingLabel
+                        label="Show bar numbers"
+                        tooltip="Slap a number on every bar so you can find your spot fast."
+                      />
+                      <Switch
+                        size="small"
+                        checked={showBarNumbers}
+                        onChange={setShowBarNumbers}
+                      />
+                    </div>
+                  </>
+                )}
 
-      <Divider />
+                <Divider />
 
-      <div className="flex items-center justify-between gap-3">
-        <SettingLabel
-          label="Show tempo"
-          tooltip="Write the BPM into the sheet wherever the tempo changes."
-        />
-        <Switch size="small" checked={showTempo} onChange={setShowTempo} />
-      </div>
+                <div className="flex items-center justify-between gap-3">
+                  <SettingLabel
+                    label="Show tempo"
+                    tooltip="Write the BPM into the sheet wherever the tempo changes."
+                  />
+                  <Switch
+                    size="small"
+                    checked={showTempo}
+                    onChange={setShowTempo}
+                  />
+                </div>
 
-      <Divider />
+                <Divider />
 
-      {enableColors && (
-        <>
-          <div className="flex items-center justify-between gap-3">
-            <SettingLabel
-              label="Show reference"
-              tooltip="Pop a little cheat sheet at the bottom showing which color is which drum."
-            />
-            <Switch
-              size="small"
-              checked={showReference}
-              onChange={setShowReference}
-            />
-          </div>
+                {enableColors && (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <SettingLabel
+                        label="Show reference"
+                        tooltip="Pop a little cheat sheet at the bottom showing which color is which drum."
+                      />
+                      <Switch
+                        size="small"
+                        checked={showReference}
+                        onChange={setShowReference}
+                      />
+                    </div>
 
-          <Divider />
-        </>
-      )}
+                    <Divider />
+                  </>
+                )}
 
-      <div className="flex items-center justify-between gap-3">
-        <SettingLabel
-          label="Count-in"
-          tooltip="A few clicks before the song starts so you're not caught off guard."
-        />
-        <Switch size="small" checked={countIn} onChange={setCountIn} />
-      </div>
+                <div className="flex items-center justify-between gap-3">
+                  <SettingLabel
+                    label="Count-in"
+                    tooltip="A few clicks before the song starts so you're not caught off guard."
+                  />
+                  <Switch
+                    size="small"
+                    checked={countIn}
+                    onChange={setCountIn}
+                  />
+                </div>
 
-      <Divider />
+                <Divider />
 
-      <div className="flex items-center justify-between gap-3">
-        <SettingLabel label="Zoom" tooltip="Sheet music zoom" />
-        <InputNumber
-          mode="spinner"
-          size="small"
-          min={0.5}
-          max={2}
-          step={0.1}
-          value={zoom}
-          onChange={(newValue) => {
-            if (newValue === null) {
-              return;
-            }
+                <div className="flex items-center justify-between gap-3">
+                  <SettingLabel label="Zoom" tooltip="Sheet music zoom" />
+                  <InputNumber
+                    mode="spinner"
+                    size="small"
+                    min={0.5}
+                    max={2}
+                    step={0.1}
+                    value={zoom}
+                    onChange={(newValue) => {
+                      if (newValue === null) {
+                        return;
+                      }
 
-            setZoom(newValue);
-          }}
-          styles={{
-            input: {
-              width: '5ch',
-            },
-          }}
-        />
-      </div>
+                      setZoom(newValue);
+                    }}
+                    styles={{
+                      input: {
+                        width: '5ch',
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            ),
+          },
+        ]}
+      />
 
       {volumeSliders ? (
         <>

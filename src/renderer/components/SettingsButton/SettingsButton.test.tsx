@@ -52,6 +52,10 @@ function open() {
   fireEvent.click(screen.getByTestId('settings-trigger'));
 }
 
+function expandSheetSettings() {
+  fireEvent.click(screen.getByText('More settings'));
+}
+
 function enableDev() {
   act(() => {
     ipc.emit('check-dev', true);
@@ -80,6 +84,7 @@ describe('SettingsButton — song-view parameters', () => {
   it('toggles enable colors', () => {
     renderSongView();
     open();
+    expandSheetSettings();
 
     const colorsRow = screen
       .getByText('Enable colors')
@@ -93,6 +98,7 @@ describe('SettingsButton — song-view parameters', () => {
   it('toggles show tempo', () => {
     renderSongView();
     open();
+    expandSheetSettings();
 
     const tempoRow = screen
       .getByText('Show tempo')
@@ -106,6 +112,7 @@ describe('SettingsButton — song-view parameters', () => {
   it('toggles show reference and persists it', () => {
     renderSongView();
     open();
+    expandSheetSettings();
 
     const referenceRow = screen
       .getByText('Show reference')
@@ -121,6 +128,7 @@ describe('SettingsButton — song-view parameters', () => {
 
     renderSongView();
     open();
+    expandSheetSettings();
 
     expect(screen.queryByText('Show reference')).not.toBeInTheDocument();
   });
@@ -128,6 +136,7 @@ describe('SettingsButton — song-view parameters', () => {
   it('toggles count-in', () => {
     renderSongView();
     open();
+    expandSheetSettings();
 
     const countInRow = screen
       .getByText('Count-in')
@@ -141,6 +150,7 @@ describe('SettingsButton — song-view parameters', () => {
   it('hides the bar-numbers switch unless dev mode is on', () => {
     renderSongView();
     open();
+    expandSheetSettings();
 
     expect(screen.queryByText('Show bar numbers')).not.toBeInTheDocument();
 

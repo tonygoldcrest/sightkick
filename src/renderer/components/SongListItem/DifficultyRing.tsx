@@ -27,7 +27,7 @@ export function DifficultyRing({ value }: { value: number }) {
       <path
         key={i}
         d={`M ${o1.x} ${o1.y} A ${outerR} ${outerR} 0 ${large} 1 ${o2.x} ${o2.y} L ${i2.x} ${i2.y} A ${innerR} ${innerR} 0 ${large} 0 ${i1.x} ${i1.y} Z`}
-        fill={i < value ? 'var(--color-accent)' : 'var(--color-surface-raised)'}
+        fill={i < value ? 'var(--color-accent)' : 'var(--color-surface-sunken)'}
       />
     );
   });
