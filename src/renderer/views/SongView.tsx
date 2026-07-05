@@ -25,7 +25,6 @@ import { useSheetMusic } from '../hooks/useSheetMusic';
 import { useInputControls } from '../hooks/useInputControls';
 import { ScoreSummary } from '../components/ScoreSummary';
 import { CountIn } from '../components/CountIn';
-import { MappingHint } from '../components/MappingHint';
 import { ScoreData } from '../../types';
 import { buildSheetPdfHtml } from '../services/pdf-export';
 import { serializeMeasureToDsl } from '../components/SheetMusic/drumDsl';
@@ -33,7 +32,7 @@ import { AudioVolume } from '../components/AudioVolume';
 
 export function SongView() {
   const { difficulty } = useApp();
-  const { inputMapping, selectedDevice } = useInput();
+  const { inputMapping, controlMapping } = useInput();
   const {
     playheadStyle,
     enableColors,
@@ -199,9 +198,9 @@ export function SongView() {
   }, [vexflowContainerRef, songData, notification]);
 
   useInputControls(
-    inputMapping,
+    controlMapping,
     {
-      tom3: () => {
+      confirm: () => {
         if (isReady && !isPlaying && !isEnded && !isCounting) {
           play();
 
@@ -223,7 +222,7 @@ export function SongView() {
           pause();
         }
       },
-      snare: () => {
+      back: () => {
         if (!isPlaying && !isEnded) {
           cancel();
           navigate('/');
@@ -278,56 +277,41 @@ export function SongView() {
         className="flex items-center p-4 gap-5"
         style={{ background: 'var(--gradient-header)' }}
       >
-        <MappingHint
-          element={
-            selectedDevice && !isPlaying && !isEnded ? 'snare' : undefined
-          }
-        >
-          <Button
-            icon={<FontAwesomeIcon icon={faArrowLeft} />}
-            data-testid="back-button"
-            onClick={() => {
+        <Button
+          icon={<FontAwesomeIcon icon={faArrowLeft} />}
+          data-testid="back-button"
+          onClick={() => {
+            cancel();
+            pause();
+            navigate('/');
+          }}
+          size="large"
+        />
+
+        <Button
+          type="primary"
+          icon={<FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />}
+          loading={audioLoading}
+          data-testid="play-toggle"
+          onClick={() => {
+            if (isCounting) {
               cancel();
+
+              return;
+            }
+
+            if (isPlaying) {
               pause();
-              navigate('/');
-            }}
-            size="large"
-          />
-        </MappingHint>
 
-        <MappingHint
-          round
-          element={
-            selectedDevice && isReady && !isPlaying && !isEnded && !isCounting
-              ? 'tom3'
-              : undefined
-          }
-        >
-          <Button
-            type="primary"
-            icon={<FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />}
-            loading={audioLoading}
-            data-testid="play-toggle"
-            onClick={() => {
-              if (isCounting) {
-                cancel();
+              return;
+            }
 
-                return;
-              }
-
-              if (isPlaying) {
-                pause();
-
-                return;
-              }
-
-              play();
-            }}
-            shape="circle"
-            size="large"
-            style={{ width: 50, height: 50 }}
-          />
-        </MappingHint>
+            play();
+          }}
+          shape="circle"
+          size="large"
+          style={{ width: 50, height: 50 }}
+        />
 
         <div>
           <div className="text-text-body font-ui text-[18px]">

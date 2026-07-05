@@ -116,5 +116,8 @@ export const antdTheme: ThemeConfig = {
       colorInfo: themedark.color.blue,
       colorSuccess: themedark.color.green,
     },
+    Tabs: {
+      colorBorderSecondary: themedark.color.surfaceRaised,
+    },
   },
 };

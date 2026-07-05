@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { InputMapping } from '../../../types';
+import { ElementMapping } from '../../../types';
 import { InputDevice } from '../../input';
 import { InputConfig } from './InputConfig';
 
@@ -7,7 +7,7 @@ const devices: InputDevice[] = [
   { id: 'midi:TD-17', name: 'Roland TD-17', sourceId: 'midi', port: 1 },
   { id: 'midi:SPD', name: 'Roland SPD-SX', sourceId: 'midi', port: 2 },
 ];
-const mapping: InputMapping = {
+const mapping: ElementMapping = {
   snare: ['midi:38'],
   kick: ['midi:36', 'keyboard:Space'],
   hihat: ['midi:46'],

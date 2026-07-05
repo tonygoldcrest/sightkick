@@ -1,3 +1,4 @@
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { InputElement } from '../types';
 
 export interface AudioFile {
@@ -16,5 +17,5 @@ export type MappingElement = {
   color: string;
   displayName: string;
   type: 'cymbal' | 'drum' | 'control';
-  alternative?: string;
+  icon: IconDefinition;
 };

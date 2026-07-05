@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useInput } from '../../context/InputContext';
 import { InputElement } from '../../../types';
-import { controlSource, InputDevice, inputBus } from '../../input';
+import {
+  controlSource,
+  InputDevice,
+  inputBus,
+  isTypingTarget,
+  makeControlId,
+} from '../../input';
 
 export function useInputConfig(isOpen: boolean) {
   const {
     setSelectedDevice,
     selectedDevice,
     inputMapping,
+    controlMapping,
     assignControl,
     removeControl,
   } = useInput();
@@ -70,16 +77,37 @@ export function useInputConfig(isOpen: boolean) {
       return undefined;
     }
 
-    const suppressDefault = (event: KeyboardEvent) => {
+    const swallow = (event: KeyboardEvent) => {
+      if (
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        isTypingTarget(event.target)
+      ) {
+        return;
+      }
+
       event.preventDefault();
+      event.stopImmediatePropagation();
+
+      if (
+        event.type === 'keydown' &&
+        !event.repeat &&
+        selectedDevice?.sourceId === 'keyboard'
+      ) {
+        assignControl(listeningTo, makeControlId('keyboard', event.code));
+        setListeningTo(undefined);
+      }
     };
 
-    window.addEventListener('keydown', suppressDefault);
+    window.addEventListener('keydown', swallow, true);
+    window.addEventListener('keyup', swallow, true);
 
     return () => {
-      window.removeEventListener('keydown', suppressDefault);
+      window.removeEventListener('keydown', swallow, true);
+      window.removeEventListener('keyup', swallow, true);
     };
-  }, [listeningTo]);
+  }, [listeningTo, selectedDevice, assignControl]);
 
   return {
     devices,
@@ -88,7 +116,7 @@ export function useInputConfig(isOpen: boolean) {
     onSelectDevice: (id: string | undefined) => {
       setSelectedDevice(devices.find((device) => device.id === id) ?? null);
     },
-    mapping: inputMapping,
+    mapping: { ...inputMapping, ...controlMapping },
     listeningTo,
     onLearn: (element: InputElement) => setListeningTo(element),
     onStopLearn: () => setListeningTo(undefined),

@@ -6,8 +6,8 @@ import {
   useEffect,
   useMemo,
 } from 'react';
-import { uniq } from 'es-toolkit';
-import { InputElement, InputMapping } from '../../types';
+import { mapValues, uniq, without } from 'es-toolkit';
+import { ControlMapping, InputElement, InputMapping } from '../../types';
 import {
   controlLabel,
   controlSource,
@@ -21,11 +21,12 @@ interface InputContextValue {
   selectedDevice: InputDevice | null;
   setSelectedDevice: (d: InputDevice | null) => void;
   inputMapping: InputMapping;
+  controlMapping: ControlMapping;
   assignControl: (element: InputElement, controlId: string) => void;
   removeControl: (element: InputElement, controlId: string) => void;
 }
 
-const EMPTY_INPUT_MAPPING: InputMapping = {
+const EMPTY_INPUT_MAPPING: Record<keyof InputMapping, string[]> = {
   hihat: [],
   ride: [],
   crash: [],
@@ -34,9 +35,40 @@ const EMPTY_INPUT_MAPPING: InputMapping = {
   tom1: [],
   tom2: [],
   tom3: [],
+};
+const EMPTY_CONTROL_MAPPING: Record<keyof ControlMapping, string[]> = {
+  up: [],
+  down: [],
+  left: [],
+  right: [],
+  confirm: [],
+  back: [],
+  difficulty: [],
+  library: [],
+  sort: [],
   pause: [],
 };
-const KIT_ELEMENTS = Object.keys(EMPTY_INPUT_MAPPING) as InputElement[];
+const CONTROL_KEYS = Object.keys(
+  EMPTY_CONTROL_MAPPING,
+) as (keyof ControlMapping)[];
+
+function isControlElement(
+  element: InputElement,
+): element is keyof ControlMapping {
+  return (CONTROL_KEYS as string[]).includes(element);
+}
+
+function assignInto<K extends string>(
+  empty: Record<K, string[]>,
+  current: Partial<Record<K, string[]>> | undefined,
+  element: K,
+  controlId: string,
+): Record<K, string[]> {
+  return mapValues({ ...empty, ...current }, (list, key) =>
+    key === element ? uniq([...list, controlId]) : without(list, controlId),
+  );
+}
+
 const InputContext = createContext<InputContextValue | null>(null);
 
 export function InputProvider({ children }: { children: ReactNode }) {
@@ -47,6 +79,9 @@ export function InputProvider({ children }: { children: ReactNode }) {
   const [inputMappings, setInputMappings] = usePersisted<
     Record<string, InputMapping>
   >('settings.inputMappings', {});
+  const [controlMappings, setControlMappings] = usePersisted<
+    Record<string, ControlMapping>
+  >('settings.controlMappings', {});
   const inputMapping = useMemo(
     () => ({
       ...EMPTY_INPUT_MAPPING,
@@ -54,46 +89,78 @@ export function InputProvider({ children }: { children: ReactNode }) {
     }),
     [selectedDevice, inputMappings],
   );
-  const updateMapping = useCallback(
-    (update: (current: InputMapping) => InputMapping) => {
+  const controlMapping = useMemo(
+    () => ({
+      ...EMPTY_CONTROL_MAPPING,
+      ...(selectedDevice ? controlMappings[selectedDevice.id] : undefined),
+    }),
+    [selectedDevice, controlMappings],
+  );
+  const assignControl = useCallback(
+    (element: InputElement, controlId: string) => {
       if (!selectedDevice) {
+        return;
+      }
+
+      if (isControlElement(element)) {
+        setControlMappings((prev) => ({
+          ...prev,
+          [selectedDevice.id]: assignInto(
+            EMPTY_CONTROL_MAPPING,
+            prev[selectedDevice.id],
+            element,
+            controlId,
+          ),
+        }));
+
         return;
       }
 
       setInputMappings((prev) => ({
         ...prev,
-        [selectedDevice.id]: update({
-          ...EMPTY_INPUT_MAPPING,
-          ...prev[selectedDevice.id],
-        }),
+        [selectedDevice.id]: assignInto(
+          EMPTY_INPUT_MAPPING,
+          prev[selectedDevice.id],
+          element,
+          controlId,
+        ),
       }));
     },
-    [selectedDevice, setInputMappings],
-  );
-  const assignControl = useCallback(
-    (element: InputElement, controlId: string) => {
-      updateMapping(
-        (current) =>
-          Object.fromEntries(
-            KIT_ELEMENTS.map((key) => [
-              key,
-              key === element
-                ? uniq([...(current[key] ?? []), controlId])
-                : (current[key] ?? []).filter((c) => c !== controlId),
-            ]),
-          ) as InputMapping,
-      );
-    },
-    [updateMapping],
+    [selectedDevice, setControlMappings, setInputMappings],
   );
   const removeControl = useCallback(
     (element: InputElement, controlId: string) => {
-      updateMapping((current) => ({
-        ...current,
-        [element]: (current[element] ?? []).filter((c) => c !== controlId),
+      if (!selectedDevice) {
+        return;
+      }
+
+      if (isControlElement(element)) {
+        setControlMappings((prev) => ({
+          ...prev,
+          [selectedDevice.id]: {
+            ...prev[selectedDevice.id],
+            [element]: without(
+              prev[selectedDevice.id]?.[element] ?? [],
+              controlId,
+            ),
+          },
+        }));
+
+        return;
+      }
+
+      setInputMappings((prev) => ({
+        ...prev,
+        [selectedDevice.id]: {
+          ...prev[selectedDevice.id],
+          [element]: without(
+            prev[selectedDevice.id]?.[element] ?? [],
+            controlId,
+          ),
+        },
       }));
     },
-    [updateMapping],
+    [selectedDevice, setControlMappings, setInputMappings],
   );
 
   useEffect(() => {
@@ -125,9 +192,11 @@ export function InputProvider({ children }: { children: ReactNode }) {
       return undefined;
     }
 
-    const mapping = inputMappings[selectedDevice.id] ?? {};
     const boundCodes = new Set(
-      Object.values(mapping)
+      [
+        ...Object.values(inputMappings[selectedDevice.id] ?? {}),
+        ...Object.values(controlMappings[selectedDevice.id] ?? {}),
+      ]
         .flat()
         .filter((controlId) => controlSource(controlId) === 'keyboard')
         .map((controlId) => controlLabel(controlId)),
@@ -152,13 +221,14 @@ export function InputProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener('keydown', suppressDefault);
     };
-  }, [selectedDevice, inputMappings]);
+  }, [selectedDevice, inputMappings, controlMappings]);
 
   const value = useMemo(
     () => ({
       selectedDevice,
       setSelectedDevice,
       inputMapping,
+      controlMapping,
       assignControl,
       removeControl,
     }),
@@ -166,6 +236,7 @@ export function InputProvider({ children }: { children: ReactNode }) {
       selectedDevice,
       setSelectedDevice,
       inputMapping,
+      controlMapping,
       assignControl,
       removeControl,
     ],

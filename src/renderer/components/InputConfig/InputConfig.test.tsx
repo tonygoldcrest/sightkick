@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { InputMapping } from '../../../types';
+import { ControlMapping, InputMapping } from '../../../types';
 import { InputEvent } from '../../input/types';
 import { installIpcMock, IpcMock } from '../../hooks/test-support';
 import { InputConfig } from './InputConfig';
@@ -30,6 +30,18 @@ const { settings, busListeners, listDevicesMock } = vi.hoisted(() => ({
       tom2: [],
       tom3: [],
     } as InputMapping,
+    controlMapping: {
+      up: [],
+      down: [],
+      left: [],
+      right: [],
+      confirm: [],
+      back: [],
+      difficulty: [],
+      library: [],
+      sort: [],
+      pause: [],
+    } as ControlMapping,
     assignControl: vi.fn(),
     removeControl: vi.fn(),
   },
@@ -54,6 +66,18 @@ vi.mock('../../input', () => ({
   },
   controlSource: (id: string) => id.slice(0, id.indexOf(':')),
   controlLabel: (id: string) => id.slice(id.indexOf(':') + 1),
+  makeControlId: (sourceId: string, raw: string | number) =>
+    `${sourceId}:${raw}`,
+  isTypingTarget: (target: EventTarget | null) => {
+    const el = target as HTMLElement | null;
+
+    return Boolean(
+      el &&
+        (el.tagName === 'INPUT' ||
+          el.tagName === 'TEXTAREA' ||
+          el.isContentEditable),
+    );
+  },
 }));
 
 let ipc: IpcMock;
@@ -197,5 +221,39 @@ describe('InputConfig', () => {
     press('midi:50');
 
     expect(dispatchKey().defaultPrevented).toBe(false);
+  });
+
+  it('binds a struck key to the learning element for a keyboard device', async () => {
+    const original = settings.selectedDevice;
+
+    settings.selectedDevice = {
+      id: 'keyboard',
+      name: 'Keyboard',
+      sourceId: 'keyboard',
+    };
+
+    try {
+      await renderModal();
+
+      fireEvent.click(screen.getAllByText('Learn')[0]);
+
+      const event = new KeyboardEvent('keydown', {
+        code: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      });
+
+      act(() => {
+        window.dispatchEvent(event);
+      });
+
+      expect(settings.assignControl).toHaveBeenCalledWith(
+        'hihat',
+        'keyboard:Enter',
+      );
+      expect(event.defaultPrevented).toBe(true);
+    } finally {
+      settings.selectedDevice = original;
+    }
   });
 });

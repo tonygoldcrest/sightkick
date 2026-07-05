@@ -352,7 +352,7 @@ describe('SongView — playback', () => {
   });
 });
 
-describe('SongView — drum navigation', () => {
+describe('SongView — control navigation', () => {
   function mapDevice(mapping: Record<string, string[]>) {
     window.localStorage.setItem('settings.countIn', JSON.stringify(false));
     window.localStorage.setItem(
@@ -365,13 +365,13 @@ describe('SongView — drum navigation', () => {
       }),
     );
     window.localStorage.setItem(
-      'settings.inputMappings',
+      'settings.controlMappings',
       JSON.stringify({ 'midi:Pad': mapping }),
     );
   }
 
-  it('starts playback when the green tom is struck', async () => {
-    mapDevice({ tom3: ['midi:38'] });
+  it('starts playback when the confirm control is struck', async () => {
+    mapDevice({ confirm: ['midi:38'] });
 
     renderView();
     await loadSong();
@@ -388,7 +388,7 @@ describe('SongView — drum navigation', () => {
   });
 
   it('pauses playback when the pause control is struck mid-play', async () => {
-    mapDevice({ tom3: ['midi:38'], pause: ['midi:39'] });
+    mapDevice({ confirm: ['midi:38'], pause: ['midi:39'] });
 
     renderView();
     await loadSong();
@@ -407,8 +407,8 @@ describe('SongView — drum navigation', () => {
     expect(pause).toHaveBeenCalledTimes(1);
   });
 
-  it('returns to the song list when the snare is struck while stopped', async () => {
-    mapDevice({ snare: ['midi:40'] });
+  it('returns to the song list when the back control is struck while stopped', async () => {
+    mapDevice({ back: ['midi:40'] });
 
     renderView();
     await loadSong();

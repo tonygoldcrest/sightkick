@@ -1,5 +1,5 @@
 import { ParsedChart, RenderData } from '../../../chart-parser/types';
-import { InputElement, InputMapping } from '../../../types';
+import { InputMapping } from '../../../types';
 import { InputEvent } from '../../input/types';
 import { secondsToTicks, ticksToSeconds } from '../../views/utils';
 import { JudgeContext, JudgeHitHandler } from './types';
@@ -109,18 +109,16 @@ export class Judge {
       return;
     }
 
-    const mapping = this.mapping;
-    const hitElements = (Object.keys(mapping) as InputElement[]).filter(
-      (key) => ELEMENT_TO_KEYS[key] && mapping[key]?.includes(controlId),
+    const expectedPrefixes = new Set(
+      Object.entries(this.mapping).flatMap(([element, controls]) =>
+        controls?.includes(controlId) ? ELEMENT_TO_KEYS[element] ?? [] : [],
+      ),
     );
 
-    if (hitElements.length === 0) {
+    if (expectedPrefixes.size === 0) {
       return;
     }
 
-    const expectedPrefixes = new Set(
-      hitElements.flatMap((el) => ELEMENT_TO_KEYS[el] ?? []),
-    );
     const tick = this.currentTick;
     const chart = this.chart;
 

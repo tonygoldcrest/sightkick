@@ -147,6 +147,52 @@ describe('InputContext input mapping', () => {
   });
 });
 
+describe('InputContext control mapping', () => {
+  it('assigns a control to an app-control element', () => {
+    const { result } = renderHook(() => useInput(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('up', 'midi:50'));
+
+    expect(result.current.controlMapping.up).toEqual(['midi:50']);
+    expect(result.current.inputMapping).not.toHaveProperty('up');
+  });
+
+  it('checks uniqueness per category, so a control can map a kit element and an app control at once', () => {
+    const { result } = renderHook(() => useInput(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('snare', 'midi:38'));
+    act(() => result.current.assignControl('confirm', 'midi:38'));
+
+    expect(result.current.inputMapping.snare).toEqual(['midi:38']);
+    expect(result.current.controlMapping.confirm).toEqual(['midi:38']);
+  });
+
+  it('moves a control off other app controls when reassigned, leaving the kit alone', () => {
+    const { result } = renderHook(() => useInput(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('snare', 'midi:38'));
+    act(() => result.current.assignControl('up', 'midi:38'));
+    act(() => result.current.assignControl('down', 'midi:38'));
+
+    expect(result.current.controlMapping.up).toEqual([]);
+    expect(result.current.controlMapping.down).toEqual(['midi:38']);
+    expect(result.current.inputMapping.snare).toEqual(['midi:38']);
+  });
+
+  it('removes a bound control from an app-control element', () => {
+    const { result } = renderHook(() => useInput(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('pause', 'midi:39'));
+    act(() => result.current.removeControl('pause', 'midi:39'));
+
+    expect(result.current.controlMapping.pause).toEqual([]);
+  });
+});
+
 const KEYBOARD: InputDevice = {
   id: 'keyboard',
   name: 'Keyboard',

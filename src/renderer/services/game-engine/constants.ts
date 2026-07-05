@@ -1,7 +1,7 @@
 import { InputElement } from '../../../types';
 import { PlaybackSnapshot } from './types';
 
-export const ELEMENT_TO_KEYS: Partial<Record<InputElement, string[]>> = {
+export const ELEMENT_TO_KEYS: Record<string, string[]> = {
   kick: ['f/4', 'e/4'],
   snare: ['c/5'],
   hihat: ['g/5'],
@@ -10,7 +10,7 @@ export const ELEMENT_TO_KEYS: Partial<Record<InputElement, string[]>> = {
   tom2: ['d/5'],
   crash: ['a/5'],
   tom3: ['a/4'],
-};
+} satisfies Partial<Record<InputElement, string[]>>;
 
 export const HIT_TOLERANCE_SECONDS = 0.1;
 

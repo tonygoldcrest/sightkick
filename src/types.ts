@@ -155,10 +155,24 @@ export interface InputMapping {
   tom1?: string[];
   tom2?: string[];
   tom3?: string[];
+}
+
+export interface ControlMapping {
+  up?: string[];
+  down?: string[];
+  left?: string[];
+  right?: string[];
+  confirm?: string[];
+  back?: string[];
+  difficulty?: string[];
+  library?: string[];
+  sort?: string[];
   pause?: string[];
 }
 
-export type InputElement = keyof InputMapping;
+export type InputElement = keyof InputMapping | keyof ControlMapping;
+
+export type ElementMapping = Partial<Record<InputElement, string[]>>;
 
 export type IpcUpdateSongPayload = Pick<SongData, 'id'> &
   Partial<Omit<SongData, 'id'>>;

@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { InputElement, InputMapping } from '../../types';
+import { ElementMapping, InputElement } from '../../types';
 import { inputBus } from '../input';
 
 export type InputControlHandlers = Partial<Record<InputElement, () => void>>;
 
 export function useInputControls(
-  mapping: InputMapping,
+  mapping: ElementMapping,
   handlers: InputControlHandlers,
   enabled = true,
 ): void {

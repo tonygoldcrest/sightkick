@@ -8,9 +8,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import appIcon from '../../../../assets/icon.png';
-import { InputElement, SongData } from '../../../types';
+import { SongData } from '../../../types';
 import { cn } from '../../cn';
-import { MappingHint } from '../MappingHint';
 import { Button, Tooltip } from 'antd';
 import { useMemo } from 'react';
 import { Mode } from '../SongFilter';
@@ -33,7 +32,6 @@ export interface SongListItemProps {
   mode: Mode;
   downloadingDisabled: boolean;
   focused?: boolean;
-  hint?: InputElement;
 }
 
 export function SongListItem({
@@ -59,7 +57,6 @@ export function SongListItem({
   mode,
   downloadingDisabled,
   focused,
-  hint,
 }: SongListItemProps) {
   const navigate = useNavigate();
   const score = useMemo(() => {
@@ -151,7 +148,7 @@ export function SongListItem({
   ]);
 
   return (
-    <MappingHint element={hint} className="w-full">
+    <div className="relative inline-flex w-full">
       <div
         onClick={() => {
           if (mode === 'local') {
@@ -214,6 +211,6 @@ export function SongListItem({
           {indicator}
         </div>
       </div>
-    </MappingHint>
+    </div>
   );
 }

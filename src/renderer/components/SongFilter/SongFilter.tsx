@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faGlobe, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { cn } from '../../cn';
 import { Tooltip } from '../Tooltip';
-import { MappingHint } from '../MappingHint';
 import { ALL_DIFFICULTIES } from '../../../constants';
 import { Difficulty } from 'scan-chart';
 
@@ -16,7 +15,6 @@ export interface SongFilterProps {
   filteredSongsCount: number;
   mode: Mode;
   onChangeMode: (value: Mode) => void;
-  showHints?: boolean;
   difficulty: Difficulty;
   setDifficulty: (newDifficulty: Difficulty) => void;
 }
@@ -30,7 +28,6 @@ export function SongFilter({
   difficulty,
   setDifficulty,
   filteredSongsCount,
-  showHints,
 }: SongFilterProps) {
   const options = [
     {
@@ -98,22 +95,19 @@ export function SongFilter({
 
             <div className="flex gap-2 items-center">
               {options.map((option) => (
-                <MappingHint
+                <Tooltip
                   key={option.value}
-                  element={
-                    showHints && mode !== option.value ? 'ride' : undefined
-                  }
+                  title={option.tooltipText}
+                  placement="bottomLeft"
                 >
-                  <Tooltip title={option.tooltipText} placement="bottomLeft">
-                    <Button
-                      className="grow"
-                      type={mode === option.value ? 'primary' : 'default'}
-                      icon={option.icon}
-                      data-testid={`mode-${option.value}`}
-                      onClick={() => onChangeMode(option.value)}
-                    ></Button>
-                  </Tooltip>
-                </MappingHint>
+                  <Button
+                    className="grow"
+                    type={mode === option.value ? 'primary' : 'default'}
+                    icon={option.icon}
+                    data-testid={`mode-${option.value}`}
+                    onClick={() => onChangeMode(option.value)}
+                  ></Button>
+                </Tooltip>
               ))}
             </div>
           </div>

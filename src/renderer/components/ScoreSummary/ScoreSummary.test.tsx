@@ -26,13 +26,6 @@ const songData = {
   artist: 'Metallica',
 } as SongData;
 
-function selectKeyboardDevice() {
-  localStorage.setItem(
-    'settings.selectedDevice',
-    JSON.stringify({ id: 'keyboard', name: 'Keyboard', sourceId: 'keyboard' }),
-  );
-}
-
 function wrapper({ children }: { children: ReactNode }) {
   return (
     <InputProvider>
@@ -44,10 +37,6 @@ function wrapper({ children }: { children: ReactNode }) {
 function filledStars() {
   return document.querySelectorAll('svg[data-prefix="fas"][data-icon="star"]')
     .length;
-}
-
-function mappingHints() {
-  return document.querySelectorAll('svg[style*="sk-mapping-hint-pulse"]');
 }
 
 function renderSummary(
@@ -121,19 +110,5 @@ describe('ScoreSummary', () => {
 
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(onNextSong).toHaveBeenCalledTimes(1);
-  });
-
-  it('hides the footer mapping hints when no device is selected', () => {
-    renderSummary({ hitNotes: 50, totalNotes: 100, falseHits: 0 });
-
-    expect(mappingHints()).toHaveLength(0);
-  });
-
-  it('shows footer mapping hints when a device is selected', () => {
-    selectKeyboardDevice();
-
-    renderSummary({ hitNotes: 50, totalNotes: 100, falseHits: 0 });
-
-    expect(mappingHints()).toHaveLength(2);
   });
 });

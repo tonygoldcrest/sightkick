@@ -1,6 +1,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCallback, useEffect, useRef } from 'react';
-import { InputElement, SongData } from '../../../types';
+import { SongData } from '../../../types';
 import { cn } from '../../cn';
 import { SongListItem } from '../SongListItem';
 import { Mode } from '../SongFilter';
@@ -21,7 +21,6 @@ export interface SongListProps {
   mode: Mode;
   downloadingDisabled: boolean;
   focusedIndex?: number;
-  showHints?: boolean;
 }
 
 const LOAD_MORE_THRESHOLD = 2;
@@ -41,35 +40,8 @@ export function SongList({
   onSplit,
   onLoadMore,
   focusedIndex,
-  showHints,
 }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const hintForIndex = (index: number): InputElement | undefined => {
-    if (!showHints || songList.length === 0) {
-      return undefined;
-    }
-
-    const len = songList.length;
-
-    if (index === focusedIndex) {
-      return 'tom3';
-    }
-
-    const nextIndex = focusedIndex === undefined ? 0 : (focusedIndex + 1) % len;
-
-    if (index === nextIndex) {
-      return 'tom2';
-    }
-
-    const prevIndex =
-      focusedIndex === undefined ? len - 1 : (focusedIndex - 1 + len) % len;
-
-    if (index === prevIndex) {
-      return 'tom1';
-    }
-
-    return undefined;
-  };
 
   useEffect(() => {
     parentRef.current?.scrollTo(0, 0);
@@ -138,7 +110,6 @@ export function SongList({
                 mode={mode}
                 downloadingDisabled={downloadingDisabled}
                 focused={virtualItem.index === focusedIndex}
-                hint={hintForIndex(virtualItem.index)}
               />
             </div>
           );

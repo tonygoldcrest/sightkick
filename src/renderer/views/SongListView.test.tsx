@@ -546,7 +546,7 @@ describe('SongListView input control gating', () => {
     expect(lastEnabled()).toBe(false);
   });
 
-  it('selects the first focused song with the green tom', () => {
+  it('selects the first focused song with confirm', () => {
     renderView();
     loadSongs([makeSong('a')]);
 
@@ -557,8 +557,8 @@ describe('SongListView input control gating', () => {
       >;
     }
 
-    act(() => handlers().tom2());
-    act(() => handlers().tom3());
+    act(() => handlers().down());
+    act(() => handlers().confirm());
 
     expect(screen.getByTestId('song-view-stub')).toBeInTheDocument();
   });
@@ -580,14 +580,14 @@ describe('SongListView — input navigation', () => {
     renderView();
     loadSongs([makeSong('a'), makeSong('b'), makeSong('c')]);
 
-    act(() => handlers().tom2());
+    act(() => handlers().down());
     expect(focused('a')).toBe(true);
 
-    act(() => handlers().tom2());
+    act(() => handlers().down());
     expect(focused('b')).toBe(true);
     expect(focused('a')).toBe(false);
 
-    act(() => handlers().tom1());
+    act(() => handlers().up());
     expect(focused('a')).toBe(true);
   });
 
@@ -595,11 +595,11 @@ describe('SongListView — input navigation', () => {
     renderView();
     loadSongs([makeSong('a'), makeSong('b'), makeSong('c')]);
 
-    act(() => handlers().tom2());
-    act(() => handlers().tom2());
+    act(() => handlers().down());
+    act(() => handlers().down());
     expect(focused('b')).toBe(true);
 
-    act(() => handlers().tom3());
+    act(() => handlers().confirm());
     expect(screen.getByTestId('song-view-stub')).toBeInTheDocument();
 
     emit('update-song', makeSong('b'));
@@ -617,7 +617,7 @@ describe('SongListView — input navigation', () => {
       makeSong('b', { name: 'Beta' }),
     ]);
 
-    act(() => handlers().tom2());
+    act(() => handlers().down());
     expect(focused('a')).toBe(true);
 
     fireEvent.change(screen.getByPlaceholderText('Enter song name'), {
@@ -634,7 +634,7 @@ describe('SongListView — input navigation', () => {
       makeSong('b', { name: 'Beta' }),
     ]);
 
-    act(() => handlers().tom2());
+    act(() => handlers().down());
     expect(focused('a')).toBe(true);
 
     fireEvent.click(screen.getByTestId('sort-trigger'));
@@ -647,25 +647,25 @@ describe('SongListView — input navigation', () => {
     renderView();
     loadSongs([makeSong('a'), makeSong('b')]);
 
-    act(() => handlers().tom2());
+    act(() => handlers().down());
     expect(focused('a')).toBe(true);
 
-    act(() => handlers().ride());
-    act(() => handlers().ride());
+    act(() => handlers().library());
+    act(() => handlers().library());
 
     expect(focused('a')).toBe(false);
   });
 
-  it('toggles online mode with the ride cymbal', () => {
+  it('toggles online mode with the library control', () => {
     renderView();
     loadSongs([]);
 
-    act(() => handlers().ride());
+    act(() => handlers().library());
 
     expect(online.calls.at(-1)).toMatchObject({ active: true });
   });
 
-  it('cycles the difficulty filter with the crash cymbal', () => {
+  it('cycles the difficulty filter with the difficulty control', () => {
     renderView();
     loadSongs([
       makeSong('a', { name: 'Easy Only', drumDifficulties: ['easy'] }),
@@ -675,7 +675,7 @@ describe('SongListView — input navigation', () => {
     expect(screen.getByText('Expert Only')).toBeInTheDocument();
     expect(screen.queryByText('Easy Only')).not.toBeInTheDocument();
 
-    act(() => handlers().crash());
+    act(() => handlers().difficulty());
 
     expect(screen.getByText('Easy Only')).toBeInTheDocument();
     expect(screen.queryByText('Expert Only')).not.toBeInTheDocument();
@@ -689,14 +689,14 @@ describe('SongListView — input navigation', () => {
     ]);
 
     for (let i = 0; i < 4; i += 1) {
-      act(() => handlers().crash());
+      act(() => handlers().difficulty());
     }
 
     expect(screen.getByText('Expert Only')).toBeInTheDocument();
     expect(screen.queryByText('Easy Only')).not.toBeInTheDocument();
   });
 
-  it('downloads the focused song with the green tom in online mode', () => {
+  it('downloads the focused song with confirm in online mode', () => {
     online.results = [makeSong('x')];
 
     renderView();
@@ -704,8 +704,8 @@ describe('SongListView — input navigation', () => {
 
     fireEvent.click(screen.getByTestId('mode-online'));
 
-    act(() => handlers().tom2());
-    act(() => handlers().tom3());
+    act(() => handlers().down());
+    act(() => handlers().confirm());
 
     expect(ipc.sent.map((s) => s.channel)).toContain('download-song');
   });
@@ -743,47 +743,47 @@ describe('SongListView — sort menu navigation', () => {
         return;
       }
 
-      act(() => handlers().tom2());
+      act(() => handlers().down());
     }
   }
 
-  it('opens the sort menu with the kick and swaps to the sort control map', () => {
+  it('opens the sort menu with the sort control and swaps to the sort control map', () => {
     renderView();
     loadSongs([makeSong('a'), makeSong('b')]);
 
-    expect(handlers().kick).toBeTypeOf('function');
+    expect(handlers().sort).toBeTypeOf('function');
 
-    act(() => handlers().kick());
+    act(() => handlers().sort());
 
-    expect(handlers().snare).toBeTypeOf('function');
+    expect(handlers().back).toBeTypeOf('function');
   });
 
-  it('moves the sort focus back and forth with the toms', () => {
+  it('moves the sort focus back and forth with up and down', () => {
     renderView();
     loadSongs([makeSong('a'), makeSong('b')]);
 
-    act(() => handlers().kick());
+    act(() => handlers().sort());
 
     const before = outlinedSort();
 
-    act(() => handlers().tom2());
+    act(() => handlers().down());
 
     const after = outlinedSort();
 
     expect(after).not.toBe(before);
 
-    act(() => handlers().tom1());
+    act(() => handlers().up());
 
     expect(outlinedSort()).toBe(before);
   });
 
-  it('toggles the direction of a directional key with the blue tom', () => {
+  it('toggles the direction of a directional key with confirm', () => {
     renderView();
     loadSongs([makeSong('a'), makeSong('b')]);
 
-    act(() => handlers().kick());
+    act(() => handlers().sort());
     focusSort('Name');
-    act(() => handlers().tom3());
+    act(() => handlers().confirm());
 
     expect(
       sortButton('Name').querySelector('[data-icon="arrow-down"]'),
@@ -794,25 +794,25 @@ describe('SongListView — sort menu navigation', () => {
     renderView();
     loadSongs([makeSong('a'), makeSong('b')]);
 
-    act(() => handlers().kick());
+    act(() => handlers().sort());
     focusSort('Favorite');
 
-    expect(() => act(() => handlers().tom3())).not.toThrow();
+    expect(() => act(() => handlers().confirm())).not.toThrow();
     expect(outlinedSort()).toBe('Favorite');
   });
 
-  it('closes the sort menu with the snare and restores the list control map', () => {
+  it('closes the sort menu with back and restores the list control map', () => {
     renderView();
     loadSongs([makeSong('a'), makeSong('b')]);
 
-    act(() => handlers().kick());
+    act(() => handlers().sort());
 
-    expect(handlers().snare).toBeTypeOf('function');
+    expect(handlers().back).toBeTypeOf('function');
 
-    act(() => handlers().snare());
+    act(() => handlers().back());
 
-    expect(handlers().kick).toBeTypeOf('function');
-    expect(handlers().snare).toBeUndefined();
+    expect(handlers().sort).toBeTypeOf('function');
+    expect(handlers().back).toBeUndefined();
   });
 
   it('does not open the sort menu in online mode', () => {
@@ -820,8 +820,8 @@ describe('SongListView — sort menu navigation', () => {
     loadSongs([], '/music');
     fireEvent.click(screen.getByTestId('mode-online'));
 
-    expect(() => act(() => handlers().kick())).not.toThrow();
-    expect(handlers().snare).toBeUndefined();
+    expect(() => act(() => handlers().sort())).not.toThrow();
+    expect(handlers().back).toBeUndefined();
   });
 });
 
@@ -838,8 +838,8 @@ describe('SongListView — input navigation edge cases', () => {
     loadSongs([]);
 
     expect(() => {
-      act(() => handlers().tom1());
-      act(() => handlers().tom2());
+      act(() => handlers().up());
+      act(() => handlers().down());
     }).not.toThrow();
   });
 
@@ -847,7 +847,7 @@ describe('SongListView — input navigation edge cases', () => {
     renderView();
     loadSongs([makeSong('a')]);
 
-    act(() => handlers().tom3());
+    act(() => handlers().confirm());
 
     expect(screen.queryByTestId('song-view-stub')).toBeNull();
   });

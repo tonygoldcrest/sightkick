@@ -23,7 +23,7 @@ import { ALL_DIFFICULTIES } from '../../constants';
 
 export function SongListView() {
   const { currentPath, difficulty, setDifficulty } = useApp();
-  const { inputMapping, selectedDevice } = useInput();
+  const { controlMapping } = useInput();
   const navigate = useNavigate();
   const songOpen = useOutlet() !== null;
   const stemTools = useStemTools();
@@ -130,16 +130,16 @@ export function SongListView() {
   };
 
   useInputControls(
-    inputMapping,
+    controlMapping,
     isSortOpen
       ? {
-          tom1: () => moveSortFocus(-1),
-          tom2: () => moveSortFocus(1),
-          tom3: toggleFocusedSortDirection,
-          snare: () => setIsSortOpen(false),
+          up: () => moveSortFocus(-1),
+          down: () => moveSortFocus(1),
+          confirm: toggleFocusedSortDirection,
+          back: () => setIsSortOpen(false),
         }
       : {
-          tom1: () =>
+          up: () =>
             setFocusedSongIndex((index) => {
               if (filteredSongList.length === 0) {
                 return 0;
@@ -153,7 +153,7 @@ export function SongListView() {
                 (index - 1 + filteredSongList.length) % filteredSongList.length
               );
             }),
-          tom2: () =>
+          down: () =>
             setFocusedSongIndex((index) => {
               if (filteredSongList.length === 0) {
                 return 0;
@@ -165,7 +165,7 @@ export function SongListView() {
 
               return (index + 1) % filteredSongList.length;
             }),
-          tom3: () => {
+          confirm: () => {
             if (focusedSongIndex === undefined) {
               return;
             }
@@ -185,9 +185,9 @@ export function SongListView() {
               handleDownload(song.id);
             }
           },
-          kick: openSort,
-          ride: () => setMode(mode === 'online' ? 'local' : 'online'),
-          crash: () => {
+          sort: openSort,
+          library: () => setMode(mode === 'online' ? 'local' : 'online'),
+          difficulty: () => {
             const difficultyIndex = ALL_DIFFICULTIES.indexOf(difficulty);
 
             setDifficulty(
@@ -218,7 +218,6 @@ export function SongListView() {
               }
               mode={mode}
               onChangeMode={setMode}
-              showHints={selectedDevice !== null && !isSortOpen}
             />
             {sortAvailable && (
               <SortButton
@@ -227,7 +226,6 @@ export function SongListView() {
                 isOpen={isSortOpen}
                 onOpenChange={setIsSortOpen}
                 focusedIndex={isSortOpen ? focusedSortIndex : undefined}
-                showHints={selectedDevice !== null}
               />
             )}
             <SettingsButton page="song-list" scanPercent={scanPercent} />
@@ -261,7 +259,6 @@ export function SongListView() {
                 onLikeChange={handleLikeChange}
                 onLoadMore={mode === 'online' ? loadMore : undefined}
                 focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
-                showHints={selectedDevice !== null && !isSortOpen}
               />
             ) : (
               <EmptySongState
