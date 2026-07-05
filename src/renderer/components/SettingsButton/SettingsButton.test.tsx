@@ -15,7 +15,10 @@ vi.mock('../../input', () => ({
   inputBus: {
     start: () => {},
     capture: (_listener: (event: InputEvent) => void) => () => {},
-    listDevices: () => Promise.resolve([]),
+    listDevices: () =>
+      Promise.resolve([
+        { id: 'midi:Pad', name: 'My Pad', sourceId: 'midi', port: 1 },
+      ]),
   },
   controlSource: (id: string) => id.slice(0, id.indexOf(':')),
   controlLabel: (id: string) => id.slice(id.indexOf(':') + 1),
@@ -240,13 +243,15 @@ describe('SettingsButton — song-list parameters', () => {
     expect(ipc.sent).toContainEqual({ channel: 'rescan-songs', args: [] });
   });
 
-  it('opens the input setup modal', () => {
+  it('opens the input setup modal', async () => {
     renderSongView();
     open();
 
     expect(screen.queryByText('Configure input')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Setup input'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Setup input'));
+    });
 
     expect(screen.getByText('Configure input')).toBeInTheDocument();
   });

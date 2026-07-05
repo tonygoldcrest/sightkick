@@ -59,6 +59,11 @@ if (typeof HTMLElement.prototype.showPopover !== 'function') {
   } as typeof Element.prototype.matches;
 }
 
+const nativeGetComputedStyle = window.getComputedStyle.bind(window);
+
+window.getComputedStyle = ((element: Element) =>
+  nativeGetComputedStyle(element)) as typeof window.getComputedStyle;
+
 if (typeof Element.prototype.scrollTo !== 'function') {
   Element.prototype.scrollTo = () => {};
 }

@@ -12,7 +12,10 @@ vi.mock('../../input', () => ({
   inputBus: {
     start: () => {},
     capture: (_listener: (event: InputEvent) => void) => () => {},
-    listDevices: () => Promise.resolve([]),
+    listDevices: () =>
+      Promise.resolve([
+        { id: 'keyboard', name: 'Keyboard', sourceId: 'keyboard' },
+      ]),
   },
   controlSource: (id: string) => id.slice(0, id.indexOf(':')),
   controlLabel: (id: string) => id.slice(id.indexOf(':') + 1),

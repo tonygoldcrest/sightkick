@@ -70,6 +70,16 @@ function press(controlId: string) {
   );
 }
 
+async function renderModal() {
+  let view!: ReturnType<typeof render>;
+
+  await act(async () => {
+    view = render(<InputConfigModal isOpen />);
+  });
+
+  return view;
+}
+
 beforeEach(() => {
   ipc = installIpcMock();
   settings.assignControl.mockClear();
@@ -91,8 +101,8 @@ function sentChannels() {
 }
 
 describe('InputConfig', () => {
-  it('does not manage the shared midi stream lifecycle itself', () => {
-    const { rerender } = render(<InputConfigModal isOpen />);
+  it('does not manage the shared midi stream lifecycle itself', async () => {
+    const { rerender } = await renderModal();
 
     act(() => {
       rerender(<InputConfigModal isOpen={false} />);
@@ -102,8 +112,8 @@ describe('InputConfig', () => {
     expect(sentChannels()).not.toContain('stop-listen-midi');
   });
 
-  it('ignores incoming controls until an element is in learn mode', () => {
-    render(<InputConfigModal isOpen />);
+  it('ignores incoming controls until an element is in learn mode', async () => {
+    await renderModal();
 
     press('midi:50');
 
@@ -144,8 +154,8 @@ describe('InputConfig', () => {
     expect(listDevicesMock).toHaveBeenCalledTimes(1);
   });
 
-  it('assigns the next learned control to the chosen element', () => {
-    render(<InputConfigModal isOpen />);
+  it('assigns the next learned control to the chosen element', async () => {
+    await renderModal();
 
     fireEvent.click(screen.getAllByText('Learn')[0]);
 
@@ -166,22 +176,22 @@ describe('InputConfig', () => {
     return event;
   }
 
-  it('does not suppress default key actions when not learning', () => {
-    render(<InputConfigModal isOpen />);
+  it('does not suppress default key actions when not learning', async () => {
+    await renderModal();
 
     expect(dispatchKey().defaultPrevented).toBe(false);
   });
 
-  it('suppresses default key actions while learning so the focused button is not re-triggered', () => {
-    render(<InputConfigModal isOpen />);
+  it('suppresses default key actions while learning so the focused button is not re-triggered', async () => {
+    await renderModal();
 
     fireEvent.click(screen.getAllByText('Learn')[0]);
 
     expect(dispatchKey().defaultPrevented).toBe(true);
   });
 
-  it('stops suppressing default key actions once a control is learned', () => {
-    render(<InputConfigModal isOpen />);
+  it('stops suppressing default key actions once a control is learned', async () => {
+    await renderModal();
 
     fireEvent.click(screen.getAllByText('Learn')[0]);
     press('midi:50');

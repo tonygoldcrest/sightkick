@@ -72,7 +72,6 @@ export function useSongList() {
 
           return next;
         });
-        console.log(cancelled);
 
         if (success && song) {
           setSongList((prev) => prev.map((s) => (s.id === id ? song : s)));
