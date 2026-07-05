@@ -49,9 +49,7 @@ function withSettings(overrides: Record<string, unknown> = {}): Decorator {
 const meta: Meta<typeof SongViewSettings> = {
   title: 'Settings/Song View Settings',
   component: SongViewSettings,
-  args: {
-    onSetupInput: noop,
-  },
+  args: {},
   decorators: [withSettings()],
 };
 

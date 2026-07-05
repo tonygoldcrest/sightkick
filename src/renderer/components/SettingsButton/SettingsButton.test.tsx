@@ -179,24 +179,6 @@ describe('SettingsButton — song-view parameters', () => {
 
     expect(screen.queryByTestId('difficulty-expert')).not.toBeInTheDocument();
   });
-
-  it('labels the input button with the selected device while the modal is closed', () => {
-    window.localStorage.setItem(
-      'settings.selectedDevice',
-      JSON.stringify({
-        id: 'midi:Pad',
-        name: 'My Pad',
-        sourceId: 'midi',
-        port: 1,
-      }),
-    );
-
-    renderSongView();
-    open();
-
-    expect(screen.getByText('My Pad')).toBeInTheDocument();
-    expect(screen.queryByText('Setup input')).not.toBeInTheDocument();
-  });
 });
 
 describe('SettingsButton — song-list parameters', () => {
@@ -231,18 +213,5 @@ describe('SettingsButton — song-list parameters', () => {
     fireEvent.click(screen.getByText('Select folder'));
 
     expect(ipc.sent).toContainEqual({ channel: 'rescan-songs', args: [] });
-  });
-
-  it('opens the input setup modal', async () => {
-    renderSongView();
-    open();
-
-    expect(screen.queryByText('Configure input')).not.toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Setup input'));
-    });
-
-    expect(screen.getByText('Configure input')).toBeInTheDocument();
   });
 });

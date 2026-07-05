@@ -63,8 +63,6 @@ export const SettingsButton = memo(function Settings({
               />
             ) : (
               <SongViewSettings
-                onSetupInput={openInput}
-                currentInputName={currentInputName}
                 onExportPdf={onExportPdf}
                 isExporting={isExporting}
                 masterVolumeControl={masterVolumeControl}

@@ -219,15 +219,14 @@ export function SongListView() {
               mode={mode}
               onChangeMode={setMode}
             />
-            {sortAvailable && (
-              <SortButton
-                sort={sort}
-                onSortChange={setSort}
-                isOpen={isSortOpen}
-                onOpenChange={setIsSortOpen}
-                focusedIndex={isSortOpen ? focusedSortIndex : undefined}
-              />
-            )}
+            <SortButton
+              sort={sort}
+              disabled={!sortAvailable}
+              onSortChange={setSort}
+              isOpen={isSortOpen}
+              onOpenChange={setIsSortOpen}
+              focusedIndex={isSortOpen ? focusedSortIndex : undefined}
+            />
             <SettingsButton page="song-list" scanPercent={scanPercent} />
           </div>
           <SplittingQueue

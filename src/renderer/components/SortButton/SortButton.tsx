@@ -11,6 +11,7 @@ interface Props {
   sort: SortState;
   onSortChange: (sort: SortState) => void;
   isOpen: boolean;
+  disabled?: boolean;
   onOpenChange: (open: boolean) => void;
   focusedIndex?: number;
 }
@@ -18,6 +19,7 @@ interface Props {
 export function SortButton({
   sort,
   onSortChange,
+  disabled,
   isOpen,
   onOpenChange,
   focusedIndex,
@@ -42,6 +44,7 @@ export function SortButton({
       <Button
         icon={<FontAwesomeIcon icon={faSort} />}
         size="large"
+        disabled={disabled}
         data-testid="sort-trigger"
       />
     </Popover>
