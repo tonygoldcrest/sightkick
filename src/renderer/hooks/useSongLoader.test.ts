@@ -1,10 +1,34 @@
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AudioData, SongData } from '../../types';
-import { installIpcMock, IpcMock } from './test-support';
-import { useSongLoader } from './useSongLoader';
+import {
+  getNotification,
+  installIpcMock,
+  IpcMock,
+  NotificationMock,
+  resetNotification,
+} from './test-support';
 
+const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }));
+
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+
+  return {
+    ...actual,
+    App: Object.assign({}, actual.App, {
+      useApp: () => ({ notification: getNotification() }),
+    }),
+  };
+});
+
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => navigate,
+}));
+
+const { useSongLoader } = await import('./useSongLoader');
 let ipc: IpcMock;
+let notification: NotificationMock;
 
 function response(
   format: 'mid' | 'chart',
@@ -16,6 +40,8 @@ function response(
 
 beforeEach(() => {
   ipc = installIpcMock();
+  notification = resetNotification();
+  navigate.mockClear();
 });
 
 describe('useSongLoader', () => {
@@ -116,5 +142,17 @@ describe('useSongLoader', () => {
     expect(result.current.trackData).toEqual([
       { name: 'drum', urls: ['drum.ogg'] },
     ]);
+  });
+
+  it('notifies and navigates back to the library when the load fails', () => {
+    const { result } = renderHook(() => useSongLoader('song-1'));
+
+    act(() => {
+      ipc.emit('load-song', { error: 'chart missing' });
+    });
+
+    expect(notification.error).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith('/');
+    expect(result.current.fileData).toBeUndefined();
   });
 });

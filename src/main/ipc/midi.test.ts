@@ -14,6 +14,7 @@ interface FakeInput {
 const holder = vi.hoisted(() => ({
   instances: [] as FakeInput[],
   ports: ['TD-07', 'Other Kit'],
+  openError: undefined as string | undefined,
 }));
 
 vi.mock('@julusian/midi', () => {
@@ -32,7 +33,11 @@ vi.mock('@julusian/midi', () => {
       this.listeners.delete(event);
     });
 
-    openPort = vi.fn();
+    openPort = vi.fn(() => {
+      if (holder.openError) {
+        throw new Error(holder.openError);
+      }
+    });
 
     closePort = vi.fn();
 
@@ -56,6 +61,7 @@ beforeEach(() => {
   stopListenMidi();
   holder.instances = [];
   holder.ports = ['TD-07', 'Other Kit'];
+  holder.openError = undefined;
 });
 
 describe('loadMidiDeviceList', () => {
@@ -111,6 +117,33 @@ describe('listenMidi', () => {
 
     expect(holder.instances[0].closePort).toHaveBeenCalledTimes(1);
     expect(holder.instances[1].openPort).toHaveBeenCalledWith(1);
+  });
+
+  it('replies with midi-error and releases the port when opening fails', () => {
+    holder.openError = 'device unavailable';
+
+    const event = makeEvent();
+
+    listenMidi(event as never, 0);
+
+    expect(lastReply(event, 'midi-error').args[0]).toEqual({
+      error: 'device unavailable',
+    });
+    expect(holder.instances[0].closePort).toHaveBeenCalledTimes(1);
+    expect(holder.instances[0].removeAllListeners).toHaveBeenCalledWith(
+      'message',
+    );
+  });
+
+  it('does not leave a failed port active', () => {
+    holder.openError = 'device unavailable';
+
+    const event = makeEvent();
+
+    listenMidi(event as never, 0);
+    stopListenMidi();
+
+    expect(holder.instances[0].closePort).toHaveBeenCalledTimes(1);
   });
 });
 

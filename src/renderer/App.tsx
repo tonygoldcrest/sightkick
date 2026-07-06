@@ -8,6 +8,7 @@ import { AppProvider } from './context/AppContext';
 import { InputProvider } from './context/InputContext';
 import { SongViewSettingsProvider } from './context/SongViewSettingsContext';
 import { useAppUpdate } from './hooks/useAppUpdate';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function UpdateNotifier() {
   useAppUpdate();
@@ -17,7 +18,7 @@ function UpdateNotifier() {
 
 export default function App() {
   return (
-    <>
+    <ErrorBoundary>
       <ConfigProvider theme={antdTheme}>
         <AntdApp>
           <UpdateNotifier />
@@ -36,6 +37,6 @@ export default function App() {
           </AppProvider>
         </AntdApp>
       </ConfigProvider>
-    </>
+    </ErrorBoundary>
   );
 }

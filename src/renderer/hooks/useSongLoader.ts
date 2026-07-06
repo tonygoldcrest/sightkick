@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AudioData, IpcLoadSongResponse, SongData } from '../../types';
+import { App } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import {
+  AudioData,
+  IpcLoadSongResponse,
+  IpcResult,
+  isIpcError,
+  SongData,
+} from '../../types';
 import { TrackConfig } from '../services/audio-player/types';
 
 interface SongLoaderResult {
@@ -14,10 +22,26 @@ export function useSongLoader(id: string | undefined): SongLoaderResult {
   const [format, setFormat] = useState<'mid' | 'chart'>('mid');
   const [songData, setSongData] = useState<SongData | null>(null);
   const [trackData, setTrackData] = useState<TrackConfig[]>([]);
+  const { notification } = App.useApp();
+  const navigate = useNavigate();
   const loadSong = useCallback(() => {
-    window.electron.ipcRenderer.once<IpcLoadSongResponse>(
+    window.electron.ipcRenderer.once<IpcResult<IpcLoadSongResponse>>(
       'load-song',
-      ({ data, fileData: fd }) => {
+      (payload) => {
+        if (isIpcError(payload)) {
+          notification.error({
+            message: "Couldn't open this song",
+            description:
+              'The chart file may have been moved or deleted. Rescan your library from the song list to refresh it.',
+            placement: 'bottomRight',
+          });
+          navigate('/');
+
+          return;
+        }
+
+        const { data, fileData: fd } = payload;
+
         setFileData(fd);
         setFormat(data.format);
         setSongData(data);
@@ -36,7 +60,7 @@ export function useSongLoader(id: string | undefined): SongLoaderResult {
       },
     );
     window.electron.ipcRenderer.sendMessage('load-song', id);
-  }, [id]);
+  }, [id, notification, navigate]);
 
   useEffect(() => {
     loadSong();

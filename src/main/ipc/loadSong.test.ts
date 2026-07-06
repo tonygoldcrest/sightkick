@@ -67,4 +67,32 @@ describe('loadSong', () => {
 
     expect(payload.fileData.toString()).toBe('CHART-BYTES');
   });
+
+  it('replies with an error when the song is not in the store', () => {
+    storeHolder.current = makeStore({ songs: {} });
+
+    const event = makeEvent();
+
+    loadSong(event as never, 'missing');
+
+    expect(lastReply(event, 'load-song')!.args[0]).toEqual({
+      error: 'Song "missing" not found',
+    });
+  });
+
+  it('replies with an error when the chart file cannot be read', () => {
+    storeHolder.current = makeStore({
+      songs: { abc: { id: 'abc', dir, format: 'mid' } },
+    });
+
+    const event = makeEvent();
+
+    loadSong(event as never, 'abc');
+
+    const payload = lastReply(event, 'load-song')!.args[0] as {
+      error: string;
+    };
+
+    expect(payload.error).toContain('ENOENT');
+  });
 });

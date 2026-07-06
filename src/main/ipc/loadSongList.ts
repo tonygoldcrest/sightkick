@@ -4,27 +4,34 @@ import { isUnderDirectory } from '../util';
 import { appState } from '../AppState';
 
 export async function loadSongList(event: Electron.IpcMainEvent) {
-  const lastOpenedPath = appState.store.get('lastOpenedPath') as
-    | string
-    | undefined;
+  try {
+    const lastOpenedPath = appState.store.get('lastOpenedPath') as
+      | string
+      | undefined;
 
-  if (!lastOpenedPath || !fs.existsSync(lastOpenedPath)) {
-    event.reply('load-song-list', { songs: [], lastOpenedPath: null });
+    if (!lastOpenedPath || !fs.existsSync(lastOpenedPath)) {
+      event.reply('load-song-list', { songs: [], lastOpenedPath: null });
 
-    return;
+      return;
+    }
+
+    const allSongs = appState.store.get('songs') as
+      | StorageSchema['songs']
+      | undefined;
+    const songs = allSongs
+      ? Object.values(allSongs)
+          .filter((s) => isUnderDirectory(s.dir, lastOpenedPath))
+          .filter((s) => fs.existsSync(s.dir))
+          .map((s) => ({
+            ...s,
+            updatedAt: fs.statSync(s.dir).mtime.toISOString(),
+          }))
+      : [];
+
+    event.reply('load-song-list', { songs, lastOpenedPath });
+  } catch (error) {
+    event.reply('load-song-list', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
-
-  const allSongs = appState.store.get('songs') as
-    | StorageSchema['songs']
-    | undefined;
-  const songs = allSongs
-    ? Object.values(allSongs)
-        .filter((s) => isUnderDirectory(s.dir, lastOpenedPath))
-        .map((s) => ({
-          ...s,
-          updatedAt: fs.statSync(s.dir).mtime.toISOString(),
-        }))
-    : [];
-
-  event.reply('load-song-list', { songs, lastOpenedPath });
 }

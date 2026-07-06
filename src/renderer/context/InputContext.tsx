@@ -6,8 +6,14 @@ import {
   useEffect,
   useMemo,
 } from 'react';
+import { App } from 'antd';
 import { mapValues, uniq, without } from 'es-toolkit';
-import { ControlMapping, InputElement, InputMapping } from '../../types';
+import {
+  ControlMapping,
+  InputElement,
+  InputMapping,
+  IpcErrorResponse,
+} from '../../types';
 import {
   controlLabel,
   controlSource,
@@ -82,6 +88,7 @@ export function InputProvider({ children }: { children: ReactNode }) {
   const [controlMappings, setControlMappings] = usePersisted<
     Record<string, ControlMapping>
   >('settings.controlMappings', {});
+  const { notification } = App.useApp();
   const inputMapping = useMemo(
     () => ({
       ...EMPTY_INPUT_MAPPING,
@@ -180,12 +187,24 @@ export function InputProvider({ children }: { children: ReactNode }) {
       return undefined;
     }
 
+    const unsubscribe = window.electron.ipcRenderer.on<IpcErrorResponse>(
+      'midi-error',
+      () => {
+        notification.error({
+          message: "Couldn't connect to your MIDI device",
+          description: `"${selectedDevice.name}" isn't responding. Reconnect it, close any other app using it, or pick another device in settings.`,
+          placement: 'bottomRight',
+        });
+      },
+    );
+
     window.electron.ipcRenderer.sendMessage('listen-midi', selectedDevice.port);
 
     return () => {
+      unsubscribe();
       window.electron.ipcRenderer.sendMessage('stop-listen-midi');
     };
-  }, [selectedDevice]);
+  }, [selectedDevice, notification]);
 
   useEffect(() => {
     if (selectedDevice?.sourceId !== 'keyboard') {

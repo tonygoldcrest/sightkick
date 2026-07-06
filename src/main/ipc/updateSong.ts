@@ -5,15 +5,26 @@ export function updateSong(
   event: Electron.IpcMainEvent,
   payload: IpcUpdateSongPayload,
 ) {
-  const { id, ...update } = payload;
-  const songs = appState.store.get('songs') as StorageSchema['songs'];
-  const prev = songs[id];
-  const next = {
-    ...prev,
-    ...update,
-    scoreData: { ...prev.scoreData, ...update.scoreData },
-  };
+  try {
+    const { id, ...update } = payload;
+    const songs = appState.store.get('songs') as StorageSchema['songs'];
+    const prev = songs[id];
 
-  appState.store.set(`songs.${id}`, next);
-  event.reply('update-song', next);
+    if (!prev) {
+      throw new Error(`Song "${id}" not found`);
+    }
+
+    const next = {
+      ...prev,
+      ...update,
+      scoreData: { ...prev.scoreData, ...update.scoreData },
+    };
+
+    appState.store.set(`songs.${id}`, next);
+    event.reply('update-song', next);
+  } catch (error) {
+    event.reply('update-song', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }

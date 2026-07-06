@@ -7,6 +7,16 @@ import fs from 'fs';
 import path from 'path';
 
 export async function rescanSongs(event: IpcMainEvent, newDir = true) {
+  try {
+    await runRescan(event, newDir);
+  } catch (error) {
+    event.reply('rescan-songs', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+async function runRescan(event: IpcMainEvent, newDir: boolean) {
   let selectedPath: string;
 
   if (newDir) {

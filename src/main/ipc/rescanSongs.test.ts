@@ -145,4 +145,27 @@ describe('rescanSongs', () => {
     expect(songs.existing.id).toBe('existing');
     expect(songs.existing.liked).toBe(true);
   });
+
+  it('replies with an error when the scan throws', async () => {
+    const base = makeStore({});
+
+    storeHolder.current = {
+      ...base,
+      get: (key: string) => {
+        if (key === 'songs') {
+          throw new Error('scan failed');
+        }
+
+        return base.get(key);
+      },
+    };
+
+    const event = makeEvent();
+
+    await rescanSongs(event as never, true);
+
+    expect(lastReply(event, 'rescan-songs')!.args[0]).toEqual({
+      error: 'scan failed',
+    });
+  });
 });

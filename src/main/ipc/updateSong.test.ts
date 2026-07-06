@@ -58,4 +58,16 @@ describe('updateSong', () => {
       scoreData: { easy: { score: 1 }, expert: { score: 9 } },
     });
   });
+
+  it('replies with an error when the song is not in the store', () => {
+    storeHolder.current = makeStore({ songs: {} });
+
+    const event = makeEvent();
+
+    updateSong(event as never, { id: 'missing', liked: true } as never);
+
+    expect(lastReply(event, 'update-song')!.args[0]).toEqual({
+      error: 'Song "missing" not found',
+    });
+  });
 });

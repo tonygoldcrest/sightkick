@@ -84,4 +84,50 @@ describe('loadSongList', () => {
 
     fs.rmSync(outside, { recursive: true, force: true });
   });
+
+  it('skips songs whose directory no longer exists', async () => {
+    const inside = path.join(root, 'inside');
+
+    fs.mkdirSync(inside);
+    storeHolder.current = makeStore({
+      lastOpenedPath: root,
+      songs: {
+        a: { id: 'a', dir: inside },
+        gone: { id: 'gone', dir: path.join(root, 'removed') },
+      },
+    });
+
+    const event = makeEvent();
+
+    await loadSongList(event as never);
+
+    const payload = lastReply(event, 'load-song-list')!.args[0] as {
+      songs: { id: string }[];
+    };
+
+    expect(payload.songs.map((s) => s.id)).toEqual(['a']);
+  });
+
+  it('replies with an error when the stored songs cannot be read', async () => {
+    const base = makeStore({ lastOpenedPath: root });
+
+    storeHolder.current = {
+      ...base,
+      get: (key: string) => {
+        if (key === 'songs') {
+          throw new Error('corrupt store');
+        }
+
+        return base.get(key);
+      },
+    };
+
+    const event = makeEvent();
+
+    await loadSongList(event as never);
+
+    expect(lastReply(event, 'load-song-list')!.args[0]).toEqual({
+      error: 'corrupt store',
+    });
+  });
 });

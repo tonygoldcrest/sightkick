@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { App } from 'antd';
 import {
   IpcLoadSongListResponse,
+  IpcResult,
   IpcScanProgressResponse,
   IpcSplitSongResponse,
+  isIpcError,
   SongData,
 } from '../../types';
 import { useApp } from '../context/AppContext';
@@ -20,18 +22,41 @@ export function useSongList() {
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('load-song-list');
-    window.electron.ipcRenderer.once<IpcLoadSongListResponse>(
+    window.electron.ipcRenderer.once<IpcResult<IpcLoadSongListResponse>>(
       'load-song-list',
-      ({ songs, lastOpenedPath }) => {
-        setSongList(songs);
-        setCurrentPath(lastOpenedPath);
+      (payload) => {
+        if (isIpcError(payload)) {
+          notification.error({
+            message: "Couldn't load your songs",
+            description:
+              'Something went wrong reading your library. Rescan the folder to refresh it.',
+            placement: 'bottomRight',
+          });
+
+          return;
+        }
+
+        setSongList(payload.songs);
+        setCurrentPath(payload.lastOpenedPath);
       },
     );
-  }, [setCurrentPath]);
+  }, [setCurrentPath, notification]);
   useEffect(() => {
     return window.electron.ipcRenderer.on<
-      IpcLoadSongListResponse | IpcScanProgressResponse
+      IpcResult<IpcLoadSongListResponse | IpcScanProgressResponse>
     >('rescan-songs', (payload) => {
+      if (isIpcError(payload)) {
+        setScanProgress(undefined);
+        notification.error({
+          message: "Couldn't scan your library",
+          description:
+            'Check that the folder still exists and try rescanning again.',
+          placement: 'bottomRight',
+        });
+
+        return;
+      }
+
       if ('total' in payload) {
         setScanProgress(payload);
 
@@ -42,12 +67,28 @@ export function useSongList() {
       setCurrentPath(payload.lastOpenedPath);
       setScanProgress(undefined);
     });
-  }, [setCurrentPath]);
+  }, [setCurrentPath, notification]);
   useEffect(() => {
-    return window.electron.ipcRenderer.on<SongData>('update-song', (song) => {
-      setSongList((prev) => prev.map((s) => (s.id === song.id ? song : s)));
-    });
-  }, []);
+    return window.electron.ipcRenderer.on<IpcResult<SongData>>(
+      'update-song',
+      (payload) => {
+        if (isIpcError(payload)) {
+          notification.error({
+            message: "Couldn't save your progress",
+            description:
+              'Your latest score may not have been saved. Try again.',
+            placement: 'bottomRight',
+          });
+
+          return;
+        }
+
+        setSongList((prev) =>
+          prev.map((s) => (s.id === payload.id ? payload : s)),
+        );
+      },
+    );
+  }, [notification]);
   useEffect(() => {
     return window.electron.ipcRenderer.on<IpcSplitSongResponse>(
       'split-song',

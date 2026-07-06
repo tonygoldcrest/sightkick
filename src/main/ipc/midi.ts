@@ -4,15 +4,20 @@ import { MidiDevice } from '../../types';
 let activeInput: InstanceType<typeof midi.Input> | null = null;
 
 export async function loadMidiDeviceList(event: Electron.IpcMainEvent) {
-  const input = new midi.Input();
-  const portCount = input.getPortCount();
   const deviceList: MidiDevice[] = [];
 
-  for (let i = 0; i < portCount; i++) {
-    deviceList.push({ port: i, name: input.getPortName(i) });
-  }
+  try {
+    const input = new midi.Input();
+    const portCount = input.getPortCount();
 
-  input.closePort();
+    for (let i = 0; i < portCount; i++) {
+      deviceList.push({ port: i, name: input.getPortName(i) });
+    }
+
+    input.closePort();
+  } catch (error) {
+    console.error('Failed to enumerate MIDI devices:', error);
+  }
 
   event.reply('midi-device-list', deviceList);
 }
@@ -35,7 +40,16 @@ export async function listenMidi(event: Electron.IpcMainEvent, port: number) {
     event.reply('listen-midi', { type, note, velocity, channel });
   });
 
-  input.openPort(port);
+  try {
+    input.openPort(port);
+  } catch (error) {
+    input.removeAllListeners('message');
+    input.closePort();
+    activeInput = null;
+    event.reply('midi-error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 export function stopListenMidi() {

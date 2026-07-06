@@ -177,6 +177,18 @@ export type ElementMapping = Partial<Record<InputElement, string[]>>;
 export type IpcUpdateSongPayload = Pick<SongData, 'id'> &
   Partial<Omit<SongData, 'id'>>;
 
+export interface IpcErrorResponse {
+  error: string;
+}
+
+export type IpcResult<T> = T | IpcErrorResponse;
+
+export function isIpcError<T extends object>(
+  payload: IpcResult<T>,
+): payload is IpcErrorResponse {
+  return 'error' in payload && typeof payload.error === 'string';
+}
+
 export interface IpcLoadSongResponse {
   data: SongData;
   fileData: Buffer;

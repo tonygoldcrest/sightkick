@@ -193,6 +193,52 @@ describe('useSongList', () => {
     expect(ipc.sent.filter((s) => s.channel === 'like-song')).toHaveLength(0);
   });
 
+  it('applies an update-song reply to the matching song', async () => {
+    const { result } = await load();
+
+    act(() =>
+      ipc.emit('load-song-list', { songs: [song('a')], lastOpenedPath: '/a' }),
+    );
+    act(() => ipc.emit('update-song', song('a', { name: 'Renamed' })));
+
+    expect(result.current.songList[0].name).toBe('Renamed');
+  });
+
+  it('notifies when loading the song list fails', async () => {
+    await load();
+
+    act(() => ipc.emit('load-song-list', { error: 'read failed' }));
+
+    expect(notification.error).toHaveBeenCalledTimes(1);
+    expect(notification.error.mock.calls[0][0]).toMatchObject({
+      message: "Couldn't load your songs",
+    });
+  });
+
+  it('notifies and clears progress when a rescan fails', async () => {
+    const { result } = await load();
+
+    act(() => ipc.emit('rescan-songs', { current: 1, total: 4 }));
+    act(() => ipc.emit('rescan-songs', { error: 'scan failed' }));
+
+    expect(result.current.scanProgress).toBeUndefined();
+    expect(notification.error).toHaveBeenCalledTimes(1);
+    expect(notification.error.mock.calls[0][0]).toMatchObject({
+      message: "Couldn't scan your library",
+    });
+  });
+
+  it('notifies when saving a song update fails', async () => {
+    await load();
+
+    act(() => ipc.emit('update-song', { error: 'write failed' }));
+
+    expect(notification.error).toHaveBeenCalledTimes(1);
+    expect(notification.error.mock.calls[0][0]).toMatchObject({
+      message: "Couldn't save your progress",
+    });
+  });
+
   it('unsubscribes from rescan and split listeners on unmount', async () => {
     const { unmount } = await load();
 

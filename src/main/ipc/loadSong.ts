@@ -4,12 +4,25 @@ import fs from 'fs';
 import { appState } from '../AppState';
 
 export function loadSong(event: Electron.IpcMainEvent, id: string) {
-  const songData = (appState.store.get('songs') as StorageSchema['songs'])[id];
-  const notesFile = path.join(
-    songData.dir,
-    songData.format === 'mid' ? 'notes.mid' : 'notes.chart',
-  );
-  const fileData = fs.readFileSync(notesFile);
+  try {
+    const songData = (appState.store.get('songs') as StorageSchema['songs'])[
+      id
+    ];
 
-  event.reply('load-song', { data: songData, fileData });
+    if (!songData) {
+      throw new Error(`Song "${id}" not found`);
+    }
+
+    const notesFile = path.join(
+      songData.dir,
+      songData.format === 'mid' ? 'notes.mid' : 'notes.chart',
+    );
+    const fileData = fs.readFileSync(notesFile);
+
+    event.reply('load-song', { data: songData, fileData });
+  } catch (error) {
+    event.reply('load-song', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
