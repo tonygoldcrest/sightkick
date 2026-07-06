@@ -46,6 +46,25 @@ function ref(element: HTMLDivElement | null) {
   return { current: element } as React.RefObject<HTMLDivElement | null>;
 }
 
+const COLORS = { note: '#000000', stave: '#888888' };
+
+function render(
+  target: React.RefObject<HTMLDivElement | null>,
+  chart: ChartParser,
+  showBarNumbers?: boolean,
+  enableColors?: boolean,
+  showTempo?: boolean,
+) {
+  return renderMusic(
+    target.current ?? undefined,
+    chart,
+    COLORS,
+    showBarNumbers,
+    enableColors,
+    showTempo,
+  );
+}
+
 function container() {
   const div = document.createElement('div');
 
@@ -72,13 +91,13 @@ function accentBounds(div: HTMLDivElement) {
 
 describe('renderMusic', () => {
   it('returns nothing when the element ref is empty', () => {
-    expect(renderMusic(ref(null), song([measure(quarters)]))).toEqual([]);
+    expect(render(ref(null), song([measure(quarters)]))).toEqual([]);
   });
 
   it('renders an SVG into the element', () => {
     const div = container();
 
-    renderMusic(ref(div), song([measure(quarters)]));
+    render(ref(div), song([measure(quarters)]));
 
     expect(div.querySelector('svg')).not.toBeNull();
   });
@@ -92,7 +111,7 @@ describe('renderMusic', () => {
         sigChange: false,
       }),
     ];
-    const data = renderMusic(ref(div), song(measures));
+    const data = render(ref(div), song(measures));
 
     expect(data).toHaveLength(2);
     expect(data[0].measure).toBe(measures[0]);
@@ -108,7 +127,7 @@ describe('renderMusic', () => {
       note({ notes: ['b/4'], duration: 'q', isRest: true, tick: 288 }),
       note({ tick: 384, notes: ['f/4', 'c/5'] }),
     ];
-    const data = renderMusic(ref(div), song([measure(notes)]));
+    const data = render(ref(div), song([measure(notes)]));
 
     expect(data[0].renderedNotes).toHaveLength(notes.length);
     expect(data[0].renderedNotes.map((rn) => rn.tick)).toEqual([
@@ -123,7 +142,7 @@ describe('renderMusic', () => {
       measure(quarters, { hasClef: false, sigChange: false }),
       measure(quarters, { hasClef: false, sigChange: false }),
     ];
-    const data = renderMusic(ref(div), song(measures));
+    const data = render(ref(div), song(measures));
     const ys = data.map((d) => d.stave.getYForLine(0));
 
     expect(data[0].stave.getX()).toBe(0);
@@ -137,12 +156,7 @@ describe('renderMusic', () => {
   it('colours note heads with the per-drum colour when enabled', () => {
     const div = container();
 
-    renderMusic(
-      ref(div),
-      song([measure([note({ notes: ['c/5'] })])]),
-      true,
-      true,
-    );
+    render(ref(div), song([measure([note({ notes: ['c/5'] })])]), true, true);
 
     expect(div.querySelector('.vf-notehead')!.classList).toContain(
       'vf-note-snare',
@@ -152,12 +166,7 @@ describe('renderMusic', () => {
   it('does not colour note heads when colours are disabled', () => {
     const div = container();
 
-    renderMusic(
-      ref(div),
-      song([measure([note({ notes: ['c/5'] })])]),
-      true,
-      false,
-    );
+    render(ref(div), song([measure([note({ notes: ['c/5'] })])]), true, false);
 
     expect(div.querySelector('.vf-notehead')!.classList).toContain(
       'vf-note-uncolored',
@@ -167,7 +176,7 @@ describe('renderMusic', () => {
   it('classes rests so they are excluded from the note-head outline', () => {
     const div = container();
 
-    renderMusic(
+    render(
       ref(div),
       song([
         measure([note({ notes: ['b/4'], duration: 'w', isRest: true })], {
@@ -188,8 +197,8 @@ describe('renderMusic', () => {
     const withNumbers = container();
     const withoutNumbers = container();
 
-    renderMusic(ref(withNumbers), song([measure(quarters)]), true);
-    renderMusic(ref(withoutNumbers), song([measure(quarters)]), false);
+    render(ref(withNumbers), song([measure(quarters)]), true);
+    render(ref(withoutNumbers), song([measure(quarters)]), false);
 
     const textOf = (div: HTMLDivElement) =>
       Array.from(div.querySelectorAll('svg text')).map((el) => el.textContent);
@@ -204,7 +213,7 @@ describe('renderMusic', () => {
       note({ tick: 0, notes: ['c/5'], graceNotes: [['c/5']] }),
       note({ tick: 192, duration: 'q' }),
     ];
-    const data = renderMusic(ref(div), song([measure(notes)]));
+    const data = render(ref(div), song([measure(notes)]));
 
     expect(data[0].renderedNotes).toHaveLength(2);
     expect(div.querySelector('svg')).not.toBeNull();
@@ -214,8 +223,8 @@ describe('renderMusic', () => {
     const plain = container();
     const accented = container();
 
-    renderMusic(ref(plain), song([measure([note({ notes: ['c/5'] })])]));
-    renderMusic(
+    render(ref(plain), song([measure([note({ notes: ['c/5'] })])]));
+    render(
       ref(accented),
       song([measure([note({ notes: ['c/5'], accents: ['c/5'] })])]),
     );
@@ -226,7 +235,7 @@ describe('renderMusic', () => {
 
   it('puts the accent of a lone note above the staff', () => {
     const div = container();
-    const data = renderMusic(
+    const data = render(
       ref(div),
       song([measure([note({ notes: ['c/5'], accents: ['c/5'] })])]),
     );
@@ -236,7 +245,7 @@ describe('renderMusic', () => {
 
   it('draws a single accent above a fully accented chord', () => {
     const div = container();
-    const data = renderMusic(
+    const data = render(
       ref(div),
       song([
         measure([
@@ -252,7 +261,7 @@ describe('renderMusic', () => {
 
   it('puts a partially accented chord note to the right of its head', () => {
     const div = container();
-    const data = renderMusic(
+    const data = render(
       ref(div),
       song([measure([note({ notes: ['c/5', 'g/5/x2'], accents: ['c/5'] })])]),
     );
@@ -267,7 +276,7 @@ describe('renderMusic', () => {
   it('classes a single-note accent like the note', () => {
     const div = container();
 
-    renderMusic(
+    render(
       ref(div),
       song([measure([note({ notes: ['c/5'], accents: ['c/5'] })])]),
       true,
@@ -282,7 +291,7 @@ describe('renderMusic', () => {
   it('classes an accent as uncolored when colours are disabled', () => {
     const div = container();
 
-    renderMusic(
+    render(
       ref(div),
       song([measure([note({ notes: ['c/5'], accents: ['c/5'] })])]),
       true,
@@ -298,7 +307,7 @@ describe('renderMusic', () => {
   it('classes a partial-chord accent like its note', () => {
     const div = container();
 
-    renderMusic(
+    render(
       ref(div),
       song([measure([note({ notes: ['c/5', 'g/5/x2'], accents: ['c/5'] })])]),
       true,
@@ -313,7 +322,7 @@ describe('renderMusic', () => {
   it('classes a fully accented chord accent as uncolored, not a note colour', () => {
     const div = container();
 
-    renderMusic(
+    render(
       ref(div),
       song([
         measure([
@@ -335,8 +344,8 @@ describe('renderMusic', () => {
     const pathCount = (div: HTMLDivElement) =>
       div.querySelectorAll('svg path').length;
 
-    renderMusic(ref(plain), song([measure([note({ notes: ['c/5'] })])]));
-    renderMusic(
+    render(ref(plain), song([measure([note({ notes: ['c/5'] })])]));
+    render(
       ref(ghosted),
       song([measure([note({ notes: ['c/5'], ghosts: ['c/5'] })])]),
     );
@@ -346,7 +355,7 @@ describe('renderMusic', () => {
 
   it('marks only the flagged head in a chord', () => {
     const div = container();
-    const data = renderMusic(
+    const data = render(
       ref(div),
       song([measure([note({ notes: ['f/4', 'c/5'], accents: ['c/5'] })])]),
     );
@@ -365,7 +374,7 @@ describe('renderMusic', () => {
         tuplets: [{ id: 0, numNotes: 3, notesOccupied: 2 }],
       }),
     ];
-    const data = renderMusic(ref(div), song(measures));
+    const data = render(ref(div), song(measures));
 
     expect(data[0].renderedNotes).toHaveLength(3);
     expect(div.querySelector('svg')).not.toBeNull();
@@ -387,7 +396,7 @@ describe('renderMusic', () => {
       ],
     } as unknown as ParsedChart;
     const parser = new ChartParser(chart, false);
-    const data = renderMusic(ref(div), parser);
+    const data = render(ref(div), parser);
 
     expect(data).toHaveLength(parser.measures.length);
     data.forEach((entry, index) => {

@@ -6,6 +6,7 @@ import { ChartParser } from '../../../chart-parser/parser';
 import { renderMusic } from '../../../chart-parser/renderer';
 import { RenderData } from '../../../chart-parser/types';
 import { SongData } from '../../../types';
+import { SHEET_MUSIC_COLORS } from '../../constants';
 
 const STORY_SONG = {
   name: 'Parser',
@@ -273,7 +274,16 @@ function SheetHarness({ dsl }: { dsl: string }) {
       return;
     }
 
-    setRenderData(renderMusic(containerRef, parser, false, true, true));
+    setRenderData(
+      renderMusic(
+        containerRef.current,
+        parser,
+        SHEET_MUSIC_COLORS,
+        false,
+        true,
+        true,
+      ),
+    );
   }, [parser]);
 
   if (!parser) {

@@ -4,6 +4,7 @@ import { Difficulty, parseChartFile } from 'scan-chart';
 import { ChartParser } from '../../chart-parser/parser';
 import { renderMusic } from '../../chart-parser/renderer';
 import { ParsedChart, RenderData } from '../../chart-parser/types';
+import { SHEET_MUSIC_COLORS } from '../constants';
 
 interface UseSheetMusicParams {
   fileData: Buffer | undefined;
@@ -78,8 +79,9 @@ export function useSheetMusic({
 
     setRenderData(
       renderMusic(
-        vexflowContainerRef,
+        vexflowContainerRef.current,
         parsedMidi,
+        SHEET_MUSIC_COLORS,
         showBarNumbers,
         enableColors,
         showTempo,

@@ -9,6 +9,7 @@ import {
   resetNotification,
 } from './test-support';
 import { useSheetMusic } from './useSheetMusic';
+import { SHEET_MUSIC_COLORS } from '../constants';
 
 vi.mock('antd', async (importOriginal) => {
   const actual = await importOriginal<typeof import('antd')>();
@@ -128,12 +129,14 @@ describe('useSheetMusic', () => {
 
     expect(renderMusicMock).toHaveBeenCalledTimes(1);
 
-    const [ref, parsed, bars, colors] = renderMusicMock.mock.calls[0];
+    const [target, parsed, colors, bars, enableColors] =
+      renderMusicMock.mock.calls[0];
 
-    expect(ref.current).toBe(div);
+    expect(target).toBe(div);
     expect(parsed).toEqual(PARSED);
+    expect(colors).toBe(SHEET_MUSIC_COLORS);
     expect(bars).toBe(false);
-    expect(colors).toBe(true);
+    expect(enableColors).toBe(true);
     expect(result.current.renderData).toEqual(RENDER_DATA);
   });
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   RenderContext,
   Renderer,
@@ -21,8 +20,12 @@ import {
 } from 'vexflow';
 import { ChartParser } from './parser';
 import { Measure, RenderData } from './types';
-import themedark from '../renderer/theme';
-import { KEY_TO_ELEMENT } from '../renderer/drumColors';
+import { KEY_TO_ELEMENT } from './constants';
+
+export interface SheetMusicColors {
+  note: string;
+  stave: string;
+}
 
 const STAVE_WIDTH = 600;
 const STAVE_PER_ROW = 2;
@@ -35,17 +38,16 @@ const ACCENT_SCALE = Flow.NOTATION_FONT_SCALE;
 const ACCENT_SCALE_RIGHT = Flow.NOTATION_FONT_SCALE * 0.8;
 
 export function renderMusic(
-  elementRef: React.RefObject<HTMLDivElement | null>,
+  container: HTMLDivElement | undefined,
   song: ChartParser,
+  colors: SheetMusicColors,
   showBarNumbers: boolean = true,
   enableColors: boolean = false,
   showTempo: boolean = true,
 ): RenderData[] {
-  if (!elementRef.current) {
+  if (!container) {
     return [];
   }
-
-  const container = elementRef.current;
 
   container.replaceChildren();
 
@@ -66,8 +68,8 @@ export function renderMusic(
     const renderer = new Renderer(rowEl, Renderer.Backends.SVG);
     const context = renderer.getContext();
 
-    context.setFillStyle(themedark.color.ink);
-    context.setStrokeStyle(themedark.color.ink);
+    context.setFillStyle(colors.note);
+    context.setStrokeStyle(colors.note);
     renderer.resize(rowWidth, lineHeight);
 
     const svgEl = rowEl.querySelector('svg');
@@ -95,6 +97,7 @@ export function renderMusic(
         showBarNumbers,
         enableColors,
         showTempo,
+        colors,
       );
 
       renderData[index] = { measure, stave, renderedNotes, yOffset };
@@ -245,6 +248,7 @@ function drawAccentGlyph(
   originY: number,
   scale: number,
   accentClass: string,
+  noteColor: string,
 ) {
   const glyph = new Glyph('articAccentAbove', scale);
 
@@ -253,8 +257,8 @@ function drawAccentGlyph(
   const group = context.openGroup('accent') as SVGGElement;
 
   group.classList.add(accentClass);
-  context.setFillStyle(themedark.color.ink);
-  context.setStrokeStyle(themedark.color.ink);
+  context.setFillStyle(noteColor);
+  context.setStrokeStyle(noteColor);
   glyph.render(context, x, y);
   context.closeGroup();
 }
@@ -265,6 +269,7 @@ function drawAccents(
   measure: Measure,
   staveNotes: StaveNote[],
   enableColors: boolean,
+  noteColor: string,
 ) {
   const gap = stave.getSpacingBetweenLines();
   const topLineY = stave.getYForLine(0);
@@ -296,6 +301,7 @@ function drawAccents(
         1,
         ACCENT_SCALE,
         accentClass,
+        noteColor,
       );
 
       return;
@@ -321,6 +327,7 @@ function drawAccents(
         0.5,
         ACCENT_SCALE_RIGHT,
         accentClassFor(key, enableColors),
+        noteColor,
       );
     });
   });
@@ -338,6 +345,7 @@ function renderMeasure(
   showBarNumbers: boolean,
   enableColors: boolean,
   showTempo: boolean,
+  colors: SheetMusicColors,
 ) {
   const stave = new Stave(xOffset, yOffset, STAVE_WIDTH);
 
@@ -365,8 +373,8 @@ function renderMeasure(
 
   stave
     .setStyle({
-      fillStyle: themedark.color.textMuted,
-      strokeStyle: themedark.color.textMuted,
+      fillStyle: colors.stave,
+      strokeStyle: colors.stave,
     })
     .setContext(context)
     .draw();
@@ -383,7 +391,7 @@ function renderMeasure(
   });
 
   applyNoteClasses(staveNotes, enableColors);
-  drawAccents(context, stave, measure, staveNotes, enableColors);
+  drawAccents(context, stave, measure, staveNotes, enableColors, colors.note);
 
   const renderedNotes = staveNotes.map((staveNote, i) => ({
     tick: measure.notes[i].tick,

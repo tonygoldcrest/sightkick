@@ -1,6 +1,7 @@
 import themedark from './theme';
 import { ControlMapping, InputElement } from '../types';
 import { ControlCategory, MappingElement } from './types';
+import { SheetMusicColors } from '../chart-parser/renderer';
 import { groupBy } from 'es-toolkit';
 import {
   faAnglesRight,
@@ -77,6 +78,11 @@ const KIT_ELEMENT_LIST: MappingElement[] = [
     type: 'drum',
   },
 ];
+
+export const SHEET_MUSIC_COLORS: SheetMusicColors = {
+  note: themedark.color.ink,
+  stave: themedark.color.textMuted,
+};
 
 export const KIT_ELEMENTS = new Map<InputElement, MappingElement>(
   KIT_ELEMENT_LIST.map((element): [InputElement, MappingElement] => [

@@ -441,7 +441,7 @@ describe('SongView — difficulty', () => {
 
 describe('SongView — bar numbers', () => {
   function lastShowBarNumbers() {
-    return renderMusicMock.mock.calls.at(-1)?.[2];
+    return renderMusicMock.mock.calls.at(-1)?.[3];
   }
 
   it('ignores a persisted showBarNumbers outside dev mode', async () => {
