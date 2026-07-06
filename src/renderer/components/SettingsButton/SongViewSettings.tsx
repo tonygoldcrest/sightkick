@@ -6,6 +6,7 @@ import { PLAYHEAD_STYLES } from '../../types';
 import { useSongViewSettings } from '../../context/SongViewSettingsContext';
 import { SettingLabel } from './SettingLabel';
 import { Tooltip } from '../Tooltip';
+import { SupportButton } from '../SupportButton/SupportButton';
 import themedark from '../../theme';
 
 interface Props {
@@ -238,6 +239,8 @@ export function SongViewSettings({
       ) : null}
 
       {clickControls}
+
+      <SupportButton />
     </>
   );
 }

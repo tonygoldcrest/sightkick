@@ -8,6 +8,7 @@ import {
 import { StemToolsPanel } from '../../context/StemToolsContext';
 import { useApp } from '../../context/AppContext';
 import { Tooltip } from '../Tooltip';
+import { SupportButton } from '../SupportButton/SupportButton';
 
 interface Props {
   scanPercent?: number;
@@ -75,6 +76,8 @@ export function SongListSettings({
       <Divider />
 
       <StemToolsPanel />
+
+      <SupportButton />
     </>
   );
 }

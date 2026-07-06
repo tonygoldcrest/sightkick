@@ -7,6 +7,8 @@ interface AppContextValue {
   setDifficulty: (d: Difficulty) => void;
   currentPath: string | null;
   setCurrentPath: (p: string | null) => void;
+  supportDismissed: boolean;
+  setSupportDismissed: (d: boolean) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -17,9 +19,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     'expert',
   );
   const [currentPath, setCurrentPath] = useState<string | null>(null);
+  const [supportDismissed, setSupportDismissed] = usePersisted(
+    'settings.supportDismissed',
+    false,
+  );
   const value = useMemo(
-    () => ({ difficulty, setDifficulty, currentPath, setCurrentPath }),
-    [difficulty, setDifficulty, currentPath, setCurrentPath],
+    () => ({
+      difficulty,
+      setDifficulty,
+      currentPath,
+      setCurrentPath,
+      supportDismissed,
+      setSupportDismissed,
+    }),
+    [
+      difficulty,
+      setDifficulty,
+      currentPath,
+      setCurrentPath,
+      supportDismissed,
+      setSupportDismissed,
+    ],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
