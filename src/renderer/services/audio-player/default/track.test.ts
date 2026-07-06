@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AudioTrack } from './track';
+import { DefaultAudioTrack } from './track';
 import {
   FakeAudioContext,
   FakeBufferSource,
   FakeGainNode,
   makeBuffer,
-} from './test-support';
+} from '../test-support';
 
 let context: FakeAudioContext;
 
@@ -14,7 +14,7 @@ function makeTrack(durations: number[] = [1]) {
     makeBuffer([new Array(seconds * 100).fill(0)], 100),
   );
 
-  return new AudioTrack(
+  return new DefaultAudioTrack(
     buffers as unknown as AudioBuffer[],
     'drums',
     context as unknown as AudioContext,
@@ -39,7 +39,7 @@ describe('AudioTrack', () => {
     const destination = context.createGain();
     const buffers = [makeBuffer([new Array(100).fill(0)], 100)];
 
-    new AudioTrack(
+    new DefaultAudioTrack(
       buffers as unknown as AudioBuffer[],
       'drums',
       context as unknown as AudioContext,

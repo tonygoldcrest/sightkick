@@ -12,13 +12,14 @@ import { Measure, ParsedChart, RenderData } from '../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../types';
 import { PlayheadStyle } from '../types';
 import {
-  GameEngine,
+  Engine,
+  GameMode,
   PlaybackSnapshot,
   PlaybackState,
-} from '../services/game-engine';
+} from '../services/engine';
 import { inputBus } from '../input';
 
-interface UseGameEngineParams {
+interface UseEngineParams {
   trackData: TrackConfig[];
   isDev: boolean;
   chart: ParsedChart | null;
@@ -29,11 +30,12 @@ interface UseGameEngineParams {
   countInEnabled: boolean;
   playheadStyle: PlayheadStyle;
   mapping: InputMapping;
+  mode?: GameMode;
   onEnded: (score: ScoreData) => void;
 }
 
-interface UseGameEngineResult {
-  engine: GameEngine | undefined;
+interface UseEngineResult {
+  engine: Engine | undefined;
   timeStore: TimeStore;
   isReady: boolean;
   state: PlaybackState;
@@ -51,6 +53,7 @@ interface UseGameEngineResult {
   seekSeconds: (seconds: number) => void;
   setStemVolume: (name: string, gain: number) => void;
   setMasterVolume: (gain: number) => void;
+  setPlaybackSpeed: (speed: number) => void;
 }
 
 const IDLE_SNAPSHOT: PlaybackSnapshot = {
@@ -65,7 +68,7 @@ const IDLE_SNAPSHOT: PlaybackSnapshot = {
   duration: 0,
 };
 
-export function useGameEngine({
+export function useEngine({
   trackData,
   isDev,
   chart,
@@ -76,17 +79,23 @@ export function useGameEngine({
   countInEnabled,
   playheadStyle,
   mapping,
+  mode,
   onEnded,
-}: UseGameEngineParams): UseGameEngineResult {
+}: UseEngineParams): UseEngineResult {
   const { notification } = App.useApp();
   const onEndedRef = useRef(onEnded);
   const isDevRef = useRef(isDev);
+  const modeRef = useRef(mode);
   const [fallbackTimeStore] = useState(() => new TimeStore());
-  const [engine, setEngine] = useState<GameEngine | undefined>(undefined);
+  const [engine, setEngine] = useState<Engine | undefined>(undefined);
 
   useEffect(() => {
     onEndedRef.current = onEnded;
   }, [onEnded]);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   useEffect(() => {
     isDevRef.current = isDev;
@@ -94,9 +103,10 @@ export function useGameEngine({
   }, [engine, isDev]);
 
   useEffect(() => {
-    const instance = new GameEngine({
+    const instance = new Engine({
       trackData,
       isDev: isDevRef.current,
+      mode: modeRef.current,
       subscribeInput: inputBus.subscribe,
       onEnded: (score) => onEndedRef.current(score),
       onError: () =>
@@ -171,6 +181,10 @@ export function useGameEngine({
     (gain: number) => engine?.setMasterVolume(gain),
     [engine],
   );
+  const setPlaybackSpeed = useCallback(
+    (speed: number) => engine?.setPlaybackSpeed(speed),
+    [engine],
+  );
 
   return {
     engine,
@@ -191,5 +205,6 @@ export function useGameEngine({
     seekSeconds,
     setStemVolume,
     setMasterVolume,
+    setPlaybackSpeed,
   };
 }

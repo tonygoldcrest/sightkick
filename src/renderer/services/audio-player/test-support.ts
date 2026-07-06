@@ -117,17 +117,12 @@ export class FakeBufferSource {
 
 export class FakeAudioContext {
   state: 'suspended' | 'running' | 'closed' = 'running';
-
+  sampleRate = 44100;
   currentTime = 0;
-
   baseLatency = 0;
-
   outputLatency = 0;
-
   destination = { id: 'destination' };
-
   gainNodes: FakeGainNode[] = [];
-
   bufferSources: FakeBufferSource[] = [];
 
   resume = vi.fn(() => {

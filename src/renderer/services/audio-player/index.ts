@@ -1,5 +1,17 @@
-export { AudioPlayer } from './player';
+export type {
+  AudioPlayer,
+  AudioPlayerFactory,
+  AudioTrackHandle,
+  SpeedControllableAudioPlayer,
+  TrackConfig,
+} from './types';
 
-export { AudioTrack } from './track';
+export { DefaultAudioPlayer } from './default/player';
 
-export type { TrackConfig } from './types';
+export { SpeedAudioPlayer } from './speed/player';
+
+export {
+  createDefaultPlayer,
+  createSpeedPlayer,
+  playerFactoryForMode,
+} from './factories';

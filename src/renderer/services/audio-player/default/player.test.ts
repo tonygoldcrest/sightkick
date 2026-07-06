@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AudioPlayer } from './player';
-import { TrackConfig } from './types';
+import { DefaultAudioPlayer } from './player';
+import { TrackConfig } from '../types';
 import {
   FakeAudioContext,
   FakeGainNode,
   installFetchByByteLength,
   installWebAudio,
-} from './test-support';
+} from '../test-support';
 
 const trimSpy = vi.hoisted(() =>
   vi.fn(
@@ -19,7 +19,7 @@ const trimSpy = vi.hoisted(() =>
   ),
 );
 
-vi.mock('./helpers', () => ({
+vi.mock('../helpers', () => ({
   trimTrailingSilence: trimSpy,
 }));
 
@@ -34,7 +34,7 @@ const TRACKS: TrackConfig[] = [
 ];
 
 async function makePlayer(tracks: TrackConfig[] = TRACKS, onEnded = vi.fn()) {
-  const player = new AudioPlayer(tracks, onEnded);
+  const player = new DefaultAudioPlayer(tracks, onEnded);
 
   await player.ready;
   await Promise.resolve();
@@ -95,7 +95,7 @@ describe('AudioPlayer', () => {
   });
 
   it('trims each decoded buffer with the provided minimum duration', async () => {
-    const player = new AudioPlayer(TRACKS, vi.fn(), () => 12.5);
+    const player = new DefaultAudioPlayer(TRACKS, vi.fn(), () => 12.5);
 
     await player.ready;
     await Promise.resolve();

@@ -8,12 +8,12 @@ import {
 } from 'react';
 import { cn } from '../../cn';
 import { Measure, RenderData } from '../../../chart-parser/types';
-import { GameEngine } from '../../services/game-engine';
+import { Engine } from '../../services/engine';
 import { SongData } from '../../../types';
 import { Reference } from './Reference';
 
 export interface SheetMusicProps {
-  engine: GameEngine | undefined;
+  engine: Engine | undefined;
   songData: SongData;
   renderData: RenderData[];
   vexflowContainerRef: RefObject<HTMLDivElement | null>;

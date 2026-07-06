@@ -3,17 +3,20 @@ import { Measure, ParsedChart, RenderData } from '../../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../../types';
 import { PlayheadStyle } from '../../types';
 import { InputEvent } from '../../input/types';
-import { TrackConfig } from '../audio-player';
+import { AudioPlayerFactory, TrackConfig } from '../audio-player';
 
-export interface GameEngineOptions {
+export type GameMode = 'game' | 'practice';
+
+export interface EngineOptions {
   trackData: TrackConfig[];
   isDev: boolean;
+  mode?: GameMode;
   subscribeInput: (listener: (event: InputEvent) => void) => () => void;
   onEnded: (score: ScoreData) => void;
   onError: () => void;
 }
 
-export interface GameContext {
+export interface EngineContext {
   chart: ParsedChart | undefined;
   measures: Measure[];
   renderData: RenderData[];
@@ -22,7 +25,7 @@ export interface GameContext {
   minDurationSeconds: number;
 }
 
-export interface GameSettings {
+export interface EngineSettings {
   playheadStyle: PlayheadStyle;
 }
 
@@ -85,6 +88,7 @@ export interface PlaybackSnapshot {
 export interface TransportOptions {
   trackData: TrackConfig[];
   isDev: boolean;
+  createPlayer: AudioPlayerFactory;
   onEnded: () => void;
   onError: () => void;
   onSeek?: (tick: number) => void;

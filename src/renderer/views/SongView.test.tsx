@@ -7,7 +7,6 @@ import { ChartParser } from '../../chart-parser/parser';
 import { renderMusic } from '../../chart-parser/renderer';
 import { IpcLoadSongResponse, SongData } from '../../types';
 import { InputEvent } from '../input/types';
-import { TrackConfig } from '../services/audio-player/types';
 import { AppProvider } from '../context/AppContext';
 import { InputProvider } from '../context/InputContext';
 import { SongViewSettingsProvider } from '../context/SongViewSettingsContext';
@@ -68,7 +67,7 @@ function pressInput(controlId: string) {
   busListeners.forEach((listener) => listener({ controlId, value: 100 }));
 }
 
-vi.mock('../services/audio-player/player', () => {
+const { MockAudioPlayer } = vi.hoisted(() => {
   const fakeContext = () => ({
     state: 'running',
     currentTime: 0,
@@ -92,10 +91,10 @@ vi.mock('../services/audio-player/player', () => {
     }),
   });
 
-  class MockAudioPlayer {
-    static instances: MockAudioPlayer[] = [];
+  class MockAudioPlayerImpl {
+    static instances: MockAudioPlayerImpl[] = [];
 
-    trackData: TrackConfig[];
+    trackData: unknown;
 
     onEnded: () => void;
 
@@ -121,8 +120,6 @@ vi.mock('../services/audio-player/player', () => {
       this.startedAt = startAt ?? this.context.currentTime;
     });
 
-    resume = vi.fn();
-
     pause = vi.fn();
 
     stop = vi.fn();
@@ -137,15 +134,20 @@ vi.mock('../services/audio-player/player', () => {
         : this.startedAt + (songTime - this.offset);
     }
 
-    constructor(trackData: TrackConfig[], onEnded: () => void) {
+    constructor(trackData: unknown, onEnded: () => void) {
       this.trackData = trackData;
       this.onEnded = onEnded;
-      MockAudioPlayer.instances.push(this);
+      MockAudioPlayerImpl.instances.push(this);
     }
   }
 
-  return { AudioPlayer: MockAudioPlayer };
+  return { MockAudioPlayer: MockAudioPlayerImpl };
 });
+
+vi.mock('../services/audio-player/factories', () => ({
+  playerFactoryForMode: () => (trackData: unknown, onEnded: () => void) =>
+    new MockAudioPlayer(trackData, onEnded),
+}));
 
 const parseChartFileMock = vi.mocked(parseChartFile);
 const ChartParserMock = vi.mocked(ChartParser);
@@ -192,12 +194,8 @@ function wrapper({ children }: { children: ReactNode }) {
   );
 }
 
-async function getInstances() {
-  const mod = await import('../services/audio-player/player');
-
-  return (
-    mod.AudioPlayer as unknown as { instances: { onEnded: () => void }[] }
-  ).instances;
+function getInstances() {
+  return Promise.resolve(MockAudioPlayer.instances);
 }
 
 async function loadSong(song: SongData = makeSong()) {

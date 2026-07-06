@@ -2,19 +2,25 @@ import { ParsedChart, RenderData } from '../../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../../types';
 import { secondsToTicks } from '../../views/utils';
 import { TimeStore } from '../time-store';
+import {
+  AudioPlayer,
+  SpeedControllableAudioPlayer,
+} from '../audio-player/types';
+import { playerFactoryForMode } from '../audio-player/factories';
 import { Transport } from './transport';
 import { Judge } from './judge';
 import { GameRenderer } from './game-renderer';
 import {
-  GameContext,
-  GameEngineOptions,
+  EngineContext,
+  EngineOptions,
   GameRendererRefs,
-  GameSettings,
+  EngineSettings,
   PlaybackSnapshot,
 } from './types';
 
-export class GameEngine {
+export class Engine {
   private transport: Transport;
+  private player: AudioPlayer | undefined;
   private judge = new Judge();
   private renderer = new GameRenderer((tick, key) =>
     this.judge.isHit(tick, key),
@@ -28,11 +34,25 @@ export class GameEngine {
   private transportUnsub: () => void;
   private inputUnsub: () => void;
 
-  constructor(options: GameEngineOptions) {
+  constructor(options: EngineOptions) {
     this.onEndedCb = options.onEnded;
+
+    const createPlayer = playerFactoryForMode(
+      options.mode === 'practice' ? 'speed' : 'default',
+    );
+
     this.transport = new Transport({
       trackData: options.trackData,
       isDev: options.isDev,
+      createPlayer: (trackConfigs, onEnded, getMinDurationSeconds) => {
+        this.player = createPlayer(
+          trackConfigs,
+          onEnded,
+          getMinDurationSeconds,
+        );
+
+        return this.player;
+      },
       onEnded: () => this.handleEnded(),
       onError: options.onError,
       onSeek: (tick) => this.judge.rewindTo(tick),
@@ -56,7 +76,7 @@ export class GameEngine {
 
   getSnapshot = (): PlaybackSnapshot => this.transport.getSnapshot();
 
-  setContext(context: GameContext): void {
+  setContext(context: EngineContext): void {
     this.chart = context.chart;
     this.renderData = context.renderData;
     this.delaySeconds = context.delaySeconds;
@@ -80,7 +100,7 @@ export class GameEngine {
     this.renderFrame();
   }
 
-  setSettings(settings: GameSettings): void {
+  setSettings(settings: EngineSettings): void {
     this.renderer.setSettings(settings.playheadStyle);
     this.renderFrame();
   }
@@ -133,6 +153,14 @@ export class GameEngine {
 
   setMasterVolume(gain: number): void {
     this.transport.setMasterVolume(gain);
+  }
+
+  setPlaybackSpeed(speed: number): void {
+    const { player } = this;
+
+    if (player && 'setPlaybackSpeed' in player) {
+      (player as SpeedControllableAudioPlayer).setPlaybackSpeed(speed);
+    }
   }
 
   renderFrame(): void {

@@ -1,5 +1,5 @@
 import { Measure, ParsedChart } from '../../../chart-parser/types';
-import { AudioPlayer, TrackConfig } from '../audio-player';
+import { AudioPlayer, AudioPlayerFactory, TrackConfig } from '../audio-player';
 import { TimeStore } from '../time-store';
 import { secondsToTicks, ticksToSeconds } from '../../views/utils';
 import { ClickTrack, DEFAULT_CLICK_TONE } from '../click-track';
@@ -27,6 +27,7 @@ export class Transport {
   private delaySeconds = 0;
   private countInEnabled = false;
   private minDurationSeconds = 0;
+  private createPlayer: AudioPlayerFactory;
   private createdPlayer: AudioPlayer | undefined;
   private audioPlayer: AudioPlayer | undefined;
   private state: PlaybackState = 'idle';
@@ -50,6 +51,7 @@ export class Transport {
 
   constructor(options: TransportOptions) {
     this.isDev = options.isDev;
+    this.createPlayer = options.createPlayer;
     this.onEndedCb = options.onEnded;
     this.onErrorCb = options.onError;
     this.onSeekCb = options.onSeek ?? (() => {});
@@ -306,7 +308,7 @@ export class Transport {
   }
 
   private initAudio(trackData: TrackConfig[]): void {
-    const player = new AudioPlayer(
+    const player = this.createPlayer(
       trackData,
       () => this.handleEnded(),
       () => this.minDurationSeconds,

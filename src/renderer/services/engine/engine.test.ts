@@ -9,14 +9,14 @@ import {
   RenderedNote,
 } from '../../../chart-parser/types';
 import { InputEvent } from '../../input/types';
-import { GameEngine } from './game-engine';
-import { GameContext } from './types';
+import { Engine } from './engine';
+import { EngineContext } from './types';
 
 vi.mock('../click-track/metronome', () => ({
   renderClickBuffers: vi.fn(() => ({ downbeat: {}, beat: {} })),
 }));
 
-vi.mock('../audio-player/player', () => {
+const { MockAudioPlayer } = vi.hoisted(() => {
   const fakeContext = () => ({
     state: 'running',
     currentTime: 0,
@@ -40,11 +40,12 @@ vi.mock('../audio-player/player', () => {
     }),
   });
 
-  class MockAudioPlayer {
-    static instances: MockAudioPlayer[] = [];
+  class MockAudioPlayerImpl {
+    static instances: MockAudioPlayerImpl[] = [];
     onEnded: () => void;
     ready = Promise.resolve([]);
     context = fakeContext();
+    audioTracks: { name: string; setVolume: () => void }[] = [];
     currentTime = 0;
     duration = 100;
     isInitialised = false;
@@ -59,6 +60,7 @@ vi.mock('../audio-player/player', () => {
     pause = vi.fn();
     stop = vi.fn();
     setMasterVolume = vi.fn();
+    setPlaybackSpeed = vi.fn();
     destroy = vi.fn();
 
     contextTimeForSongTime(songTime: number) {
@@ -67,14 +69,19 @@ vi.mock('../audio-player/player', () => {
         : this.startedAt + (songTime - this.offset);
     }
 
-    constructor(_trackData: TrackConfig[], onEnded: () => void) {
+    constructor(_trackData: unknown, onEnded: () => void) {
       this.onEnded = onEnded;
-      MockAudioPlayer.instances.push(this);
+      MockAudioPlayerImpl.instances.push(this);
     }
   }
 
-  return { AudioPlayer: MockAudioPlayer };
+  return { MockAudioPlayer: MockAudioPlayerImpl };
 });
+
+vi.mock('../audio-player/factories', () => ({
+  playerFactoryForMode: () => (trackData: unknown, onEnded: () => void) =>
+    new MockAudioPlayer(trackData, onEnded),
+}));
 
 type MockPlayer = {
   onEnded: () => void;
@@ -161,10 +168,8 @@ function uncolored(note: StaveNote, head = 0): boolean {
   );
 }
 
-async function getPlayerClass() {
-  const mod = await import('../audio-player/player');
-
-  return mod.AudioPlayer as unknown as { instances: MockPlayer[] };
+function getPlayerInstances(): MockPlayer[] {
+  return MockAudioPlayer.instances as unknown as MockPlayer[];
 }
 
 async function flush() {
@@ -178,10 +183,10 @@ function emitInput(controlId: string, value = 100) {
   inputListeners.forEach((listener) => listener({ controlId, value }));
 }
 
-async function setup(over: Partial<GameContext> = {}) {
+async function setup(over: Partial<EngineContext> = {}) {
   const onEnded = vi.fn();
   const onError = vi.fn();
-  const engine = new GameEngine({
+  const engine = new Engine({
     trackData: TRACKS,
     isDev: false,
     subscribeInput: (listener) => {
@@ -209,7 +214,7 @@ async function setup(over: Partial<GameContext> = {}) {
 
   await flush();
 
-  const [player] = (await getPlayerClass()).instances;
+  const [player] = getPlayerInstances();
 
   return { engine, onEnded, player };
 }
@@ -231,10 +236,10 @@ function advanceClockTo(
   flushFrame();
 }
 
-beforeEach(async () => {
+beforeEach(() => {
   inputListeners = new Set();
   frameQueue = [];
-  (await getPlayerClass()).instances.length = 0;
+  MockAudioPlayer.instances.length = 0;
   vi.useFakeTimers();
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
     frameQueue.push(cb);
@@ -249,7 +254,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('GameEngine', () => {
+describe('Engine', () => {
   it('delegates transport to playback and reflects state', async () => {
     const { engine, player } = await setup({
       renderData: [measureData(0, 1920, [])],

@@ -17,7 +17,7 @@ import { useSongViewSettings } from '../context/SongViewSettingsContext';
 import { ClickControls } from '../components/ClickControls';
 import { usePersisted } from '../hooks/usePersisted';
 import { useSongLoader } from '../hooks/useSongLoader';
-import { useGameEngine } from '../hooks/useGameEngine';
+import { useEngine } from '../hooks/useEngine';
 import { useVolumeControls } from '../hooks/useVolumeControls';
 import { useMuteToggle } from '../hooks/useMuteToggle';
 import { calculateAccuracy, ticksToSeconds } from './utils';
@@ -96,7 +96,7 @@ export function SongView() {
     seekSeconds,
     setStemVolume,
     setMasterVolume: setEngineMasterVolume,
-  } = useGameEngine({
+  } = useEngine({
     trackData,
     isDev,
     chart,

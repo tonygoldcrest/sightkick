@@ -1,41 +1,11 @@
-export class AudioTrack {
-  private gainNodes: GainNode[];
+import { BaseAudioTrack } from '../base-track';
 
-  private _volume: number = 1;
-
+export class DefaultAudioTrack extends BaseAudioTrack {
   private sources: AudioBufferSourceNode[] = [];
-
-  duration: number;
 
   ended: boolean = false;
 
   endedListener: (() => void) | null = null;
-
-  constructor(
-    public buffers: AudioBuffer[],
-    public name: string,
-    public context: AudioContext,
-    destination: AudioNode = context.destination,
-  ) {
-    this.gainNodes = new Array(buffers.length).fill(null).map(() => {
-      const gainNode = context.createGain();
-
-      gainNode.connect(destination);
-
-      return gainNode;
-    });
-    this.duration = Math.max(...this.buffers.map((buffer) => buffer.duration));
-  }
-
-  get volume() {
-    return this._volume;
-  }
-
-  setVolume(newVolume: number) {
-    this.gainNodes.forEach((gainNode) => {
-      gainNode.gain.setValueAtTime(newVolume, this.context.currentTime);
-    });
-  }
 
   start(at: number, offset: number) {
     if (this.sources.length > 0) {
@@ -79,11 +49,7 @@ export class AudioTrack {
   }
 
   destroy() {
-    this.stop();
-    this.gainNodes.forEach((node) => {
-      node.disconnect();
-    });
-    this.gainNodes = [];
+    super.destroy();
     this.endedListener = null;
   }
 }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TrackConfig } from '../audio-player';
+import { AudioPlayer, TrackConfig } from '../audio-player';
 import { Measure, ParsedChart } from '../../../chart-parser/types';
 import { Transport } from './transport';
 import { TransportContext } from './types';
@@ -8,77 +8,74 @@ vi.mock('../click-track/metronome', () => ({
   renderClickBuffers: () => ({ downbeat: {}, beat: {} }),
 }));
 
-vi.mock('../audio-player/player', () => {
-  const fakeContext = () => ({
-    state: 'running',
-    currentTime: 0,
-    destination: {},
-    resume: () => Promise.resolve(),
-    createGain: () => ({
-      gain: {
-        value: 0,
-        setValueAtTime: () => {},
-        cancelScheduledValues: () => {},
-      },
-      connect: () => {},
-      disconnect: () => {},
-    }),
-    createBufferSource: () => ({
-      buffer: undefined,
-      connect: () => {},
-      start: () => {},
-      stop: () => {},
-      addEventListener: () => {},
-    }),
+const fakeContext = () => ({
+  state: 'running',
+  currentTime: 0,
+  destination: {},
+  resume: () => Promise.resolve(),
+  createGain: () => ({
+    gain: {
+      value: 0,
+      setValueAtTime: () => {},
+      cancelScheduledValues: () => {},
+    },
+    connect: () => {},
+    disconnect: () => {},
+  }),
+  createBufferSource: () => ({
+    buffer: undefined,
+    connect: () => {},
+    start: () => {},
+    stop: () => {},
+    addEventListener: () => {},
+  }),
+});
+
+class MockAudioPlayer {
+  static instances: MockAudioPlayer[] = [];
+  static failNext = false;
+  onEnded: () => void;
+  ready: Promise<unknown>;
+  context = fakeContext();
+  audioTracks: { name: string; setVolume: () => void }[] = [];
+  currentTime = 0;
+  duration = 100;
+  isInitialised = false;
+  startedAt = -1;
+  offset = 0;
+
+  start = vi.fn((offset = 0, startAt?: number) => {
+    this.isInitialised = true;
+    this.offset = offset;
+    this.startedAt = startAt ?? this.context.currentTime;
+    this.currentTime = offset;
   });
 
-  class MockAudioPlayer {
-    static instances: MockAudioPlayer[] = [];
-    static failNext = false;
-    onEnded: () => void;
-    ready: Promise<unknown>;
-    context = fakeContext();
-    currentTime = 0;
-    duration = 100;
-    isInitialised = false;
-    startedAt = -1;
-    offset = 0;
+  pause = vi.fn();
 
-    start = vi.fn((offset = 0, startAt?: number) => {
-      this.isInitialised = true;
-      this.offset = offset;
-      this.startedAt = startAt ?? this.context.currentTime;
-      this.currentTime = offset;
-    });
+  stop = vi.fn(() => {
+    this.isInitialised = false;
+  });
 
-    pause = vi.fn();
+  setMasterVolume = vi.fn();
 
-    stop = vi.fn(() => {
-      this.isInitialised = false;
-    });
+  destroy = vi.fn();
 
-    setMasterVolume = vi.fn();
-
-    destroy = vi.fn();
-
-    contextTimeForSongTime(songTime: number) {
-      return this.startedAt < 0
-        ? this.context.currentTime
-        : this.startedAt + (songTime - this.offset);
-    }
-
-    constructor(_trackData: TrackConfig[], onEnded: () => void) {
-      this.onEnded = onEnded;
-      this.ready = MockAudioPlayer.failNext
-        ? Promise.reject(new Error('load failed'))
-        : Promise.resolve([]);
-      this.ready.catch(() => {});
-      MockAudioPlayer.instances.push(this);
-    }
+  contextTimeForSongTime(songTime: number) {
+    return this.startedAt < 0
+      ? this.context.currentTime
+      : this.startedAt + (songTime - this.offset);
   }
 
-  return { AudioPlayer: MockAudioPlayer };
-});
+  constructor(_trackData: TrackConfig[], onEnded: () => void) {
+    this.onEnded = onEnded;
+    this.ready = MockAudioPlayer.failNext
+      ? Promise.reject(new Error('load failed'))
+      : Promise.resolve([]);
+    this.ready.catch(() => {});
+    MockAudioPlayer.instances.push(this);
+  }
+}
 
 type MockPlayer = {
   onEnded: () => void;
@@ -93,15 +90,8 @@ type MockPlayer = {
   destroy: ReturnType<typeof vi.fn>;
 };
 
-async function getPlayerClass() {
-  const mod = await import('../audio-player/player');
-
-  return mod.AudioPlayer as unknown as {
-    instances: MockPlayer[];
-    failNext: boolean;
-  };
-}
-
+const createMockPlayer = (trackData: TrackConfig[], onEnded: () => void) =>
+  new MockAudioPlayer(trackData, onEnded) as unknown as AudioPlayer;
 const TRACKS: TrackConfig[] = [{ name: 'drums', urls: ['d.ogg'] }];
 const CHART = {
   resolution: 480,
@@ -146,6 +136,7 @@ async function setup(
   const engine = new Transport({
     trackData: TRACKS,
     isDev: false,
+    createPlayer: createMockPlayer,
     onEnded,
     onError,
     ...options,
@@ -155,12 +146,12 @@ async function setup(
 
   await flush();
 
-  const [player] = (await getPlayerClass()).instances;
+  const [player] = MockAudioPlayer.instances as unknown as MockPlayer[];
 
   return { engine, onEnded, onError, player };
 }
 
-beforeEach(async () => {
+beforeEach(() => {
   frameQueue = [];
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
     frameQueue.push(cb);
@@ -169,10 +160,8 @@ beforeEach(async () => {
   });
   vi.stubGlobal('cancelAnimationFrame', () => {});
 
-  const Cls = await getPlayerClass();
-
-  Cls.instances.length = 0;
-  Cls.failNext = false;
+  MockAudioPlayer.instances.length = 0;
+  MockAudioPlayer.failNext = false;
 });
 
 afterEach(() => {
@@ -191,7 +180,7 @@ describe('Transport', () => {
   it('creates no player without tracks', async () => {
     const { engine } = await setup({ trackData: [] });
 
-    expect((await getPlayerClass()).instances).toHaveLength(0);
+    expect(MockAudioPlayer.instances).toHaveLength(0);
     expect(engine.getSnapshot().isReady).toBe(false);
   });
 
@@ -217,7 +206,7 @@ describe('Transport', () => {
   });
 
   it('reports an error and stays player-less when loading fails', async () => {
-    (await getPlayerClass()).failNext = true;
+    MockAudioPlayer.failNext = true;
 
     const { engine, onError } = await setup();
 

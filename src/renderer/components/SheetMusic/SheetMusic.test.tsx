@@ -3,7 +3,7 @@ import { fireEvent, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Measure, RenderData } from '../../../chart-parser/types';
 import { SongData } from '../../../types';
-import { GameEngine } from '../../services/game-engine';
+import { Engine } from '../../services/engine';
 import { SheetMusic } from './SheetMusic';
 
 function makeStave(): RenderData['stave'] {
@@ -37,7 +37,7 @@ const songData = {
 function renderSheet(
   overrides: Partial<Parameters<typeof SheetMusic>[0]> = {},
 ) {
-  const engine = { setRendererRefs: vi.fn() } as unknown as GameEngine;
+  const engine = { setRendererRefs: vi.fn() } as unknown as Engine;
   const onSelectMeasure = vi.fn();
   const result = render(
     <SheetMusic
