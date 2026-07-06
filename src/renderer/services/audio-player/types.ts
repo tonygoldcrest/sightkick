@@ -28,6 +28,12 @@ export interface SpeedControllableAudioPlayer extends AudioPlayer {
   setPlaybackSpeed(speed: number): void;
 }
 
+export function isSpeedControllable(
+  player: AudioPlayer,
+): player is SpeedControllableAudioPlayer {
+  return 'setPlaybackSpeed' in player;
+}
+
 export type AudioPlayerFactory = (
   trackConfigs: TrackConfig[],
   onEnded: () => void,

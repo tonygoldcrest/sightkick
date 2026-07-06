@@ -2,12 +2,17 @@ import { Measure, ParsedChart } from '../../../chart-parser/types';
 import {
   AudioPlayer,
   AudioPlayerFactory,
+  isSpeedControllable,
   SpeedControllableAudioPlayer,
   TrackConfig,
 } from '../audio-player';
 import { TimeStore } from '../time-store';
 import { secondsToTicks, ticksToSeconds } from '../../../chart-parser/timing';
-import { ClickTrack, DEFAULT_CLICK_TONE } from '../click-track';
+import {
+  ClickTrack,
+  CountInScheduler,
+  DEFAULT_CLICK_TONE,
+} from '../click-track';
 import { Beat, getBeatGrid, getCountInInfo } from '../beat-grid';
 import {
   LoopRegion,
@@ -36,19 +41,16 @@ export class Transport {
   private createPlayer: AudioPlayerFactory;
   private createdPlayer: AudioPlayer | undefined;
   private audioPlayer: AudioPlayer | undefined;
+  private speedPlayer: SpeedControllableAudioPlayer | undefined;
   private state: PlaybackState = 'idle';
   private isStarted = false;
   private position = 0;
-  private countInBeat: number | undefined;
-  private countInBeatMs: number | undefined;
   private clickTrack: ClickTrack | undefined;
   private clickVolume = 0;
   private clickTone = DEFAULT_CLICK_TONE;
   private beatGrid: Beat[] = [];
   private nextBeatIndex = 0;
-  private countInStartCtx: number | undefined;
-  private countInBeatDuration: number | undefined;
-  private countInBeats: number | undefined;
+  private countIn: CountInScheduler | undefined;
   private songStartCtx: number | undefined;
   private raf: number | undefined;
   private loopRegion: LoopRegion | undefined;
@@ -124,11 +126,7 @@ export class Transport {
   }
 
   private applyPlaybackSpeed(speed: number): void {
-    const player = this.audioPlayer;
-
-    if (player && 'setPlaybackSpeed' in player) {
-      (player as SpeedControllableAudioPlayer).setPlaybackSpeed(speed);
-    }
+    this.speedPlayer?.setPlaybackSpeed(speed);
   }
 
   setLoopRegion(region: LoopRegion | undefined): void {
@@ -212,13 +210,7 @@ export class Transport {
   }
 
   private get playbackSpeed(): number {
-    const player = this.audioPlayer;
-
-    if (player && 'playbackSpeed' in player) {
-      return (player as SpeedControllableAudioPlayer).playbackSpeed;
-    }
-
-    return 1;
+    return this.speedPlayer?.playbackSpeed ?? 1;
   }
 
   private async beginPlayback(tick: number, startTime: number): Promise<void> {
@@ -255,21 +247,16 @@ export class Transport {
     );
     const realBeatDuration = beatDurationSeconds / this.playbackSpeed;
     const now = ctx.currentTime;
-    const songStart = now + beats * realBeatDuration;
 
-    this.songStartCtx = songStart;
-    this.countInStartCtx = now;
-    this.countInBeatDuration = realBeatDuration;
-    this.countInBeats = beats;
-    this.countInBeat = 1;
-    this.countInBeatMs = realBeatDuration * 1000;
+    this.countIn = new CountInScheduler(now, beats, realBeatDuration);
+    this.songStartCtx = this.countIn.songStartCtx;
 
     this.clickTrack.cancelGain();
     this.clickTrack.setGain(
       Math.max(this.clickVolume, COUNT_IN_MIN_VOLUME),
       now,
     );
-    this.clickTrack.setGain(this.clickVolume, songStart);
+    this.clickTrack.setGain(this.clickVolume, this.songStartCtx);
 
     for (let i = 0; i < beats; i += 1) {
       this.clickTrack.scheduleClick(now + i * realBeatDuration, i === 0);
@@ -278,7 +265,7 @@ export class Transport {
     this.state = 'counting-in';
     this.emit();
 
-    void this.audioPlayer.start(startTime, songStart);
+    void this.audioPlayer.start(startTime, this.songStartCtx);
   }
 
   pause(): void {
@@ -353,11 +340,7 @@ export class Transport {
   private clearScheduling(): void {
     this.clickTrack?.clearPending();
     this.clickTrack?.cancelGain();
-    this.countInBeat = undefined;
-    this.countInBeatMs = undefined;
-    this.countInStartCtx = undefined;
-    this.countInBeatDuration = undefined;
-    this.countInBeats = undefined;
+    this.countIn = undefined;
     this.songStartCtx = undefined;
   }
 
@@ -407,6 +390,7 @@ export class Transport {
         }
 
         this.audioPlayer = player;
+        this.speedPlayer = isSpeedControllable(player) ? player : undefined;
         this.clickTrack = new ClickTrack(player.context);
         this.clickTrack.setTone(this.clickTone);
         this.emit();
@@ -483,22 +467,14 @@ export class Transport {
   }
 
   private updateCountIn(): void {
-    if (
-      this.state !== 'counting-in' ||
-      !this.audioPlayer ||
-      this.countInStartCtx === undefined ||
-      this.countInBeatDuration === undefined ||
-      this.songStartCtx === undefined
-    ) {
+    if (this.state !== 'counting-in' || !this.audioPlayer || !this.countIn) {
       return;
     }
 
     const now = this.audioPlayer.context.currentTime;
 
-    if (now >= this.songStartCtx) {
-      this.countInBeat = undefined;
-      this.countInBeatMs = undefined;
-      this.countInStartCtx = undefined;
+    if (this.countIn.isComplete(now)) {
+      this.countIn = undefined;
       this.isStarted = true;
       this.state = 'playing';
 
@@ -512,14 +488,7 @@ export class Transport {
       return;
     }
 
-    const elapsed = now - this.countInStartCtx;
-    const beat = Math.min(
-      this.countInBeats ?? 1,
-      Math.max(1, Math.floor(elapsed / this.countInBeatDuration) + 1),
-    );
-
-    if (beat !== this.countInBeat) {
-      this.countInBeat = beat;
+    if (this.countIn.advanceTo(now)) {
       this.emit();
     }
   }
@@ -556,8 +525,8 @@ export class Transport {
       isCounting: this.state === 'counting-in',
       isStarted: this.isStarted,
       isEnded: this.state === 'ended',
-      countInBeat: this.countInBeat,
-      countInBeatMs: this.countInBeatMs,
+      countInBeat: this.countIn?.beat,
+      countInBeatMs: this.countIn?.beatMs,
       isReady: this.audioPlayer !== undefined,
       duration: this.audioPlayer?.duration ?? 0,
     };

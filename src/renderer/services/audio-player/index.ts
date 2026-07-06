@@ -6,6 +6,8 @@ export type {
   TrackConfig,
 } from './types';
 
+export { isSpeedControllable } from './types';
+
 export { DefaultAudioPlayer } from './default/player';
 
 export { SpeedAudioPlayer } from './speed/player';
