@@ -25,6 +25,7 @@ export interface SheetMusicProps {
   isDev: boolean;
   gameMode?: GameMode;
   practiceRange?: PracticeRange;
+  focusIndex?: number;
   isLooping?: boolean;
   onPracticeRangeChange?: (range?: PracticeRange) => void;
   onSelectMeasure: (measure: Measure, event: MouseEvent) => void;
@@ -41,6 +42,7 @@ export function SheetMusic({
   isDev,
   gameMode,
   practiceRange,
+  focusIndex,
   isLooping,
   onPracticeRangeChange,
   onSelectMeasure,
@@ -112,6 +114,9 @@ export function SheetMusic({
 
     return renderData.map(({ measure, stave, yOffset }, index) => {
       const selected = isSelected(index);
+      const focused =
+        index === focusIndex &&
+        (isLooping ? practiceRange === undefined : true);
       const mergeLeft =
         selected && isSelected(index - 1) && isSameRow(index, index - 1);
       const mergeRight =
@@ -134,6 +139,8 @@ export function SheetMusic({
                 selected,
               'border-l-0! rounded-l-none': mergeLeft,
               'border-r-0! rounded-r-none': mergeRight,
+              'bg-accent-medium-bg shadow-accent-soft border border-accent-soft-border z-[-1]!':
+                focused,
             },
             (isDev || gameMode === 'practice') &&
               'cursor-pointer hover:bg-accent-medium-bg hover:shadow-accent-soft hover:border hover:border-accent-soft-border hover:z-[-1]',
@@ -156,6 +163,7 @@ export function SheetMusic({
     onSelectMeasure,
     gameMode,
     practiceRange,
+    focusIndex,
     handleMeasureMouseDown,
     handleMeasureMouseEnter,
   ]);

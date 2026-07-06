@@ -41,6 +41,15 @@ textarea,
   outline: none;
 }
 
+.ant-modal-wrap .ant-modal .ant-modal-close,
+.ant-modal-wrap .ant-modal .ant-modal-close:hover,
+.ant-modal-wrap .ant-modal .ant-modal-close:focus,
+.ant-modal-wrap .ant-modal .ant-modal-close:focus-visible {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

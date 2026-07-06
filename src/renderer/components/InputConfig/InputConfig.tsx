@@ -3,100 +3,15 @@ import { ElementMapping, InputElement } from '../../../types';
 import { controlLabel, InputDevice } from '../../input';
 import { modalStyles, MODAL_ABOVE_POPOVER_Z_INDEX } from '../../overlayStyles';
 import { IconButton } from '../IconButton';
-import themedark from '../../theme';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faArrowDown,
-  faArrowLeft,
-  faArrowRight,
   faArrowsRotate,
-  faArrowUp,
-  faBook,
-  faCheck,
-  faChevronLeft,
-  faDumbbell,
-  faInfoCircle,
-  faPause,
   faPlus,
-  faSort,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { MappingElement } from '../../types';
-import { KIT_ELEMENTS } from '../../constants';
+import { GROUPED_CONTROL_ELEMENTS, KIT_ELEMENTS } from '../../constants';
 import { Tooltip } from '../Tooltip';
-
-const CONTROL_ELEMENTS: MappingElement[] = [
-  {
-    value: 'up',
-    displayName: 'Up',
-    color: themedark.color.textMuted,
-    icon: faArrowUp,
-    type: 'control',
-  },
-  {
-    value: 'down',
-    displayName: 'Down',
-    color: themedark.color.textMuted,
-    icon: faArrowDown,
-    type: 'control',
-  },
-  {
-    value: 'left',
-    displayName: 'Left',
-    color: themedark.color.textMuted,
-    icon: faArrowLeft,
-    type: 'control',
-  },
-  {
-    value: 'right',
-    displayName: 'Right',
-    color: themedark.color.textMuted,
-    icon: faArrowRight,
-    type: 'control',
-  },
-  {
-    value: 'confirm',
-    displayName: 'Confirm',
-    color: themedark.color.textMuted,
-    icon: faCheck,
-    type: 'control',
-  },
-  {
-    value: 'back',
-    displayName: 'Back',
-    color: themedark.color.textMuted,
-    icon: faChevronLeft,
-    type: 'control',
-  },
-  {
-    value: 'difficulty',
-    displayName: 'Difficulty',
-    color: themedark.color.textMuted,
-    icon: faDumbbell,
-    type: 'control',
-  },
-  {
-    value: 'library',
-    displayName: 'Library',
-    color: themedark.color.textMuted,
-    icon: faBook,
-    type: 'control',
-  },
-  {
-    value: 'sort',
-    displayName: 'Sort',
-    color: themedark.color.textMuted,
-    icon: faSort,
-    type: 'control',
-  },
-  {
-    value: 'pause',
-    displayName: 'Pause',
-    color: themedark.color.textMuted,
-    icon: faPause,
-    type: 'control',
-  },
-];
 
 interface Props {
   isOpen: boolean;
@@ -199,11 +114,26 @@ export function InputConfig({
       width={640}
       destroyOnHidden
       centered
-      styles={modalStyles}
+      styles={{
+        ...modalStyles,
+        container: {
+          ...modalStyles.container,
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: 'calc(100vh - 32px)',
+        },
+        body: {
+          ...modalStyles.body,
+          flex: '1 1 auto',
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+        },
+      }}
       zIndex={MODAL_ABOVE_POPOVER_Z_INDEX}
     >
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-6 min-h-0 flex-1">
+        <div className="flex flex-col gap-1 shrink-0">
           <div className="text-text-faint text-[12px] font-semibold uppercase">
             Input Device
           </div>
@@ -228,46 +158,22 @@ export function InputConfig({
           </div>
         </div>
 
-        <div>
-          <div className="flex items-center gap-3">
-            <div
-              className="grow h-px"
-              style={{ background: 'var(--gradient-faint-fade-reverse)' }}
-            />
-            <div className="flex items-center gap-2">
-              <div className="text-text-faint uppercase font-semibold text-[13px]">
-                Mappings
-              </div>
-
-              <Tooltip
-                title="
-                    If a drum/cymbal sends a different signal depending on where you hit it, add
-                    each one so every hit counts.
-                "
-                placement="bottom"
-              >
-                <FontAwesomeIcon
-                  icon={faInfoCircle}
-                  color={themedark.color.textFaint}
-                />
-              </Tooltip>
-            </div>
-            <div
-              className="grow h-px"
-              style={{ background: 'var(--gradient-faint-fade)' }}
-            />
-          </div>
-
+        <div className="flex flex-col min-h-0 flex-1">
           <Tabs
             size="small"
             defaultActiveKey="kit"
             centered
+            className="flex flex-col min-h-0 flex-1 [&_.ant-tabs-content-holder]:min-h-0 [&_.ant-tabs-content-holder]:overflow-y-auto [&_.ant-tabs-content]:h-full"
             items={[
               {
                 key: 'kit',
                 label: 'Kit',
                 children: (
                   <div className="flex flex-col gap-2">
+                    <div className="text-text-muted text-xs italic text-center">
+                      If a pad sends different signals for different spots, add
+                      each one so every hit counts.
+                    </div>
                     {[...KIT_ELEMENTS.values()].map(renderElement)}
                   </div>
                 ),
@@ -277,7 +183,20 @@ export function InputConfig({
                 label: 'App Navigation',
                 children: (
                   <div className="flex flex-col gap-2">
-                    {CONTROL_ELEMENTS.map(renderElement)}
+                    {Object.entries(GROUPED_CONTROL_ELEMENTS).map(
+                      ([group, elements]) => {
+                        return (
+                          <>
+                            <div className="capitalize text-text-muted">
+                              {group}
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              {elements.map(renderElement)}
+                            </div>
+                          </>
+                        );
+                      },
+                    )}
                   </div>
                 ),
               },

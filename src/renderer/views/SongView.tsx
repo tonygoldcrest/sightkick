@@ -21,6 +21,7 @@ import { useEngine } from '../hooks/useEngine';
 import { useVolumeControls } from '../hooks/useVolumeControls';
 import { useMuteToggle } from '../hooks/useMuteToggle';
 import { calculateAccuracy, ticksToSeconds } from './utils';
+import { usePracticeNav } from '../hooks/usePracticeNav';
 import { useSheetMusic } from '../hooks/useSheetMusic';
 import { useInputControls } from '../hooks/useInputControls';
 import { ScoreSummary } from '../components/ScoreSummary';
@@ -33,7 +34,7 @@ import { GameMode, PracticeRange } from '../types';
 
 export function SongView() {
   const { difficulty } = useApp();
-  const { inputMapping, controlMapping } = useInput();
+  const { inputMapping, controlMapping, kitControlIds } = useInput();
   const {
     playheadStyle,
     enableColors,
@@ -212,46 +213,59 @@ export function SongView() {
     });
     window.electron.ipcRenderer.sendMessage('export-pdf', { html, fileName });
   }, [vexflowContainerRef, songData, notification]);
+  const practiceNav = usePracticeNav({
+    engine,
+    chart,
+    renderData,
+    delaySeconds,
+    isLooping,
+    practiceRange,
+    setPracticeRange,
+    setPlaybackSpeed,
+    onExit: () => navigate('/'),
+  });
 
   useInputControls(
     controlMapping,
-    {
-      confirm: () => {
-        if (isReady && !isPlaying && !isEnded && !isCounting) {
-          play();
+    gameMode === 'practice'
+      ? practiceNav.controlHandlers
+      : {
+          confirm: () => {
+            if (isReady && !isPlaying && !isEnded && !isCounting) {
+              play();
 
-          return;
-        }
+              return;
+            }
 
-        if (isEnded && isScoreModalOpen) {
-          onNextSong();
-        }
-      },
-      pause: () => {
-        if (isCounting) {
-          cancel();
+            if (isEnded && isScoreModalOpen) {
+              onNextSong();
+            }
+          },
+          pause: () => {
+            if (isCounting) {
+              cancel();
 
-          return;
-        }
+              return;
+            }
 
-        if (!isEnded && isPlaying) {
-          pause();
-        }
-      },
-      back: () => {
-        if (!isPlaying && !isEnded) {
-          cancel();
-          navigate('/');
+            if (!isEnded && isPlaying) {
+              pause();
+            }
+          },
+          back: () => {
+            if (isEnded && isScoreModalOpen) {
+              onRetry();
 
-          return;
-        }
+              return;
+            }
 
-        if (isEnded && isScoreModalOpen) {
-          onRetry();
-        }
-      },
-    },
+            cancel();
+            pause();
+            navigate('/');
+          },
+        },
     !isLoading,
+    isPlaying || isCounting ? kitControlIds : undefined,
   );
 
   useEffect(() => {
@@ -280,6 +294,12 @@ export function SongView() {
 
     setEnginePlaybackSpeed(playbackSpeed);
   }, [playbackSpeed, setEnginePlaybackSpeed, gameMode]);
+
+  useEffect(() => {
+    if (gameMode === 'practice' && isEnded) {
+      seekSeconds(delaySeconds);
+    }
+  }, [gameMode, isEnded, seekSeconds, delaySeconds]);
 
   useEffect(() => {
     if (isReady) {
@@ -416,7 +436,10 @@ export function SongView() {
               <Switch
                 size="medium"
                 checked={isLooping}
-                onChange={setIsLooping}
+                onChange={(checked) => {
+                  setIsLooping(checked);
+                  practiceNav.clearSelection();
+                }}
               />
             </div>
           </div>
@@ -456,7 +479,8 @@ export function SongView() {
               isLooping={isLooping}
               renderData={renderData}
               practiceRange={practiceRange}
-              onPracticeRangeChange={setPracticeRange}
+              focusIndex={practiceNav.focusIndex}
+              onPracticeRangeChange={practiceNav.onPracticeRangeChange}
               gameMode={gameMode}
               songData={songData}
               isDev={isDev}

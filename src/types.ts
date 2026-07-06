@@ -168,6 +168,8 @@ export interface ControlMapping {
   library?: string[];
   sort?: string[];
   pause?: string[];
+  faster?: string[];
+  slower?: string[];
 }
 
 export type InputElement = keyof InputMapping | keyof ControlMapping;

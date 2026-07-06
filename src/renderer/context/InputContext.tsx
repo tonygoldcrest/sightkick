@@ -22,12 +22,14 @@ import {
   isTypingTarget,
 } from '../input';
 import { usePersisted } from '../hooks/usePersisted';
+import { CATEGORY_CONFLICTS, CONTROL_CATEGORIES } from '../constants';
 
 interface InputContextValue {
   selectedDevice: InputDevice | null;
   setSelectedDevice: (d: InputDevice | null) => void;
   inputMapping: InputMapping;
   controlMapping: ControlMapping;
+  kitControlIds: Set<string>;
   assignControl: (element: InputElement, controlId: string) => void;
   removeControl: (element: InputElement, controlId: string) => void;
 }
@@ -53,6 +55,8 @@ const EMPTY_CONTROL_MAPPING: Record<keyof ControlMapping, string[]> = {
   library: [],
   sort: [],
   pause: [],
+  faster: [],
+  slower: [],
 };
 const CONTROL_KEYS = Object.keys(
   EMPTY_CONTROL_MAPPING,
@@ -73,6 +77,24 @@ function assignInto<K extends string>(
   return mapValues({ ...empty, ...current }, (list, key) =>
     key === element ? uniq([...list, controlId]) : without(list, controlId),
   );
+}
+
+function assignControlInto(
+  current: Partial<Record<keyof ControlMapping, string[]>> | undefined,
+  element: keyof ControlMapping,
+  controlId: string,
+): Record<keyof ControlMapping, string[]> {
+  const conflicting = CATEGORY_CONFLICTS[CONTROL_CATEGORIES.get(element)!];
+
+  return mapValues({ ...EMPTY_CONTROL_MAPPING, ...current }, (list, key) => {
+    if (key === element) {
+      return uniq([...list, controlId]);
+    }
+
+    return conflicting.includes(CONTROL_CATEGORIES.get(key)!)
+      ? without(list, controlId)
+      : list;
+  });
 }
 
 const InputContext = createContext<InputContextValue | null>(null);
@@ -103,6 +125,10 @@ export function InputProvider({ children }: { children: ReactNode }) {
     }),
     [selectedDevice, controlMappings],
   );
+  const kitControlIds = useMemo(
+    () => new Set(Object.values(inputMapping).flat()),
+    [inputMapping],
+  );
   const assignControl = useCallback(
     (element: InputElement, controlId: string) => {
       if (!selectedDevice) {
@@ -112,8 +138,7 @@ export function InputProvider({ children }: { children: ReactNode }) {
       if (isControlElement(element)) {
         setControlMappings((prev) => ({
           ...prev,
-          [selectedDevice.id]: assignInto(
-            EMPTY_CONTROL_MAPPING,
+          [selectedDevice.id]: assignControlInto(
             prev[selectedDevice.id],
             element,
             controlId,
@@ -248,6 +273,7 @@ export function InputProvider({ children }: { children: ReactNode }) {
       setSelectedDevice,
       inputMapping,
       controlMapping,
+      kitControlIds,
       assignControl,
       removeControl,
     }),
@@ -256,6 +282,7 @@ export function InputProvider({ children }: { children: ReactNode }) {
       setSelectedDevice,
       inputMapping,
       controlMapping,
+      kitControlIds,
       assignControl,
       removeControl,
     ],

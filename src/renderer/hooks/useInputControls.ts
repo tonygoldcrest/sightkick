@@ -8,10 +8,12 @@ export function useInputControls(
   mapping: ElementMapping,
   handlers: InputControlHandlers,
   enabled = true,
+  blockedControlIds?: Set<string>,
 ): void {
   const mappingRef = useRef(mapping);
   const handlersRef = useRef(handlers);
   const enabledRef = useRef(enabled);
+  const blockedRef = useRef(blockedControlIds);
 
   useEffect(() => {
     mappingRef.current = mapping;
@@ -26,8 +28,16 @@ export function useInputControls(
   }, [enabled]);
 
   useEffect(() => {
+    blockedRef.current = blockedControlIds;
+  }, [blockedControlIds]);
+
+  useEffect(() => {
     return inputBus.subscribe(({ controlId, value }) => {
       if (!enabledRef.current || value === 0) {
+        return;
+      }
+
+      if (blockedRef.current?.has(controlId)) {
         return;
       }
 

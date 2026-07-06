@@ -24,12 +24,13 @@ interface Props {
   mapping: InputMapping;
   handlers: InputControlHandlers;
   enabled?: boolean;
+  blockedControlIds?: Set<string>;
 }
 
 function setup(initial: Props) {
   return renderHook(
-    ({ mapping, handlers, enabled = true }: Props) =>
-      useInputControls(mapping, handlers, enabled),
+    ({ mapping, handlers, enabled = true, blockedControlIds }: Props) =>
+      useInputControls(mapping, handlers, enabled, blockedControlIds),
     { initialProps: initial },
   );
 }
@@ -188,6 +189,44 @@ describe('useInputControls', () => {
     expect(snare).not.toHaveBeenCalled();
 
     press('midi:40');
+    expect(snare).toHaveBeenCalledTimes(1);
+    expect(listeners.size).toBe(1);
+  });
+
+  it('skips controls that are blocked', () => {
+    const snare = vi.fn();
+    const kick = vi.fn();
+
+    setup({
+      mapping: { snare: ['midi:38'], kick: ['keyboard:Enter'] },
+      handlers: { snare, kick },
+      blockedControlIds: new Set(['midi:38']),
+    });
+
+    press('midi:38');
+    press('keyboard:Enter');
+
+    expect(snare).not.toHaveBeenCalled();
+    expect(kick).toHaveBeenCalledTimes(1);
+  });
+
+  it('reacts to the blocked set changing without resubscribing', () => {
+    const snare = vi.fn();
+    const { rerender } = setup({
+      mapping: { snare: ['midi:38'] },
+      handlers: { snare },
+    });
+
+    press('midi:38');
+    expect(snare).toHaveBeenCalledTimes(1);
+
+    rerender({
+      mapping: { snare: ['midi:38'] },
+      handlers: { snare },
+      blockedControlIds: new Set(['midi:38']),
+    });
+
+    press('midi:38');
     expect(snare).toHaveBeenCalledTimes(1);
     expect(listeners.size).toBe(1);
   });

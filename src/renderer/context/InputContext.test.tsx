@@ -233,6 +233,69 @@ describe('InputContext control mapping', () => {
   });
 });
 
+describe('InputContext control category uniqueness', () => {
+  it('lets one control bind a library element and a game element at once', () => {
+    const { result } = renderHook(() => useInput(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('sort', 'midi:40'));
+    act(() => result.current.assignControl('pause', 'midi:40'));
+
+    expect(result.current.controlMapping.sort).toEqual(['midi:40']);
+    expect(result.current.controlMapping.pause).toEqual(['midi:40']);
+  });
+
+  it('moves a control within the library group but leaves a game binding alone', () => {
+    const { result } = renderHook(() => useInput(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('pause', 'midi:41'));
+    act(() => result.current.assignControl('sort', 'midi:41'));
+    act(() => result.current.assignControl('difficulty', 'midi:41'));
+
+    expect(result.current.controlMapping.sort).toEqual([]);
+    expect(result.current.controlMapping.difficulty).toEqual(['midi:41']);
+    expect(result.current.controlMapping.pause).toEqual(['midi:41']);
+  });
+
+  it('moves a control within the game group but leaves a library binding alone', () => {
+    const { result } = renderHook(() => useInput(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('sort', 'midi:42'));
+    act(() => result.current.assignControl('pause', 'midi:42'));
+    act(() => result.current.assignControl('left', 'midi:42'));
+
+    expect(result.current.controlMapping.pause).toEqual([]);
+    expect(result.current.controlMapping.left).toEqual(['midi:42']);
+    expect(result.current.controlMapping.sort).toEqual(['midi:42']);
+  });
+
+  it('clears a shared control off both the library and game groups', () => {
+    const { result } = renderHook(() => useInput(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('sort', 'midi:43'));
+    act(() => result.current.assignControl('pause', 'midi:43'));
+    act(() => result.current.assignControl('confirm', 'midi:43'));
+
+    expect(result.current.controlMapping.sort).toEqual([]);
+    expect(result.current.controlMapping.pause).toEqual([]);
+    expect(result.current.controlMapping.confirm).toEqual(['midi:43']);
+  });
+
+  it('clears a shared binding when the control is reassigned to a game element', () => {
+    const { result } = renderHook(() => useInput(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('confirm', 'midi:44'));
+    act(() => result.current.assignControl('pause', 'midi:44'));
+
+    expect(result.current.controlMapping.confirm).toEqual([]);
+    expect(result.current.controlMapping.pause).toEqual(['midi:44']);
+  });
+});
+
 const KEYBOARD: InputDevice = {
   id: 'keyboard',
   name: 'Keyboard',

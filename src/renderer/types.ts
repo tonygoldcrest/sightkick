@@ -12,10 +12,13 @@ export const PLAYHEAD_STYLES = ['Cursor', 'Measure'] as const;
 
 export type PlayheadStyle = (typeof PLAYHEAD_STYLES)[number];
 
+export type ControlCategory = 'shared' | 'library' | 'game';
+
 export type MappingElement = {
   value: InputElement;
   color: string;
   displayName: string;
+  category?: ControlCategory;
   type: 'cymbal' | 'drum' | 'control';
   icon: IconDefinition;
 };

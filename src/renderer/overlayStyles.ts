@@ -1,10 +1,14 @@
 import type { CSSProperties } from 'react';
-import type { ModalProps } from 'antd';
 
 const border = '1px solid var(--color-border)';
 const sectionPadding: CSSProperties = { margin: 0, padding: '16px 24px' };
 
-export const modalStyles: ModalProps['styles'] = {
+type ModalStyles = Record<
+  'container' | 'header' | 'body' | 'footer' | 'mask',
+  CSSProperties
+>;
+
+export const modalStyles: ModalStyles = {
   container: { padding: 0, overflow: 'hidden', border, boxShadow: 'none' },
   header: {
     ...sectionPadding,
