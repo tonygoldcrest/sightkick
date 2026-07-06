@@ -66,6 +66,8 @@ test.describe('seeded library', () => {
 
     await song.click();
 
+    await page.getByRole('button', { name: 'perform' }).click();
+
     const sheet = page.locator('svg').first();
 
     await expect(sheet).toBeVisible();
