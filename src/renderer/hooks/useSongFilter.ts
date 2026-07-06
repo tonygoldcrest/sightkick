@@ -1,19 +1,13 @@
 import { useMemo, useState } from 'react';
 import Fuse from 'fuse.js';
 import { Difficulty } from 'scan-chart';
-import { SongData } from '../../types';
+import { Song } from '../../types';
 import { type SortState } from '../components/SortButton';
 import { useOnlineSearch } from './useOnlineSearch';
 import { usePersisted } from './usePersisted';
 import { LibraryMode } from '../types';
 
-function parseDifficulty(value: string | undefined): number {
-  const parsed = parseInt(value ?? '', 10);
-
-  return Number.isNaN(parsed) ? -1 : parsed;
-}
-
-export function useSongFilter(songList: SongData[], difficulty: Difficulty) {
+export function useSongFilter(songList: Song[], difficulty: Difficulty) {
   const [nameFilter, setNameFilter] = useState('');
   const [libraryMode, setLibraryMode] = useState<LibraryMode>('local');
   const [sort, setSort] = usePersisted<SortState>('settings.sort', {
@@ -62,8 +56,8 @@ export function useSongFilter(songList: SongData[], difficulty: Difficulty) {
         }
 
         case 'difficulty': {
-          const ad = parseDifficulty(a.diff_drums);
-          const bd = parseDifficulty(b.diff_drums);
+          const ad = a.drumDifficulty;
+          const bd = b.drumDifficulty;
 
           return sort.direction === 'asc' ? ad - bd : bd - ad;
         }

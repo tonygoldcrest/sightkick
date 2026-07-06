@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseChartFile } from 'scan-chart';
 import { ChartParser } from '../../chart-parser/parser';
 import { renderMusic } from '../../chart-parser/renderer';
-import { IpcLoadSongResponse, SongData } from '../../types';
+import { IpcLoadSongResponse, Song } from '../../types';
 import { InputEvent } from '../input/types';
 import { AppProvider } from '../context/AppContext';
 import { InputProvider } from '../context/InputContext';
@@ -162,19 +162,19 @@ const CHART = {
 };
 let ipc: IpcMock;
 
-function makeSong(extra: Partial<SongData> = {}): SongData {
+function makeSong(extra: Partial<Song> = {}): Song {
   return {
     id: 'song-1',
     name: 'Master of Puppets',
     artist: 'Metallica',
     charter: 'Charter',
     format: 'mid',
-    delay: '0',
-    five_lane_drums: 'False',
-    pro_drums: 'True',
+    delaySeconds: 0,
+    fiveLaneDrums: false,
+    proDrums: true,
     audio: [{ src: 'song.ogg', name: 'song' }],
     ...extra,
-  } as SongData;
+  } as Song;
 }
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -198,7 +198,7 @@ function getInstances() {
   return Promise.resolve(MockAudioPlayer.instances);
 }
 
-async function loadSong(song: SongData = makeSong()) {
+async function loadSong(song: Song = makeSong()) {
   const response: IpcLoadSongResponse = {
     data: song,
     fileData: new Uint8Array([1, 2, 3]) as unknown as Buffer,

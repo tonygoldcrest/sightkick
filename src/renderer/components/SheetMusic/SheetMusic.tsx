@@ -10,7 +10,7 @@ import {
 import { cn } from '../../cn';
 import { Measure, RenderData } from '../../../chart-parser/types';
 import { Engine } from '../../services/engine';
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { Reference } from './Reference';
 import { GameMode, PracticeRange } from '../../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -19,7 +19,7 @@ import { IconButton } from '../IconButton';
 
 export interface SheetMusicProps {
   engine: Engine | undefined;
-  songData: SongData;
+  songData: Song;
   renderData: RenderData[];
   vexflowContainerRef: RefObject<HTMLDivElement | null>;
   isDev: boolean;

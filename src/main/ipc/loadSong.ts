@@ -2,6 +2,7 @@ import { StorageSchema } from '../../types';
 import path from 'path';
 import fs from 'fs';
 import { appState } from '../AppState';
+import { toSong } from '../util';
 
 export function loadSong(event: Electron.IpcMainEvent, id: string) {
   try {
@@ -19,7 +20,7 @@ export function loadSong(event: Electron.IpcMainEvent, id: string) {
     );
     const fileData = fs.readFileSync(notesFile);
 
-    event.reply('load-song', { data: songData, fileData });
+    event.reply('load-song', { data: toSong(songData), fileData });
   } catch (error) {
     event.reply('load-song', {
       error: error instanceof Error ? error.message : String(error),

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { StorageSchema } from '../../types';
-import { isUnderDirectory } from '../util';
+import { isUnderDirectory, toSong } from '../util';
 import { appState } from '../AppState';
 
 export async function loadSongList(event: Electron.IpcMainEvent) {
@@ -22,10 +22,12 @@ export async function loadSongList(event: Electron.IpcMainEvent) {
       ? Object.values(allSongs)
           .filter((s) => isUnderDirectory(s.dir, lastOpenedPath))
           .filter((s) => fs.existsSync(s.dir))
-          .map((s) => ({
-            ...s,
-            updatedAt: fs.statSync(s.dir).mtime.toISOString(),
-          }))
+          .map((s) =>
+            toSong({
+              ...s,
+              updatedAt: fs.statSync(s.dir).mtime.toISOString(),
+            }),
+          )
       : [];
 
     event.reply('load-song-list', { songs, lastOpenedPath });

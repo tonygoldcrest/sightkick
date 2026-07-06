@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SongData } from '../../types';
+import { Song } from '../../types';
 import {
   getNotification,
   installIpcMock,
@@ -23,14 +23,14 @@ vi.mock('antd', async (importOriginal) => {
 let ipc: IpcMock;
 let notification: NotificationMock;
 
-function song(id: string): SongData {
+function song(id: string): Song {
   return {
     id,
     dir: `https://files/${id}.sng`,
     name: `Name ${id}`,
     artist: `Artist ${id}`,
     charter: `Charter ${id}`,
-  } as SongData;
+  } as Song;
 }
 
 beforeEach(() => {
@@ -38,7 +38,7 @@ beforeEach(() => {
   notification = resetNotification();
 });
 
-async function load(results: SongData[], onAdded = vi.fn()) {
+async function load(results: Song[], onAdded = vi.fn()) {
   const { useDownload } = await import('./useDownload');
   const view = renderHook(() => useDownload(results, onAdded));
 

@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SongData } from '../../types';
+import { Song } from '../../types';
 import {
   getNotification,
   installIpcMock,
@@ -29,8 +29,8 @@ vi.mock('../context/AppContext', () => ({
 let ipc: IpcMock;
 let notification: NotificationMock;
 
-function song(id: string, extra: Partial<SongData> = {}): SongData {
-  return { id, name: `Name ${id}`, ...extra } as SongData;
+function song(id: string, extra: Partial<Song> = {}): Song {
+  return { id, name: `Name ${id}`, ...extra } as Song;
 }
 
 beforeEach(() => {

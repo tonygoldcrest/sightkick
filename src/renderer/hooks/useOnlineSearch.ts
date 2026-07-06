@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
 import { uniqBy } from 'es-toolkit';
 import { Difficulty } from 'scan-chart';
-import { SongData } from '../../types';
+import { Song } from '../../types';
 import { ALL_DIFFICULTIES } from '../../constants';
 
-type PageResult = { songs: SongData[]; total: number | undefined };
+type PageResult = { songs: Song[]; total: number | undefined };
 
 interface NoteCount {
   instrument: string;
@@ -25,29 +25,32 @@ function drumDifficulties(
   return ALL_DIFFICULTIES.filter((d) => present.has(d));
 }
 
-function mapSongs(data: Record<string, unknown>[]): SongData[] {
+function mapSongs(data: Record<string, unknown>[]): Song[] {
   return uniqBy(
     data.map(
-      (chart) =>
-        ({
-          id: chart.md5,
-          dir: `https://files.enchor.us/${chart.md5}.sng`,
-          albumCover: chart.albumArtMd5
-            ? `https://files.enchor.us/${chart.albumArtMd5}.jpg`
-            : null,
-          name: chart.name ?? '',
-          artist: chart.artist ?? '',
-          charter: chart.charter ?? '',
-          album: chart.album ?? '',
-          year: chart.year ?? '',
-          genre: chart.genre ?? '',
-          song_length: String(chart.song_length ?? ''),
-          diff_drums: String(chart.diff_drums ?? ''),
-          diff_drums_real: String(chart.diff_drums_real ?? ''),
-          drumDifficulties: drumDifficulties(
-            chart.notesData as { noteCounts?: NoteCount[] } | undefined,
-          ),
-        }) as SongData,
+      (chart): Song => ({
+        id: String(chart.md5),
+        dir: `https://files.enchor.us/${chart.md5}.sng`,
+        albumCover: chart.albumArtMd5
+          ? `https://files.enchor.us/${chart.albumArtMd5}.jpg`
+          : undefined,
+        name: String(chart.name ?? ''),
+        artist: String(chart.artist ?? ''),
+        charter: String(chart.charter ?? ''),
+        album: String(chart.album ?? ''),
+        year: String(chart.year ?? ''),
+        genre: String(chart.genre ?? ''),
+        fiveLaneDrums: false,
+        proDrums: false,
+        delaySeconds: 0,
+        drumDifficulty:
+          typeof chart.diff_drums === 'number' ? chart.diff_drums : 0,
+        format: 'mid',
+        audio: [],
+        drumDifficulties: drumDifficulties(
+          chart.notesData as { noteCounts?: NoteCount[] } | undefined,
+        ),
+      }),
     ),
     (song) => song.id,
   );
@@ -91,7 +94,7 @@ export function useOnlineSearch(
   difficulty: Difficulty,
 ) {
   const { notification } = App.useApp();
-  const [results, setResults] = useState<SongData[]>([]);
+  const [results, setResults] = useState<Song[]>([]);
   const [total, setTotal] = useState<number | undefined>();
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);

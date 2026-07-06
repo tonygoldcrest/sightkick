@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { SongSplitProgress } from './SongSplitProgress';
 
 const songData = {
   name: 'Master of Puppets',
-} as SongData;
+} as Song;
 const meta: Meta<typeof SongSplitProgress> = {
   title: 'Song List/Song Split Progress',
   component: SongSplitProgress,

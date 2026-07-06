@@ -1,6 +1,6 @@
 import { Button, Modal } from 'antd';
 import { useMemo } from 'react';
-import { ScoreData, SongData } from '../../../types';
+import { ScoreData, Song } from '../../../types';
 import { Difficulty } from 'scan-chart';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRepeat } from '@fortawesome/free-solid-svg-icons';
@@ -12,7 +12,7 @@ interface Props {
   isOpen: boolean;
   onRetry: () => void;
   onNextSong: () => void;
-  songData: SongData | null;
+  songData: Song | undefined;
   difficulty: Difficulty;
   scoreData?: ScoreData;
 }

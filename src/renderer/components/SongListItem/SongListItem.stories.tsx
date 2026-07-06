@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { SongListItem } from './SongListItem';
 
 const songData = {
@@ -8,13 +8,13 @@ const songData = {
   name: 'Master of Puppets',
   artist: 'Metallica',
   charter: 'DrumCharter',
-  diff_drums: 5,
+  drumDifficulty: 5,
   liked: false,
-  audio: ['song.ogg'],
+  audio: [{ src: 'song.ogg', name: 'song' }],
   scoreData: {
     expert: { hitNotes: 92, totalNotes: 100, falseHits: 3 },
   },
-} as unknown as SongData;
+} as unknown as Song;
 const meta: Meta<typeof SongListItem> = {
   title: 'Song List/Song List Item',
   component: SongListItem,

@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { ScoreSummary } from './ScoreSummary';
 
 const songData = {
   name: 'Master of Puppets',
   artist: 'Metallica',
-} as SongData;
+} as Song;
 const meta: Meta<typeof ScoreSummary> = {
   title: 'Song View/Score Summary',
   component: ScoreSummary,

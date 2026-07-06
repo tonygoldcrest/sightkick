@@ -60,8 +60,8 @@ export function SongView() {
   const { chart, parsedMidi, renderData, vexflowContainerRef } = useSheetMusic({
     fileData,
     format,
-    fiveLaneDrums: songData?.five_lane_drums === 'True',
-    proDrums: songData?.pro_drums === 'True',
+    fiveLaneDrums: songData?.fiveLaneDrums ?? false,
+    proDrums: songData?.proDrums ?? false,
     songId: songData?.id,
     difficulty,
     showBarNumbers: isDev && showBarNumbers,
@@ -72,7 +72,7 @@ export function SongView() {
     () => renderData.map((rd) => rd.measure),
     [renderData],
   );
-  const delaySeconds = (Number(songData?.delay) || 0) / 1000;
+  const delaySeconds = songData?.delaySeconds ?? 0;
   const minDurationSeconds = useMemo(() => {
     const measureList = parsedMidi?.measures;
     const lastMeasure = chart && measureList?.[measureList.length - 1];

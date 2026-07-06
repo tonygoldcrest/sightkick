@@ -1,13 +1,13 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { installIpcMock, IpcMock } from '../../hooks/test-support';
 import { SplittingQueue } from './SplittingQueue';
 
 const songList = [
   { id: 'a', name: 'Song A' },
   { id: 'b', name: 'Song B' },
-] as SongData[];
+] as Song[];
 
 describe('SplittingQueue', () => {
   let ipc: IpcMock;

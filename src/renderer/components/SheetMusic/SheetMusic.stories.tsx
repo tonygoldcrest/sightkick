@@ -5,14 +5,14 @@ import { buildParsedChartFromDsl } from './drumDsl';
 import { ChartParser } from '../../../chart-parser/parser';
 import { renderMusic } from '../../../chart-parser/renderer';
 import { RenderData } from '../../../chart-parser/types';
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { SHEET_MUSIC_COLORS } from '../../constants';
 
 const STORY_SONG = {
   name: 'Parser',
   artist: '',
   charter: '',
-} as unknown as SongData;
+} as unknown as Song;
 const DSL = `
 # quarters
 res=480 ts=4/4

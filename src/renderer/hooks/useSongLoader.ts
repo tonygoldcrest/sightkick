@@ -6,21 +6,21 @@ import {
   IpcLoadSongResponse,
   IpcResult,
   isIpcError,
-  SongData,
+  Song,
 } from '../../types';
 import { TrackConfig } from '../services/audio-player/types';
 
 interface SongLoaderResult {
   fileData: Buffer | undefined;
   format: 'mid' | 'chart';
-  songData: SongData | null;
+  songData: Song | undefined;
   trackData: TrackConfig[];
 }
 
 export function useSongLoader(id: string | undefined): SongLoaderResult {
   const [fileData, setFileData] = useState<Buffer>();
   const [format, setFormat] = useState<'mid' | 'chart'>('mid');
-  const [songData, setSongData] = useState<SongData | null>(null);
+  const [songData, setSongData] = useState<Song>();
   const [trackData, setTrackData] = useState<TrackConfig[]>([]);
   const { notification } = App.useApp();
   const navigate = useNavigate();

@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { StorageSchema } from '../../types';
 import { appState } from '../AppState';
-import { assetUrlToFilePath, buildSongFromDir } from '../util';
+import { assetUrlToFilePath, buildSongFromDir, toSong } from '../util';
 import { getBinaryPath } from '../stemTools';
 
 class CancelledError extends Error {}
@@ -124,7 +124,7 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
     }
 
     appState.store.set(`songs.${id}`, updatedSong);
-    event.reply('split-song', { id, success: true, song: updatedSong });
+    event.reply('split-song', { id, success: true, song: toSong(updatedSong) });
   } catch (err) {
     if (err instanceof CancelledError) {
       event.reply('split-song', { id, success: false, cancelled: true });

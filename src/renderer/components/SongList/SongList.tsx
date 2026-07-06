@@ -1,13 +1,13 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCallback, useEffect, useRef } from 'react';
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { cn } from '../../cn';
 import { SongListItem } from '../SongListItem';
 import { Difficulty } from 'scan-chart';
 import { LibraryMode } from '../../types';
 
 export interface SongListProps {
-  songList: SongData[];
+  songList: Song[];
   className?: string;
   onLikeChange: (id: string, liked: boolean) => void;
   onDownload: (id: string) => void;

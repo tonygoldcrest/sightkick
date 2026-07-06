@@ -1,12 +1,12 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SongData } from '../../types';
+import { Song } from '../../types';
 import { Difficulty } from 'scan-chart';
 import { installLocalStorage } from './test-support';
 
 const onlineState = vi.hoisted(() => ({
   current: {
-    results: [] as SongData[],
+    results: [] as Song[],
     total: undefined as number | undefined,
     loading: false,
     loadMore: () => {},
@@ -28,16 +28,15 @@ vi.mock('./useOnlineSearch', () => ({
 
 import { useSongFilter } from './useSongFilter';
 
-function song(id: string, extra: Partial<SongData> = {}): SongData {
+function song(id: string, extra: Partial<Song> = {}): Song {
   return {
     id,
     name: id,
     artist: '',
     charter: '',
-    diff_drums: '',
     drumDifficulties: ['easy', 'medium', 'hard', 'expert'],
     ...extra,
-  } as SongData;
+  } as Song;
 }
 
 beforeEach(() => {
@@ -51,7 +50,7 @@ beforeEach(() => {
   };
 });
 
-function ids(list: SongData[]) {
+function ids(list: Song[]) {
   return list.map((s) => s.id);
 }
 
@@ -113,26 +112,26 @@ describe('useSongFilter', () => {
     ]);
   });
 
-  it('sorts by difficulty, treating empty strings as unranked', () => {
+  it('sorts by drum difficulty rating', () => {
     const list = [
-      song('hard', { diff_drums: '5' }),
-      song('blank', { diff_drums: '' }),
-      song('easy', { diff_drums: '0' }),
+      song('hard', { drumDifficulty: 5 }),
+      song('unrated', { drumDifficulty: 0 }),
+      song('medium', { drumDifficulty: 3 }),
     ];
     const { result } = renderHook(() => useSongFilter(list, 'expert'));
 
     act(() => result.current.setSort({ key: 'difficulty', direction: 'asc' }));
     expect(ids(result.current.filteredSongList)).toEqual([
-      'blank',
-      'easy',
+      'unrated',
+      'medium',
       'hard',
     ]);
 
     act(() => result.current.setSort({ key: 'difficulty', direction: 'desc' }));
     expect(ids(result.current.filteredSongList)).toEqual([
       'hard',
-      'easy',
-      'blank',
+      'medium',
+      'unrated',
     ]);
   });
 

@@ -1,10 +1,10 @@
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { SongSplitProgress } from '../SongSplitProgress';
 
 interface Props {
   splittingIds: Set<string>;
   splitProgress: Map<string, number>;
-  songList: SongData[];
+  songList: Song[];
 }
 
 export function SplittingQueue({

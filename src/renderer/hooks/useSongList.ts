@@ -6,12 +6,12 @@ import {
   IpcScanProgressResponse,
   IpcSplitSongResponse,
   isIpcError,
-  SongData,
+  Song,
 } from '../../types';
 import { useApp } from '../context/AppContext';
 
 export function useSongList() {
-  const [songList, setSongList] = useState<SongData[]>([]);
+  const [songList, setSongList] = useState<Song[]>([]);
   const [splittingIds, setSplittingIds] = useState<Set<string>>(new Set());
   const [splitProgress, setSplitProgress] = useState<Map<string, number>>(
     new Map(),
@@ -69,7 +69,7 @@ export function useSongList() {
     });
   }, [setCurrentPath, notification]);
   useEffect(() => {
-    return window.electron.ipcRenderer.on<IpcResult<SongData>>(
+    return window.electron.ipcRenderer.on<IpcResult<Song>>(
       'update-song',
       (payload) => {
         if (isIpcError(payload)) {
@@ -163,7 +163,7 @@ export function useSongList() {
     },
     [songList],
   );
-  const addSong = useCallback((song: SongData) => {
+  const addSong = useCallback((song: Song) => {
     setSongList((prev) => [...prev, song]);
   }, []);
 

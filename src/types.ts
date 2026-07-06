@@ -56,7 +56,29 @@ export interface SongData {
   format: 'mid' | 'chart';
   audio: AudioData[];
   drumDifficulties?: Difficulty[];
-  scoreData?: Record<Difficulty, ScoreData>;
+  scoreData?: Partial<Record<Difficulty, ScoreData>>;
+}
+
+export interface Song {
+  id: string;
+  dir: string;
+  albumCover?: string;
+  name: string;
+  artist: string;
+  album: string;
+  charter: string;
+  genre: string;
+  year: string;
+  fiveLaneDrums: boolean;
+  proDrums: boolean;
+  delaySeconds: number;
+  drumDifficulty: number;
+  format: 'mid' | 'chart';
+  audio: AudioData[];
+  drumDifficulties?: Difficulty[];
+  liked?: boolean;
+  updatedAt?: string;
+  scoreData?: Partial<Record<Difficulty, ScoreData>>;
 }
 
 export interface ScoreData {
@@ -124,7 +146,7 @@ export interface IpcSplitSongResponse {
   id: string;
   progress?: number;
   success?: boolean;
-  song?: SongData;
+  song?: Song;
   error?: string;
   cancelled?: boolean;
 }
@@ -192,12 +214,12 @@ export function isIpcError<T extends object>(
 }
 
 export interface IpcLoadSongResponse {
-  data: SongData;
+  data: Song;
   fileData: Buffer;
 }
 
 export interface IpcLoadSongListResponse {
-  songs: SongData[];
+  songs: Song[];
   lastOpenedPath: string | null;
   downloadedEncoreMd5s: string[];
 }

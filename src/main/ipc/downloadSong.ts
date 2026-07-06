@@ -2,7 +2,7 @@ import { SngStream } from '@eliwhite/parse-sng';
 import path from 'path';
 import fs from 'fs';
 import { appState } from '../AppState';
-import { buildSongFromDir } from '../util';
+import { buildSongFromDir, toSong } from '../util';
 
 type Props = {
   url: string;
@@ -112,10 +112,10 @@ export async function downloadSong(
     event.reply('download-song', {
       success: true,
       md5,
-      song: {
+      song: toSong({
         ...songData,
         updatedAt: fs.statSync(outputDir).mtime.toISOString(),
-      },
+      }),
     });
   } catch (err) {
     event.reply('download-song', {

@@ -1,15 +1,15 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { SongSplitProgress } from './SongSplitProgress';
 
 const song = {
   id: 's1',
   name: 'Enter Sandman',
   albumCover: 'sightkick:///cover.png',
-} as SongData;
+} as Song;
 
-function renderProgress(overrides: Partial<SongData> = {}, progress = 40) {
+function renderProgress(overrides: Partial<Song> = {}, progress = 40) {
   const onCancel = vi.fn();
 
   render(

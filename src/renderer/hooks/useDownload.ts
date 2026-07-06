@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
-import { SongData } from '../../types';
+import { Song } from '../../types';
 
 interface DownloadReply {
   success: boolean;
   md5: string;
-  song?: SongData;
+  song?: Song;
   error?: string;
 }
 
 export function useDownload(
-  onlineResults: SongData[],
-  onSongAdded: (song: SongData) => void,
+  onlineResults: Song[],
+  onSongAdded: (song: Song) => void,
 ) {
   const { notification } = App.useApp();
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());

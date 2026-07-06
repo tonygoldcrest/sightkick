@@ -2,24 +2,31 @@ import { ReactNode } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ScoreData, SongData } from '../../../types';
+import { ScoreData, Song } from '../../../types';
 import themedark from '../../theme';
 import { installIpcMock } from '../../hooks/test-support';
 import { SongListItem } from './SongListItem';
 
-function makeSong(extra: Partial<SongData> = {}): SongData {
+function makeSong(extra: Partial<Song> = {}): Song {
   return {
     id: 'song-1',
     dir: '/songs/song-1',
-    albumCover: null,
+    albumCover: undefined,
     name: 'Master of Puppets',
     artist: 'Metallica',
+    album: '',
     charter: 'Charter',
-    diff_drums: '4',
-    drumDifficulties: ['easy', 'medium', 'hard', 'expert'],
+    genre: '',
+    year: '',
+    fiveLaneDrums: false,
+    proDrums: false,
+    delaySeconds: 0,
+    drumDifficulty: 4,
+    format: 'mid',
     audio: [{ src: 'song.ogg', name: 'song' }],
+    drumDifficulties: ['easy', 'medium', 'hard', 'expert'],
     ...extra,
-  } as SongData;
+  };
 }
 
 function score(hitNotes: number, totalNotes = 100, falseHits = 0): ScoreData {
@@ -62,7 +69,7 @@ describe('SongListItem high score display', () => {
     renderItem({
       difficulty: 'expert',
       songData: makeSong({
-        scoreData: { expert: score(70) } as SongData['scoreData'],
+        scoreData: { expert: score(70) },
       }),
     });
 
@@ -83,7 +90,7 @@ describe('SongListItem high score display', () => {
       scoreData: {
         hard: score(100),
         expert: score(45),
-      } as SongData['scoreData'],
+      },
     });
     const { rerender } = renderItem({ difficulty: 'expert', songData });
 
@@ -110,7 +117,7 @@ describe('SongListItem high score display', () => {
     renderItem({
       difficulty: 'expert',
       songData: makeSong({
-        scoreData: { expert: score(100) } as SongData['scoreData'],
+        scoreData: { expert: score(100) },
       }),
     });
 

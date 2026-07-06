@@ -1,7 +1,12 @@
 import { IpcMainEvent, dialog } from 'electron';
 import { SongData, StorageSchema } from '../../types';
 import { appState } from '../AppState';
-import { buildSongFromDir, chartGlobPattern, isUnderDirectory } from '../util';
+import {
+  buildSongFromDir,
+  chartGlobPattern,
+  isUnderDirectory,
+  toSong,
+} from '../util';
 import { glob } from 'glob';
 import fs from 'fs';
 import path from 'path';
@@ -98,10 +103,12 @@ async function runRescan(event: IpcMainEvent, newDir: boolean) {
   appState.store.set('songs', { ...otherSongs, ...rescannedSongs });
 
   event.reply('rescan-songs', {
-    songs: Object.values(rescannedSongs).map((s) => ({
-      ...s,
-      updatedAt: fs.statSync(s.dir).mtime.toISOString(),
-    })),
+    songs: Object.values(rescannedSongs).map((s) =>
+      toSong({
+        ...s,
+        updatedAt: fs.statSync(s.dir).mtime.toISOString(),
+      }),
+    ),
     lastOpenedPath: selectedPath,
   });
 }

@@ -7,7 +7,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import appIcon from '../../../../assets/icon.png';
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { cn } from '../../cn';
 import { Button, Tooltip } from 'antd';
 import { useMemo } from 'react';
@@ -20,7 +20,7 @@ import { DifficultyRing } from './DifficultyRing';
 import { LibraryMode } from '../../types';
 
 export interface SongListItemProps {
-  songData: SongData;
+  songData: Song;
   onLikeChange: (id: string, liked: boolean) => void;
   onDownload: (id: string) => void;
   onClick: () => void;
@@ -42,7 +42,7 @@ export function SongListItem({
     name,
     artist,
     charter,
-    diff_drums,
+    drumDifficulty,
     liked,
     audio,
     scoreData,
@@ -202,7 +202,7 @@ export function SongListItem({
             </div>
           )}
 
-          {diff_drums && <DifficultyRing value={Number(diff_drums)} />}
+          <DifficultyRing value={drumDifficulty} />
 
           {indicator}
         </div>

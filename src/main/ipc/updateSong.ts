@@ -1,5 +1,6 @@
 import { IpcUpdateSongPayload, StorageSchema } from '../../types';
 import { appState } from '../AppState';
+import { toSong } from '../util';
 
 export function updateSong(
   event: Electron.IpcMainEvent,
@@ -21,7 +22,7 @@ export function updateSong(
     };
 
     appState.store.set(`songs.${id}`, next);
-    event.reply('update-song', next);
+    event.reply('update-song', toSong(next));
   } catch (error) {
     event.reply('update-song', {
       error: error instanceof Error ? error.message : String(error),

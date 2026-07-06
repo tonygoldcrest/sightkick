@@ -9,7 +9,9 @@ import {
   isUnderDirectory,
   resolveHtmlPath,
   toAssetUrl,
+  toSong,
 } from './util';
+import { SongData } from '../types';
 
 const CHART_WITH_HARD_AND_EXPERT = `[Song]
 {
@@ -167,6 +169,79 @@ describe('buildSongFromDir metadata', () => {
     writeSong(CHART_WITH_HARD_AND_EXPERT);
 
     expect(buildSongFromDir(dir)?.albumCover).toBeNull();
+  });
+});
+
+describe('toSong', () => {
+  function stored(extra: Partial<SongData> = {}): SongData {
+    return {
+      id: 'id-1',
+      dir: '/songs/song-1',
+      albumCover: null,
+      name: 'Master of Puppets',
+      artist: 'Metallica',
+      album: 'Master of Puppets',
+      charter: 'Charter',
+      genre: 'Metal',
+      year: '1986',
+      delay: '480',
+      five_lane_drums: 'True',
+      pro_drums: 'True',
+      diff_drums: '5',
+      format: 'chart',
+      audio: [{ src: 'song.ogg', name: 'song' }],
+      ...extra,
+    } as SongData;
+  }
+
+  it('converts delay milliseconds into seconds', () => {
+    expect(toSong(stored({ delay: '480' })).delaySeconds).toBe(0.48);
+    expect(toSong(stored({ delay: '-1000' })).delaySeconds).toBe(-1);
+  });
+
+  it('defaults delay to zero when missing or unparseable', () => {
+    expect(toSong(stored({ delay: undefined as never })).delaySeconds).toBe(0);
+    expect(toSong(stored({ delay: 'nope' })).delaySeconds).toBe(0);
+  });
+
+  it('turns the Clone Hero True/False strings into booleans', () => {
+    const song = toSong(
+      stored({ five_lane_drums: 'True', pro_drums: 'False' }),
+    );
+
+    expect(song.fiveLaneDrums).toBe(true);
+    expect(song.proDrums).toBe(false);
+  });
+
+  it('parses the drum difficulty rating and clamps blanks and negatives to zero', () => {
+    expect(toSong(stored({ diff_drums: '5' })).drumDifficulty).toBe(5);
+    expect(toSong(stored({ diff_drums: '0' })).drumDifficulty).toBe(0);
+    expect(toSong(stored({ diff_drums: '' })).drumDifficulty).toBe(0);
+    expect(toSong(stored({ diff_drums: '-1' })).drumDifficulty).toBe(0);
+  });
+
+  it('normalizes a missing album cover to undefined', () => {
+    expect(toSong(stored({ albumCover: null })).albumCover).toBeUndefined();
+    expect(toSong(stored({ albumCover: 'cover.png' })).albumCover).toBe(
+      'cover.png',
+    );
+  });
+
+  it('passes persisted fields through untouched', () => {
+    const scoreData = { expert: { totalNotes: 10, falseHits: 0, hitNotes: 8 } };
+    const song = toSong(
+      stored({
+        liked: true,
+        updatedAt: '2024-01-01T00:00:00.000Z',
+        drumDifficulties: ['hard', 'expert'],
+        scoreData,
+      }),
+    );
+
+    expect(song.liked).toBe(true);
+    expect(song.updatedAt).toBe('2024-01-01T00:00:00.000Z');
+    expect(song.drumDifficulties).toEqual(['hard', 'expert']);
+    expect(song.scoreData).toEqual(scoreData);
   });
 });
 

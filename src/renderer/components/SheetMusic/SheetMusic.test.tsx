@@ -2,7 +2,7 @@ import { createRef } from 'react';
 import { fireEvent, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Measure, RenderData } from '../../../chart-parser/types';
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import { Engine } from '../../services/engine';
 import { SheetMusic } from './SheetMusic';
 
@@ -32,7 +32,7 @@ const songData = {
   name: 'Master of Puppets',
   artist: 'Metallica',
   charter: 'Charter',
-} as SongData;
+} as Song;
 
 function renderSheet(
   overrides: Partial<Parameters<typeof SheetMusic>[0]> = {},

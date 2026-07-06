@@ -1,10 +1,10 @@
-import { SongData } from '../../../types';
+import { Song } from '../../../types';
 import appIcon from '../../../../assets/icon.png';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { IconButton } from '../IconButton';
 
 type Props = {
-  songData: SongData;
+  songData: Song;
   progress: number;
   onCancel: () => void;
 };

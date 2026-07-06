@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InputEvent } from '../../input/types';
 import { InputProvider } from '../../context/InputContext';
 import { installIpcMock, installLocalStorage } from '../../hooks/test-support';
-import { ScoreData, SongData } from '../../../types';
+import { ScoreData, Song } from '../../../types';
 import { ScoreSummary } from './ScoreSummary';
 
 vi.mock('../../input', () => ({
@@ -24,7 +24,7 @@ vi.mock('../../input', () => ({
 const songData = {
   name: 'Master of Puppets',
   artist: 'Metallica',
-} as SongData;
+} as Song;
 
 function wrapper({ children }: { children: ReactNode }) {
   return (
