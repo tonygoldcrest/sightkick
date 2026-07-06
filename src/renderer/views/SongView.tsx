@@ -497,7 +497,7 @@ export function SongView() {
 
                   return;
                 } else if (
-                  (event.altKey || (gameMode === 'practice' && !isLooping)) &&
+                  (isDev || (gameMode === 'practice' && !isLooping)) &&
                   chart
                 ) {
                   playFromTick(measure.startTick);

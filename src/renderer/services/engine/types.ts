@@ -1,4 +1,3 @@
-import { StaveNote } from 'vexflow';
 import { Measure, ParsedChart, RenderData } from '../../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../../types';
 import { GameMode, PlayheadStyle } from '../../types';
@@ -27,11 +26,11 @@ export interface EngineSettings {
   playheadStyle: PlayheadStyle;
 }
 
-export type JudgeHitHandler = (note: StaveNote, prefixes: string[]) => void;
+export type JudgeHitHandler = (pos: NotePos, prefixes: string[]) => void;
 
 export interface JudgeContext {
   chart: ParsedChart | undefined;
-  renderData: RenderData[];
+  measures: Measure[];
   mapping: InputMapping;
 }
 

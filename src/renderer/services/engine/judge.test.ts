@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { StaveNote } from 'vexflow';
-import {
-  ParsedChart,
-  RenderData,
-  RenderedNote,
-} from '../../../chart-parser/types';
+import { Measure, Note, ParsedChart } from '../../../chart-parser/types';
 import { InputEvent } from '../../input/types';
 import { Judge } from './judge';
 import { JudgeContext, JudgeHitHandler } from './types';
@@ -14,29 +9,28 @@ const CHART = {
   tempos: [{ tick: 0, beatsPerMinute: 120, msTime: 0 }],
 } as unknown as ParsedChart;
 
-function fakeNote(keys: string[], isRest = false): StaveNote {
-  return {
-    isRest: () => isRest,
-    getKeys: () => keys,
-  } as unknown as StaveNote;
-}
-
-function rendered(
+function note(
+  keys: string[],
   tick: number,
-  note: StaveNote,
-  marks: { accents?: string[]; ghosts?: string[] } = {},
-): RenderedNote {
-  return { tick, note, ...marks } as unknown as RenderedNote;
+  marks: { isRest?: boolean; accents?: string[]; ghosts?: string[] } = {},
+): Note {
+  return {
+    notes: keys,
+    tick,
+    isRest: marks.isRest ?? false,
+    accents: marks.accents,
+    ghosts: marks.ghosts,
+  } as unknown as Note;
 }
 
 function measure(
-  notes: RenderedNote[],
-  bounds?: { startTick: number; endTick: number },
-): RenderData {
-  return {
-    renderedNotes: notes,
-    ...(bounds ? { measure: bounds } : {}),
-  } as unknown as RenderData;
+  notes: Note[],
+  bounds: { startTick: number; endTick: number } = {
+    startTick: 0,
+    endTick: Number.MAX_SAFE_INTEGER,
+  },
+): Measure {
+  return { notes, ...bounds } as unknown as Measure;
 }
 
 function hit(controlId: string, value = 100): InputEvent {
@@ -52,7 +46,7 @@ function setup(
 
   engine.setContext({
     chart: CHART,
-    renderData: [],
+    measures: [],
     mapping: { snare: ['midi:38'] },
     ...overrides,
   });
@@ -64,10 +58,9 @@ function setup(
 }
 
 describe('Judge', () => {
-  it('registers a correct hit and notifies onHit with the matched note', () => {
-    const note = fakeNote(['c/5']);
+  it('registers a correct hit and notifies onHit with the matched position', () => {
     const { engine, onHit } = setup(
-      { renderData: [measure([rendered(480, note)])] },
+      { measures: [measure([note(['c/5'], 480)])] },
       { tick: 480 },
     );
 
@@ -75,14 +68,13 @@ describe('Judge', () => {
 
     expect(engine.isHit(480, 'c/5')).toBe(true);
     expect(engine.falseHitCount).toBe(0);
-    expect(onHit).toHaveBeenCalledWith(note, ['c/5']);
+    expect(onHit).toHaveBeenCalledWith({ measureIdx: 0, noteIdx: 0 }, ['c/5']);
   });
 
   it('registers a hit using the remapped control after a remap', () => {
-    const note = fakeNote(['c/5']);
-    const renderData = [measure([rendered(480, note)])];
+    const measures = [measure([note(['c/5'], 480)])];
     const { engine } = setup(
-      { renderData, mapping: { snare: ['midi:38'] } },
+      { measures, mapping: { snare: ['midi:38'] } },
       { tick: 480 },
     );
 
@@ -91,7 +83,7 @@ describe('Judge', () => {
 
     engine.setContext({
       chart: CHART,
-      renderData,
+      measures,
       mapping: { snare: ['midi:40'] },
     });
     engine.handleInput(hit('midi:40'));
@@ -103,9 +95,8 @@ describe('Judge', () => {
   });
 
   it('ignores input with zero value', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note)])] },
+      { measures: [measure([note(['c/5'], 480)])] },
       { tick: 480 },
     );
 
@@ -116,9 +107,8 @@ describe('Judge', () => {
   });
 
   it('ignores unmapped controls without counting them as misses', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note)])] },
+      { measures: [measure([note(['c/5'], 480)])] },
       { tick: 480 },
     );
 
@@ -129,9 +119,8 @@ describe('Judge', () => {
   });
 
   it('counts a miss when no note is near the playhead', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(5000, note)])] },
+      { measures: [measure([note(['c/5'], 5000)])] },
       { tick: 480 },
     );
 
@@ -142,10 +131,9 @@ describe('Judge', () => {
   });
 
   it('counts a miss when the nearby note belongs to a different drum', () => {
-    const kick = fakeNote(['f/4']);
     const { engine } = setup(
       {
-        renderData: [measure([rendered(480, kick)])],
+        measures: [measure([note(['f/4'], 480)])],
         mapping: { snare: ['midi:38'], kick: ['midi:36'] },
       },
       { tick: 480 },
@@ -158,9 +146,8 @@ describe('Judge', () => {
   });
 
   it('counts a repeat hit on the same note as a miss', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note)])] },
+      { measures: [measure([note(['c/5'], 480)])] },
       { tick: 480 },
     );
 
@@ -174,11 +161,8 @@ describe('Judge', () => {
   it('counts every simultaneous wrong hit at the same tick', () => {
     const { engine } = setup(
       {
-        renderData: [
-          measure([rendered(5000, fakeNote(['c/5']))], {
-            startTick: 0,
-            endTick: 10000,
-          }),
+        measures: [
+          measure([note(['c/5'], 5000)], { startTick: 0, endTick: 10000 }),
         ],
         mapping: {
           crash: ['midi:49'],
@@ -199,11 +183,8 @@ describe('Judge', () => {
   it('never wipes false hits on backward setTick, regardless of magnitude', () => {
     const { engine } = setup(
       {
-        renderData: [
-          measure([rendered(5000, fakeNote(['c/5']))], {
-            startTick: 0,
-            endTick: 10000,
-          }),
+        measures: [
+          measure([note(['c/5'], 5000)], { startTick: 0, endTick: 10000 }),
         ],
         mapping: { crash: ['midi:49'] },
       },
@@ -223,11 +204,8 @@ describe('Judge', () => {
   it('drops only false hits ahead of a genuine rewind, keeping earlier ones', () => {
     const { engine } = setup(
       {
-        renderData: [
-          measure([rendered(5000, fakeNote(['c/5']))], {
-            startTick: 0,
-            endTick: 10000,
-          }),
+        measures: [
+          measure([note(['c/5'], 5000)], { startTick: 0, endTick: 10000 }),
         ],
         mapping: { crash: ['midi:49'] },
       },
@@ -245,9 +223,8 @@ describe('Judge', () => {
   });
 
   it('keeps a recorded hit through backward setTick, regardless of magnitude', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note)])] },
+      { measures: [measure([note(['c/5'], 480)])] },
       { tick: 480 },
     );
 
@@ -261,8 +238,7 @@ describe('Judge', () => {
   });
 
   it('does nothing while the current tick is undefined', () => {
-    const note = fakeNote(['c/5']);
-    const { engine } = setup({ renderData: [measure([rendered(480, note)])] });
+    const { engine } = setup({ measures: [measure([note(['c/5'], 480)])] });
 
     engine.setTick(undefined);
     engine.handleInput(hit('midi:38'));
@@ -272,9 +248,8 @@ describe('Judge', () => {
   });
 
   it('clears hits ahead of the playhead when rewinding', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note)])] },
+      { measures: [measure([note(['c/5'], 480)])] },
       { tick: 480 },
     );
 
@@ -288,18 +263,15 @@ describe('Judge', () => {
   });
 
   it('preserves hit state when the same chart re-renders', () => {
-    const note = fakeNote(['c/5']);
-    const renderData = [measure([rendered(480, note)])];
-    const { engine } = setup({ renderData }, { tick: 480 });
+    const measures = [measure([note(['c/5'], 480)])];
+    const { engine } = setup({ measures }, { tick: 480 });
 
     engine.handleInput(hit('midi:38'));
     expect(engine.hitCount).toBe(1);
 
-    const next = fakeNote(['c/5']);
-
     engine.setContext({
       chart: CHART,
-      renderData: [measure([rendered(480, next)])],
+      measures: [measure([note(['c/5'], 480)])],
       mapping: { snare: ['midi:38'] },
     });
 
@@ -308,9 +280,8 @@ describe('Judge', () => {
   });
 
   it('clears all hit state when the chart changes', () => {
-    const note = fakeNote(['c/5']);
-    const renderData = [measure([rendered(480, note)])];
-    const { engine } = setup({ renderData }, { tick: 480 });
+    const measures = [measure([note(['c/5'], 480)])];
+    const { engine } = setup({ measures }, { tick: 480 });
 
     engine.handleInput(hit('midi:38'));
     expect(engine.hitCount).toBe(1);
@@ -322,7 +293,7 @@ describe('Judge', () => {
 
     engine.setContext({
       chart: nextChart,
-      renderData,
+      measures,
       mapping: { snare: ['midi:38'] },
     });
 
@@ -330,10 +301,8 @@ describe('Judge', () => {
   });
 
   it('picks the closest matching note among several', () => {
-    const near = fakeNote(['c/5']);
-    const far = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(530, far), rendered(490, near)])] },
+      { measures: [measure([note(['c/5'], 530), note(['c/5'], 490)])] },
       { tick: 480 },
     );
 
@@ -344,9 +313,15 @@ describe('Judge', () => {
   });
 
   it('skips rest notes when matching', () => {
-    const rest = fakeNote(['c/5'], true);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, rest)])] },
+      {
+        measures: [
+          measure([note(['c/5'], 480, { isRest: true }), note(['f/4'], 9000)], {
+            startTick: 0,
+            endTick: 10000,
+          }),
+        ],
+      },
       { tick: 480 },
     );
 
@@ -357,9 +332,8 @@ describe('Judge', () => {
   });
 
   it('ignores hits when not enabled', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note)])] },
+      { measures: [measure([note(['c/5'], 480)])] },
       { tick: 480, enabled: false },
     );
 
@@ -370,9 +344,8 @@ describe('Judge', () => {
   });
 
   it('resumes registering hits after enabled transitions to true', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note)])] },
+      { measures: [measure([note(['c/5'], 480)])] },
       { tick: 480, enabled: false },
     );
 
@@ -387,9 +360,8 @@ describe('Judge', () => {
   });
 
   it('rejects a soft hit on an accented note as a miss', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note, { accents: ['c/5'] })])] },
+      { measures: [measure([note(['c/5'], 480, { accents: ['c/5'] })])] },
       { tick: 480 },
     );
 
@@ -400,9 +372,8 @@ describe('Judge', () => {
   });
 
   it('accepts a hard hit on an accented note', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note, { accents: ['c/5'] })])] },
+      { measures: [measure([note(['c/5'], 480, { accents: ['c/5'] })])] },
       { tick: 480 },
     );
 
@@ -413,9 +384,8 @@ describe('Judge', () => {
   });
 
   it('rejects a loud hit on a ghost note as a miss', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note, { ghosts: ['c/5'] })])] },
+      { measures: [measure([note(['c/5'], 480, { ghosts: ['c/5'] })])] },
       { tick: 480 },
     );
 
@@ -426,9 +396,8 @@ describe('Judge', () => {
   });
 
   it('accepts a soft hit on a ghost note', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
-      { renderData: [measure([rendered(480, note, { ghosts: ['c/5'] })])] },
+      { measures: [measure([note(['c/5'], 480, { ghosts: ['c/5'] })])] },
       { tick: 480 },
     );
 
@@ -439,11 +408,13 @@ describe('Judge', () => {
   });
 
   it('does not count a false hit inside a fully silent measure', () => {
-    const rest = fakeNote(['c/5'], true);
     const { engine } = setup(
       {
-        renderData: [
-          measure([rendered(480, rest)], { startTick: 0, endTick: 1920 }),
+        measures: [
+          measure([note(['c/5'], 480, { isRest: true })], {
+            startTick: 0,
+            endTick: 1920,
+          }),
         ],
       },
       { tick: 480 },
@@ -456,11 +427,10 @@ describe('Judge', () => {
   });
 
   it('still counts a false hit in a measure that contains notes', () => {
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
       {
-        renderData: [
-          measure([rendered(5000, note)], { startTick: 0, endTick: 10000 }),
+        measures: [
+          measure([note(['c/5'], 5000)], { startTick: 0, endTick: 10000 }),
         ],
       },
       { tick: 480 },
@@ -472,13 +442,14 @@ describe('Judge', () => {
   });
 
   it('counts a false hit played alongside a correct early hit into a silent measure', () => {
-    const rest = fakeNote(['c/5'], true);
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
       {
-        renderData: [
-          measure([rendered(1000, rest)], { startTick: 0, endTick: 1920 }),
-          measure([rendered(1950, note)], { startTick: 1920, endTick: 3840 }),
+        measures: [
+          measure([note(['c/5'], 1000, { isRest: true })], {
+            startTick: 0,
+            endTick: 1920,
+          }),
+          measure([note(['c/5'], 1950)], { startTick: 1920, endTick: 3840 }),
         ],
         mapping: { snare: ['midi:38'], tom1: ['midi:48'] },
       },
@@ -493,13 +464,14 @@ describe('Judge', () => {
   });
 
   it('registers an early hit on a note in the next measure from a silent measure', () => {
-    const rest = fakeNote(['c/5'], true);
-    const note = fakeNote(['c/5']);
     const { engine } = setup(
       {
-        renderData: [
-          measure([rendered(1000, rest)], { startTick: 0, endTick: 1920 }),
-          measure([rendered(1950, note)], { startTick: 1920, endTick: 3840 }),
+        measures: [
+          measure([note(['c/5'], 1000, { isRest: true })], {
+            startTick: 0,
+            endTick: 1920,
+          }),
+          measure([note(['c/5'], 1950)], { startTick: 1920, endTick: 3840 }),
         ],
       },
       { tick: 1900 },
@@ -512,13 +484,12 @@ describe('Judge', () => {
   });
 
   it('stops notifying a removed hit listener', () => {
-    const note = fakeNote(['c/5']);
     const onHit = vi.fn<JudgeHitHandler>();
     const engine = new Judge();
 
     engine.setContext({
       chart: CHART,
-      renderData: [measure([rendered(480, note)])],
+      measures: [measure([note(['c/5'], 480)])],
       mapping: { snare: ['midi:38'] },
     });
     engine.setEnabled(true);

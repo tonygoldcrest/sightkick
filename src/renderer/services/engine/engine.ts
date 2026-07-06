@@ -1,4 +1,4 @@
-import { ParsedChart, RenderData } from '../../../chart-parser/types';
+import { Measure, ParsedChart } from '../../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../../types';
 import { secondsToTicks } from '../../views/utils';
 import { TimeStore } from '../time-store';
@@ -25,7 +25,7 @@ export class Engine {
   );
   private onEndedCb: (score: ScoreData) => void;
   private chart: ParsedChart | undefined;
-  private renderData: RenderData[] = [];
+  private measures: Measure[] = [];
   private delaySeconds = 0;
   private mapping: InputMapping = {};
   private timeUnsub: () => void;
@@ -60,9 +60,7 @@ export class Engine {
     this.inputUnsub = options.subscribeInput((event) =>
       this.judge.handleInput(event),
     );
-    this.judge.onHit((note, prefixes) =>
-      this.renderer.paintHit(note, prefixes),
-    );
+    this.judge.onHit((pos, prefixes) => this.renderer.paintHit(pos, prefixes));
   }
 
   get timeStore(): TimeStore {
@@ -76,7 +74,7 @@ export class Engine {
 
   setContext(context: EngineContext): void {
     this.chart = context.chart;
-    this.renderData = context.renderData;
+    this.measures = context.measures;
     this.delaySeconds = context.delaySeconds;
     this.renderer.setContext({
       chart: context.chart,
@@ -91,7 +89,7 @@ export class Engine {
     });
     this.judge.setContext({
       chart: context.chart,
-      renderData: context.renderData,
+      measures: context.measures,
       mapping: this.mapping,
     });
 
@@ -111,7 +109,7 @@ export class Engine {
     this.mapping = mapping;
     this.judge.setContext({
       chart: this.chart,
-      renderData: this.renderData,
+      measures: this.measures,
       mapping,
     });
   }
@@ -201,8 +199,8 @@ export class Engine {
   }
 
   private totalNotes(): number {
-    return this.renderData
-      .flatMap((rd) => rd.measure.notes)
+    return this.measures
+      .flatMap((measure) => measure.notes)
       .filter((note) => !note.isRest)
       .reduce((sum, note) => sum + note.notes.length, 0);
   }

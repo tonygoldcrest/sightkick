@@ -1,8 +1,8 @@
-import { ParsedChart, RenderData } from '../../../chart-parser/types';
+import { Measure, Note, ParsedChart } from '../../../chart-parser/types';
 import { InputMapping } from '../../../types';
 import { InputEvent } from '../../input/types';
 import { secondsToTicks, ticksToSeconds } from '../../views/utils';
-import { JudgeContext, JudgeHitHandler } from './types';
+import { JudgeContext, JudgeHitHandler, NotePos } from './types';
 import {
   ACCENT_VALUE_THRESHOLD,
   ELEMENT_TO_KEYS,
@@ -13,7 +13,7 @@ import { keyPrefix } from './helpers';
 
 export class Judge {
   private chart: ParsedChart | undefined;
-  private renderData: RenderData[] = [];
+  private measures: Measure[] = [];
   private mapping: InputMapping = {};
   private enabled = false;
   private currentTick: number | undefined;
@@ -26,7 +26,7 @@ export class Judge {
 
     this.chart = context.chart;
     this.mapping = context.mapping;
-    this.renderData = context.renderData;
+    this.measures = context.measures;
 
     if (chartChanged) {
       this.reset();
@@ -78,24 +78,21 @@ export class Judge {
   }
 
   private isInSilentMeasure(tick: number): boolean {
-    const containing = this.renderData.find(
-      ({ measure }) =>
-        measure !== undefined &&
-        tick >= measure.startTick &&
-        tick < measure.endTick,
+    const containing = this.measures.find(
+      (measure) => tick >= measure.startTick && tick < measure.endTick,
     );
 
     if (!containing) {
       return false;
     }
 
-    return containing.renderedNotes.every((rn) => rn.note.isRest());
+    return containing.notes.every((note) => note.isRest);
   }
 
   private hasScoreableNoteNear(tick: number, toleranceTicks: number): boolean {
-    for (const { renderedNotes } of this.renderData) {
-      for (const rn of renderedNotes) {
-        if (!rn.note.isRest() && Math.abs(rn.tick - tick) <= toleranceTicks) {
+    for (const measure of this.measures) {
+      for (const note of measure.notes) {
+        if (!note.isRest && Math.abs(note.tick - tick) <= toleranceTicks) {
           return true;
         }
       }
@@ -134,32 +131,34 @@ export class Judge {
         chart.tempos,
       ) - tick;
     let bestDist = Infinity;
-    let bestNote: RenderData['renderedNotes'][number] | undefined;
+    let bestNote: Note | undefined;
+    let bestPos: NotePos | undefined;
 
-    for (const { renderedNotes } of this.renderData) {
-      for (const rn of renderedNotes) {
-        if (rn.note.isRest()) {
-          continue;
+    this.measures.forEach((measure, measureIdx) => {
+      measure.notes.forEach((note, noteIdx) => {
+        if (note.isRest) {
+          return;
         }
 
-        const dist = Math.abs(rn.tick - tick);
+        const dist = Math.abs(note.tick - tick);
 
         if (dist > toleranceTicks || dist >= bestDist) {
-          continue;
+          return;
         }
 
-        const hasMatchingKey = rn.note
-          .getKeys()
-          .some((k) => expectedPrefixes.has(keyPrefix(k)));
+        const hasMatchingKey = note.notes.some((k) =>
+          expectedPrefixes.has(keyPrefix(k)),
+        );
 
         if (hasMatchingKey) {
           bestDist = dist;
-          bestNote = rn;
+          bestNote = note;
+          bestPos = { measureIdx, noteIdx };
         }
-      }
-    }
+      });
+    });
 
-    if (!bestNote) {
+    if (!bestNote || !bestPos) {
       if (
         !this.isInSilentMeasure(tick) ||
         this.hasScoreableNoteNear(tick, toleranceTicks)
@@ -171,6 +170,7 @@ export class Judge {
     }
 
     const hit = bestNote;
+    const pos = bestPos;
     const accentPrefixes = new Set((hit.accents ?? []).map(keyPrefix));
     const ghostPrefixes = new Set((hit.ghosts ?? []).map(keyPrefix));
     const passesVelocity = (prefix: string) => {
@@ -184,8 +184,7 @@ export class Judge {
 
       return true;
     };
-    const newPrefixes = hit.note
-      .getKeys()
+    const newPrefixes = hit.notes
       .map(keyPrefix)
       .filter(
         (p) =>
@@ -206,6 +205,6 @@ export class Judge {
     }
 
     newPrefixes.forEach((p) => this.hitKeys.add(`${hit.tick}:${p}`));
-    this.hitListeners.forEach((listener) => listener(hit.note, newPrefixes));
+    this.hitListeners.forEach((listener) => listener(pos, newPrefixes));
   }
 }

@@ -55,7 +55,7 @@ export function SheetMusic({
     () => renderData.map(() => createRef<HTMLDivElement>()),
     [renderData],
   );
-  const isSelectable = isDev || gameMode === 'practice';
+  const isSelectable = gameMode === 'practice';
   const dragAnchorRef = useRef<number | undefined>(undefined);
   const handleMeasureMouseDown = useCallback(
     (index: number) => {
@@ -148,7 +148,10 @@ export function SheetMusic({
           onMouseDown={() => handleMeasureMouseDown(index)}
           onMouseEnter={() => handleMeasureMouseEnter(index)}
           onClick={(event) => {
-            if (isDev || (gameMode === 'practice' && !isLooping)) {
+            if (
+              (gameMode !== 'practice' && isDev) ||
+              (gameMode === 'practice' && !isLooping)
+            ) {
               onSelectMeasure(measure, event);
             }
           }}

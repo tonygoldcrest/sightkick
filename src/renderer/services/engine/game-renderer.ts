@@ -1,4 +1,3 @@
-import { StaveNote } from 'vexflow';
 import { ParsedChart, RenderData } from '../../../chart-parser/types';
 import { PlayheadStyle } from '../../types';
 import { getCursorX, getNoteSvg } from '../../views/utils';
@@ -75,7 +74,14 @@ export class GameRenderer {
     this.updateCursor(chartTime);
   }
 
-  paintHit(note: StaveNote, prefixes: string[]): void {
+  paintHit(pos: NotePos, prefixes: string[]): void {
+    const note =
+      this.renderData[pos.measureIdx]?.renderedNotes[pos.noteIdx]?.note;
+
+    if (!note) {
+      return;
+    }
+
     note.getKeys().forEach((key, i) => {
       if (!prefixes.includes(keyPrefix(key))) {
         return;

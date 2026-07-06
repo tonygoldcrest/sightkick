@@ -178,9 +178,9 @@ describe('GameRenderer', () => {
 
   it('flashes a hit class on the struck note head only for the matching prefix', () => {
     const note = staveNote(['c/5', 'g/5']);
-    const view = setup([]);
+    const view = setup([measureData(0, 1920, [rendered(0, note)])]);
 
-    view.paintHit(note, ['c/5']);
+    view.paintHit({ measureIdx: 0, noteIdx: 0 }, ['c/5']);
 
     expect(hasClass(note, 'vf-note-pop', 0)).toBe(true);
     expect(hasClass(note, 'vf-note-pop', 1)).toBe(false);
@@ -273,9 +273,9 @@ describe('GameRenderer', () => {
 
   it('paints a struck note head only for the matching prefix', () => {
     const note = staveNote(['c/5', 'g/5']);
-    const view = setup([], {});
+    const view = setup([measureData(0, 1920, [rendered(0, note)])], {});
 
-    view.paintHit(note, ['c/5']);
+    view.paintHit({ measureIdx: 0, noteIdx: 0 }, ['c/5']);
 
     expect(hasClass(note, 'vf-note-hit', 0)).toBe(true);
     expect(uncolored(note, 1)).toBe(true);
