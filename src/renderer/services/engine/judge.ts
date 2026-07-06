@@ -1,7 +1,7 @@
 import { Measure, Note, ParsedChart } from '../../../chart-parser/types';
 import { InputMapping } from '../../../types';
 import { InputEvent } from '../../input/types';
-import { secondsToTicks, ticksToSeconds } from '../../views/utils';
+import { secondsToTicks, ticksToSeconds } from '../../../chart-parser/timing';
 import { JudgeContext, JudgeHitHandler, NotePos } from './types';
 import {
   ACCENT_VALUE_THRESHOLD,

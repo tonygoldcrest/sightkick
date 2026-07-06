@@ -1,6 +1,6 @@
 import { Measure, ParsedChart } from '../../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../../types';
-import { secondsToTicks } from '../../views/utils';
+import { secondsToTicks } from '../../../chart-parser/timing';
 import { TimeStore } from '../time-store';
 import { AudioPlayer } from '../audio-player/types';
 import { playerFactoryForMode } from '../audio-player/factories';

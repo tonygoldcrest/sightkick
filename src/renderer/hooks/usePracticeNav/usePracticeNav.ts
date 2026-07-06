@@ -3,7 +3,7 @@ import { clamp } from 'es-toolkit';
 import { ParsedChart, RenderData } from '../../../chart-parser/types';
 import { PracticeRange } from '../../types';
 import { Engine } from '../../services/engine';
-import { secondsToTicks } from '../../views/utils';
+import { secondsToTicks } from '../../../chart-parser/timing';
 import { InputControlHandlers } from '../useInputControls';
 import {
   PracticeNavDirection,

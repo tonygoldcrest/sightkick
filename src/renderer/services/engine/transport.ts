@@ -6,7 +6,7 @@ import {
   TrackConfig,
 } from '../audio-player';
 import { TimeStore } from '../time-store';
-import { secondsToTicks, ticksToSeconds } from '../../views/utils';
+import { secondsToTicks, ticksToSeconds } from '../../../chart-parser/timing';
 import { ClickTrack, DEFAULT_CLICK_TONE } from '../click-track';
 import { Beat, getBeatGrid, getCountInInfo } from '../beat-grid';
 import {

@@ -1,6 +1,6 @@
 import { ParsedChart, RenderData } from '../../../chart-parser/types';
 import { PlayheadStyle } from '../../types';
-import { getCursorX, getNoteSvg } from '../../views/utils';
+import { getCursorX, getNoteSvg } from './cursor-geometry';
 import {
   ActiveNote,
   GameRendererContext,

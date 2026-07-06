@@ -4,7 +4,7 @@ import { ScoreData, SongData } from '../../../types';
 import { Difficulty } from 'scan-chart';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRepeat } from '@fortawesome/free-solid-svg-icons';
-import { calculateAccuracy, getStarRating } from '../../views/utils';
+import { calculateAccuracy, getStarRating } from '../../scoring';
 import { MODAL_ABOVE_POPOVER_Z_INDEX, modalStyles } from '../../overlayStyles';
 import { Stars } from '../Stars';
 

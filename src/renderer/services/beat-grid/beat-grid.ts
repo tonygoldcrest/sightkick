@@ -1,5 +1,5 @@
 import { Measure } from '../../../chart-parser/types';
-import { ticksToSeconds } from '../../views/utils';
+import { ticksToSeconds } from '../../../chart-parser/timing';
 import { Beat, CountInInfo, TimingChart } from './types';
 import { DEFAULT_COUNT_IN } from './constants';
 

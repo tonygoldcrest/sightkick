@@ -15,7 +15,7 @@ import { SongMenu } from '../SongMenu';
 import { Stars } from '../Stars';
 import { IconButton } from '../IconButton';
 import { Difficulty } from 'scan-chart';
-import { calculateAccuracy, getStarRating } from '../../views/utils';
+import { calculateAccuracy, getStarRating } from '../../scoring';
 import { DifficultyRing } from './DifficultyRing';
 import { LibraryMode } from '../../types';
 
