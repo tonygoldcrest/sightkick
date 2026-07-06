@@ -1,6 +1,17 @@
-import { ChannelStretcher } from './channel-stretcher';
+import {
+  buildUnits,
+  scatterBlocks,
+  StretchUnit,
+  VoiceGroup,
+} from './build-units';
 
-type InitMessage = { type: 'init'; channels: Float32Array[]; speed: number };
+type InitMessage = {
+  type: 'init';
+  channels: Float32Array[];
+  speed: number;
+  groups: VoiceGroup[];
+  sampleRate: number;
+};
 
 type SetSpeedMessage = { type: 'setSpeed'; speed: number };
 
@@ -15,7 +26,10 @@ type RequestMessage =
   | ProduceMessage;
 
 let channels: Float32Array[] = [];
-let stretchers: ChannelStretcher[] = [];
+let groups: VoiceGroup[] = [];
+let sampleRate = 44100;
+let onsetsByGroup: (number[] | undefined)[] = [];
+let units: StretchUnit[] = [];
 
 self.onmessage = (event: MessageEvent<RequestMessage>) => {
   const message = event.data;
@@ -23,28 +37,37 @@ self.onmessage = (event: MessageEvent<RequestMessage>) => {
   switch (message.type) {
     case 'init':
       channels = message.channels;
-      stretchers = channels.map(
-        (channel) => new ChannelStretcher(channel, message.speed),
+      groups = message.groups;
+      sampleRate = message.sampleRate;
+      onsetsByGroup = new Array(groups.length).fill(undefined);
+      units = buildUnits(
+        channels,
+        groups,
+        message.speed,
+        sampleRate,
+        onsetsByGroup,
       );
 
       break;
 
     case 'setSpeed':
-      stretchers = channels.map(
-        (channel) => new ChannelStretcher(channel, message.speed),
+      units = buildUnits(
+        channels,
+        groups,
+        message.speed,
+        sampleRate,
+        onsetsByGroup,
       );
 
       break;
 
     case 'seek':
-      stretchers.forEach((stretcher) => stretcher.seek(message.outputSample));
+      units.forEach((unit) => unit.seek(message.outputSample));
 
       break;
 
     case 'produce': {
-      const blocks = stretchers.map((stretcher) =>
-        stretcher.produce(message.frames),
-      );
+      const blocks = scatterBlocks(units, channels.length, message.frames);
 
       (self as unknown as Worker).postMessage(
         { id: message.id, blocks },

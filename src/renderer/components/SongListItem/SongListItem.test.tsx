@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScoreData, SongData } from '../../../types';
 import themedark from '../../theme';
@@ -37,9 +37,10 @@ function renderItem(props: Partial<Parameters<typeof SongListItem>[0]> = {}) {
       onLikeChange={vi.fn()}
       onDownload={vi.fn()}
       onSplit={vi.fn()}
+      onClick={vi.fn()}
       difficulty="expert"
       splitting={false}
-      mode="local"
+      libraryMode="local"
       downloadingDisabled={false}
       {...props}
     />,
@@ -94,9 +95,10 @@ describe('SongListItem high score display', () => {
         onLikeChange={vi.fn()}
         onDownload={vi.fn()}
         onSplit={vi.fn()}
+        onClick={vi.fn()}
         difficulty="hard"
         splitting={false}
-        mode="local"
+        libraryMode="local"
         downloadingDisabled={false}
       />,
     );
@@ -140,7 +142,7 @@ describe('SongListItem indicators', () => {
     const onLikeChange = vi.fn();
 
     renderItem({
-      mode: 'local',
+      libraryMode: 'local',
       onLikeChange,
       songData: makeSong({ liked: false }),
     });
@@ -151,59 +153,42 @@ describe('SongListItem indicators', () => {
   });
 
   it('shows an enabled download button in online mode', () => {
-    renderItem({ mode: 'online', downloadingDisabled: false });
+    renderItem({ libraryMode: 'online', downloadingDisabled: false });
 
     expect(screen.getByTestId('download-button')).toBeEnabled();
   });
 
   it('disables the download button until a library folder is selected', () => {
-    renderItem({ mode: 'online', downloadingDisabled: true });
+    renderItem({ libraryMode: 'online', downloadingDisabled: true });
 
     expect(screen.getByTestId('download-button')).toBeDisabled();
   });
 
   it('shows a downloaded indicator instead of a button once downloaded', () => {
-    renderItem({ mode: 'online', downloaded: true });
+    renderItem({ libraryMode: 'online', downloaded: true });
 
     expect(screen.getByTestId('downloaded-indicator')).toBeInTheDocument();
     expect(screen.queryByTestId('download-button')).not.toBeInTheDocument();
   });
 
-  it('navigates to the song on click in local mode', () => {
-    renderItem({ mode: 'local' });
+  it('calls onClick when the item is clicked in local mode', () => {
+    const onClick = vi.fn();
 
-    const item = screen.getByTestId('song-item-song-1');
+    renderItem({ libraryMode: 'local', onClick });
 
-    expect(within(item).getByText('Master of Puppets')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('song-item-song-1'));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it('does not navigate when clicking a song menu item', () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <SongListItem
-                songData={makeSong()}
-                onLikeChange={vi.fn()}
-                onDownload={vi.fn()}
-                onSplit={vi.fn()}
-                difficulty="expert"
-                splitting={false}
-                mode="local"
-                downloadingDisabled={false}
-              />
-            }
-          />
-          <Route path="/:id" element={<div>song view</div>} />
-        </Routes>
-      </MemoryRouter>,
-    );
+  it('does not call onClick when clicking a song menu item', () => {
+    const onClick = vi.fn();
+
+    renderItem({ libraryMode: 'local', onClick });
 
     fireEvent.click(screen.getByTestId('song-menu-trigger'));
     fireEvent.click(screen.getByText('Open song directory'));
 
-    expect(screen.queryByText('song view')).not.toBeInTheDocument();
+    expect(onClick).not.toHaveBeenCalled();
   });
 });

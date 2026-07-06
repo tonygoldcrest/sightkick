@@ -2,10 +2,7 @@ import { ParsedChart, RenderData } from '../../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../../types';
 import { secondsToTicks } from '../../views/utils';
 import { TimeStore } from '../time-store';
-import {
-  AudioPlayer,
-  SpeedControllableAudioPlayer,
-} from '../audio-player/types';
+import { AudioPlayer } from '../audio-player/types';
 import { playerFactoryForMode } from '../audio-player/factories';
 import { Transport } from './transport';
 import { Judge } from './judge';
@@ -15,6 +12,7 @@ import {
   EngineOptions,
   GameRendererRefs,
   EngineSettings,
+  LoopRegion,
   PlaybackSnapshot,
 } from './types';
 
@@ -38,7 +36,7 @@ export class Engine {
     this.onEndedCb = options.onEnded;
 
     const createPlayer = playerFactoryForMode(
-      options.mode === 'practice' ? 'speed' : 'default',
+      options.gameMode === 'practice' ? 'speed' : 'default',
     );
 
     this.transport = new Transport({
@@ -127,6 +125,10 @@ export class Engine {
     this.transport.setDev(isDev);
   }
 
+  setLoopRegion(region: LoopRegion | undefined): void {
+    this.transport.setLoopRegion(region);
+  }
+
   play(): void {
     this.transport.play();
   }
@@ -156,11 +158,7 @@ export class Engine {
   }
 
   setPlaybackSpeed(speed: number): void {
-    const { player } = this;
-
-    if (player && 'setPlaybackSpeed' in player) {
-      (player as SpeedControllableAudioPlayer).setPlaybackSpeed(speed);
-    }
+    this.transport.setPlaybackSpeed(speed);
   }
 
   renderFrame(): void {

@@ -20,6 +20,7 @@ import { useDownload } from '../hooks/useDownload';
 import { useSongFilter } from '../hooks/useSongFilter';
 import { useInputControls } from '../hooks/useInputControls';
 import { ALL_DIFFICULTIES } from '../../constants';
+import { useGameModeSelector } from '../hooks/useGameModeSelector';
 
 export function SongListView() {
   const { currentPath, difficulty, setDifficulty } = useApp();
@@ -43,8 +44,8 @@ export function SongListView() {
   const {
     nameFilter,
     setNameFilter,
-    mode,
-    setMode,
+    libraryMode,
+    setLibraryMode,
     sort,
     setSort,
     filteredSongList,
@@ -62,15 +63,20 @@ export function SongListView() {
   );
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [focusedSortIndex, setFocusedSortIndex] = useState(0);
-  const sortAvailable = mode !== 'online';
+  const sortAvailable = libraryMode !== 'online';
   const [prevNameFilter, setPrevNameFilter] = useState(nameFilter);
-  const [prevMode, setPrevMode] = useState(mode);
+  const [prevLibraryMode, setPrevLibraryMode] = useState(libraryMode);
   const [prevSort, setPrevSort] = useState(sort);
   const [prevSortAvailable, setPrevSortAvailable] = useState(sortAvailable);
+  const gameModeSelector = useGameModeSelector();
 
-  if (nameFilter !== prevNameFilter || mode !== prevMode || sort !== prevSort) {
+  if (
+    nameFilter !== prevNameFilter ||
+    libraryMode !== prevLibraryMode ||
+    sort !== prevSort
+  ) {
     setPrevNameFilter(nameFilter);
-    setPrevMode(mode);
+    setPrevLibraryMode(libraryMode);
     setPrevSort(sort);
     setFocusedSongIndex(undefined);
   }
@@ -128,6 +134,17 @@ export function SongListView() {
     setFocusedSortIndex(currentIndex === -1 ? 0 : currentIndex);
     setIsSortOpen(true);
   };
+  const play = async (id: string) => {
+    if (gameModeSelector.isOpen) {
+      return;
+    }
+
+    const gameMode = await gameModeSelector.open();
+
+    if (gameMode) {
+      navigate(`/${id}?gameMode=${gameMode}`);
+    }
+  };
 
   useInputControls(
     controlMapping,
@@ -176,17 +193,18 @@ export function SongListView() {
               return;
             }
 
-            if (mode === 'local') {
-              navigate(`/${song.id}`);
+            if (libraryMode === 'local') {
+              play(song.id);
             } else if (
-              mode === 'online' &&
+              libraryMode === 'online' &&
               !songList.find(({ id }) => song.id === id)
             ) {
               handleDownload(song.id);
             }
           },
           sort: openSort,
-          library: () => setMode(mode === 'online' ? 'local' : 'online'),
+          library: () =>
+            setLibraryMode(libraryMode === 'online' ? 'local' : 'online'),
           difficulty: () => {
             const difficultyIndex = ALL_DIFFICULTIES.indexOf(difficulty);
 
@@ -195,11 +213,13 @@ export function SongListView() {
             );
           },
         },
-    !songOpen,
+    !songOpen && !gameModeSelector.isOpen,
   );
 
   return (
     <StemToolsProvider value={stemTools}>
+      {gameModeSelector.element}
+
       <div className="h-screen flex flex-col bg-bg">
         <div
           className="border-b border-divider p-4 z-10 flex flex-col gap-4"
@@ -212,12 +232,12 @@ export function SongListView() {
               difficulty={difficulty}
               setDifficulty={setDifficulty}
               filteredSongsCount={
-                mode === 'online' && onlineTotal !== undefined
+                libraryMode === 'online' && onlineTotal !== undefined
                   ? onlineTotal
                   : filteredSongList.length
               }
-              mode={mode}
-              onChangeMode={setMode}
+              libraryMode={libraryMode}
+              onChangeLibraryMode={setLibraryMode}
             />
             <SortButton
               sort={sort}
@@ -239,16 +259,21 @@ export function SongListView() {
         <div className="relative grow overflow-hidden w-full flex">
           <div className="relative w-full max-w-250 grow overflow-hidden mx-auto bg-bg flex flex-col">
             {filteredSongList.length > 0 ||
-            (mode === 'online' && onlineLoading) ? (
+            (libraryMode === 'online' && onlineLoading) ? (
               <SongList
                 songList={filteredSongList}
                 scrollKey={nameFilter}
                 downloadingIds={downloadingIds}
                 downloadingDisabled={currentPath === null}
-                mode={mode}
+                libraryMode={libraryMode}
                 difficulty={difficulty}
+                onClickSong={(id) => {
+                  if (libraryMode === 'local') {
+                    play(id);
+                  }
+                }}
                 downloadedIds={
-                  mode === 'online'
+                  libraryMode === 'online'
                     ? new Set(songList.map((s) => s.id))
                     : undefined
                 }
@@ -256,19 +281,19 @@ export function SongListView() {
                 onSplit={handleSplit}
                 onDownload={handleDownload}
                 onLikeChange={handleLikeChange}
-                onLoadMore={mode === 'online' ? loadMore : undefined}
+                onLoadMore={libraryMode === 'online' ? loadMore : undefined}
                 focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
               />
             ) : (
               <EmptySongState
-                mode={mode}
+                libraryMode={libraryMode}
                 hasFolder={currentPath !== null}
                 hasSongs={songList.length > 0}
               />
             )}
           </div>
 
-          {mode === 'online' && onlineLoading && (
+          {libraryMode === 'online' && onlineLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none z-10">
               <Spin size="large" />
             </div>

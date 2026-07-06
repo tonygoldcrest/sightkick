@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Button, Collapse, Divider, InputNumber, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilePdf, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
-import { PLAYHEAD_STYLES } from '../../types';
+import { GameMode, PLAYHEAD_STYLES } from '../../types';
 import { useSongViewSettings } from '../../context/SongViewSettingsContext';
 import { SettingLabel } from './SettingLabel';
 import { Tooltip } from '../Tooltip';
@@ -12,6 +12,7 @@ import themedark from '../../theme';
 interface Props {
   onExportPdf?: () => void;
   isExporting?: boolean;
+  gameMode?: GameMode;
   volumeSliders?: ReactNode[];
   clickControls?: ReactNode;
   masterVolumeControl?: ReactNode;
@@ -21,6 +22,7 @@ export function SongViewSettings({
   onExportPdf,
   isExporting,
   volumeSliders,
+  gameMode,
   clickControls,
   masterVolumeControl,
 }: Props) {
@@ -68,27 +70,31 @@ export function SongViewSettings({
 
       <Divider />
 
-      <div className="flex flex-col gap-3">
-        <SettingLabel
-          label="Playhead style"
-          tooltip="How you follow along: a cursor that glides through the notes, or just the current bar lit up."
-        />
+      {gameMode !== 'practice' && (
+        <>
+          <div className="flex flex-col gap-3">
+            <SettingLabel
+              label="Playhead style"
+              tooltip="How you follow along: a cursor that glides through the notes, or just the current bar lit up."
+            />
 
-        <div className="flex gap-2">
-          {PLAYHEAD_STYLES.map((s) => (
-            <Button
-              key={s}
-              className="grow"
-              type={playheadStyle === s ? 'primary' : 'default'}
-              onClick={() => setPlayheadStyle(s)}
-            >
-              {s}
-            </Button>
-          ))}
-        </div>
-      </div>
+            <div className="flex gap-2">
+              {PLAYHEAD_STYLES.map((s) => (
+                <Button
+                  key={s}
+                  className="grow"
+                  type={playheadStyle === s ? 'primary' : 'default'}
+                  onClick={() => setPlayheadStyle(s)}
+                >
+                  {s}
+                </Button>
+              ))}
+            </div>
+          </div>
 
-      <Divider />
+          <Divider />
+        </>
+      )}
 
       <Collapse
         size="small"

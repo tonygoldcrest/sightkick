@@ -5,24 +5,23 @@ import { cn } from '../../cn';
 import { Tooltip } from '../Tooltip';
 import { ALL_DIFFICULTIES } from '../../../constants';
 import { Difficulty } from 'scan-chart';
-
-export type Mode = 'local' | 'online';
+import { LibraryMode } from '../../types';
 
 export interface SongFilterProps {
   onChangeFilter: (value: string) => void;
   nameFilter: string;
   className?: string;
   filteredSongsCount: number;
-  mode: Mode;
-  onChangeMode: (value: Mode) => void;
+  libraryMode: LibraryMode;
+  onChangeLibraryMode: (value: LibraryMode) => void;
   difficulty: Difficulty;
   setDifficulty: (newDifficulty: Difficulty) => void;
 }
 
 export function SongFilter({
-  onChangeFilter: onChange,
-  onChangeMode,
-  mode = 'local',
+  onChangeFilter,
+  onChangeLibraryMode,
+  libraryMode = 'local',
   nameFilter,
   className,
   difficulty,
@@ -51,7 +50,7 @@ export function SongFilter({
         placeholder="Enter song name"
         value={nameFilter}
         onChange={(event) => {
-          onChange(event.target.value);
+          onChangeFilter(event.target.value);
         }}
         suffix={
           <div className="flex gap-1 items-center">
@@ -102,10 +101,10 @@ export function SongFilter({
                 >
                   <Button
                     className="grow"
-                    type={mode === option.value ? 'primary' : 'default'}
+                    type={libraryMode === option.value ? 'primary' : 'default'}
                     icon={option.icon}
                     data-testid={`mode-${option.value}`}
-                    onClick={() => onChangeMode(option.value)}
+                    onClick={() => onChangeLibraryMode(option.value)}
                   ></Button>
                 </Tooltip>
               ))}

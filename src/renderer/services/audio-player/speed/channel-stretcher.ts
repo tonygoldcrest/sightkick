@@ -28,10 +28,12 @@ export class ChannelStretcher {
   private readonly accumulatorNorm = new Float32Array(FFT_SIZE);
   private frameIndex = 0;
   private firstFrame = true;
+  private onsetIndex = 0;
 
   constructor(
     private readonly input: Float32Array,
     speed: number,
+    private readonly onsets: number[] = [],
   ) {
     this.analysisHop = this.synthesisHop * speed;
 
@@ -47,6 +49,17 @@ export class ChannelStretcher {
     this.accumulatorNorm.fill(0);
     this.previousPhase.fill(0);
     this.synthesisPhase.fill(0);
+
+    const sourcePosition = this.frameIndex * this.analysisHop;
+
+    this.onsetIndex = 0;
+
+    while (
+      this.onsetIndex < this.onsets.length &&
+      this.onsets[this.onsetIndex] < sourcePosition
+    ) {
+      this.onsetIndex += 1;
+    }
   }
 
   produce(frames: number): Float32Array {
@@ -75,6 +88,16 @@ export class ChannelStretcher {
   private processFrame() {
     const { size, half, bins } = this;
     const start = Math.round(this.frameIndex * this.analysisHop);
+    const windowCenter = start + half;
+    let onsetFrame = false;
+
+    while (
+      this.onsetIndex < this.onsets.length &&
+      this.onsets[this.onsetIndex] <= windowCenter
+    ) {
+      onsetFrame = true;
+      this.onsetIndex += 1;
+    }
 
     this.frameIndex += 1;
 
@@ -97,7 +120,7 @@ export class ChannelStretcher {
       this.analysisPhase[k] = Math.atan2(imag, real);
     }
 
-    if (this.firstFrame) {
+    if (this.firstFrame || onsetFrame) {
       this.synthesisPhase.set(this.analysisPhase);
       this.firstFrame = false;
     } else {

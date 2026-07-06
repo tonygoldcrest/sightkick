@@ -197,7 +197,7 @@ describe('useSongFilter', () => {
       useSongFilter([song('local')], 'expert'),
     );
 
-    act(() => result.current.setMode('online'));
+    act(() => result.current.setLibraryMode('online'));
 
     expect(ids(result.current.filteredSongList)).toEqual([
       'online-1',
@@ -210,7 +210,7 @@ describe('useSongFilter', () => {
 
     expect(onlineState.calls.at(-1)).toMatchObject({ active: false });
 
-    act(() => result.current.setMode('online'));
+    act(() => result.current.setLibraryMode('online'));
 
     expect(onlineState.calls.at(-1)).toMatchObject({ active: true });
   });

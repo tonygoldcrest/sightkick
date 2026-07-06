@@ -574,3 +574,47 @@ describe('SongView — score', () => {
     expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
   });
 });
+
+describe('SongView — practice mode', () => {
+  function renderPractice() {
+    return render(
+      <AppProvider>
+        <InputProvider>
+          <SongViewSettingsProvider>
+            <MemoryRouter initialEntries={['/song-1?gameMode=practice']}>
+              <Routes>
+                <Route
+                  path="/"
+                  element={<div data-testid="song-list-stub" />}
+                />
+                <Route path=":id" element={<SongView />} />
+              </Routes>
+            </MemoryRouter>
+          </SongViewSettingsProvider>
+        </InputProvider>
+      </AppProvider>,
+    );
+  }
+
+  it('renders the speed and loop controls', async () => {
+    renderPractice();
+    await loadSong();
+
+    expect(screen.getByText('Speed:')).toBeInTheDocument();
+    expect(screen.getByText('Loop:')).toBeInTheDocument();
+  });
+
+  it('never shows the score modal or persists a score when a run ends', async () => {
+    renderPractice();
+    await loadSong();
+
+    const [player] = await getInstances();
+
+    await act(async () => {
+      (player as unknown as { onEnded: () => void }).onEnded();
+    });
+
+    expect(screen.queryByTestId('score-modal')).toBeNull();
+    expect(ipc.sent.map((s) => s.channel)).not.toContain('update-song');
+  });
+});

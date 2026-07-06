@@ -7,12 +7,14 @@ import { popoverOpenChange, popoverStyles } from '../../overlayStyles';
 import { InputConfig, useInputConfig } from '../InputConfig';
 import { SongListSettings } from './SongListSettings';
 import { SongViewSettings } from './SongViewSettings';
+import { GameMode } from '../../types';
 
 interface Props {
   volumeSliders?: ReactNode[];
   clickControls?: ReactNode;
   masterVolumeControl?: ReactNode;
   page: 'song-list' | 'song-view';
+  gameMode?: GameMode;
   scanPercent?: number;
   onExportPdf?: () => void;
   isExporting?: boolean;
@@ -24,6 +26,7 @@ export const SettingsButton = memo(function Settings({
   masterVolumeControl,
   page,
   scanPercent,
+  gameMode,
   onExportPdf,
   isExporting,
 }: Props) {
@@ -65,6 +68,7 @@ export const SettingsButton = memo(function Settings({
               <SongViewSettings
                 onExportPdf={onExportPdf}
                 isExporting={isExporting}
+                gameMode={gameMode}
                 masterVolumeControl={masterVolumeControl}
                 volumeSliders={volumeSliders}
                 clickControls={clickControls}

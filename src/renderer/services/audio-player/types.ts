@@ -24,6 +24,7 @@ export interface AudioPlayer {
 }
 
 export interface SpeedControllableAudioPlayer extends AudioPlayer {
+  playbackSpeed: number;
   setPlaybackSpeed(speed: number): void;
 }
 

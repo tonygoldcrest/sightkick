@@ -4,7 +4,7 @@ export type {
   EngineContext,
   EngineOptions,
   EngineSettings,
-  GameMode,
+  LoopRegion,
   PlaybackSnapshot,
   PlaybackState,
 } from './types';

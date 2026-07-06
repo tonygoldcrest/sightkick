@@ -352,14 +352,15 @@ describe('SongListView — liking', () => {
 });
 
 describe('SongListView — navigation', () => {
-  it('opens the song view when a local song row is clicked', () => {
+  it('opens the song view when a local song row is clicked', async () => {
     renderView();
 
     loadSongs([makeSong('a')]);
 
     fireEvent.click(screen.getByText('Name a'));
+    fireEvent.click(await screen.findByText('perform'));
 
-    expect(screen.getByTestId('song-view-stub')).toBeInTheDocument();
+    expect(await screen.findByTestId('song-view-stub')).toBeInTheDocument();
   });
 });
 
@@ -546,7 +547,7 @@ describe('SongListView input control gating', () => {
     expect(lastEnabled()).toBe(false);
   });
 
-  it('selects the first focused song with confirm', () => {
+  it('selects the first focused song with confirm', async () => {
     renderView();
     loadSongs([makeSong('a')]);
 
@@ -559,8 +560,9 @@ describe('SongListView input control gating', () => {
 
     act(() => handlers().down());
     act(() => handlers().confirm());
+    fireEvent.click(await screen.findByText('perform'));
 
-    expect(screen.getByTestId('song-view-stub')).toBeInTheDocument();
+    expect(await screen.findByTestId('song-view-stub')).toBeInTheDocument();
   });
 });
 
@@ -591,7 +593,7 @@ describe('SongListView — input navigation', () => {
     expect(focused('a')).toBe(true);
   });
 
-  it('keeps the focused song after returning from the song view', () => {
+  it('keeps the focused song after returning from the song view', async () => {
     renderView();
     loadSongs([makeSong('a'), makeSong('b'), makeSong('c')]);
 
@@ -600,7 +602,8 @@ describe('SongListView — input navigation', () => {
     expect(focused('b')).toBe(true);
 
     act(() => handlers().confirm());
-    expect(screen.getByTestId('song-view-stub')).toBeInTheDocument();
+    fireEvent.click(await screen.findByText('perform'));
+    expect(await screen.findByTestId('song-view-stub')).toBeInTheDocument();
 
     emit('update-song', makeSong('b'));
 

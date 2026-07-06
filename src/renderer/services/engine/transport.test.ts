@@ -59,6 +59,12 @@ class MockAudioPlayer {
 
   setMasterVolume = vi.fn();
 
+  playbackSpeed = 1;
+
+  setPlaybackSpeed = vi.fn((speed: number) => {
+    this.playbackSpeed = speed;
+  });
+
   destroy = vi.fn();
 
   contextTimeForSongTime(songTime: number) {
@@ -87,6 +93,8 @@ type MockPlayer = {
   pause: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
   setMasterVolume: ReturnType<typeof vi.fn>;
+  setPlaybackSpeed: ReturnType<typeof vi.fn>;
+  playbackSpeed: number;
   destroy: ReturnType<typeof vi.fn>;
 };
 
@@ -349,13 +357,26 @@ describe('Transport', () => {
     expect(player.start).toHaveBeenLastCalledWith(0);
   });
 
-  it('seeks to an absolute time and plays', async () => {
+  it('seeks to an absolute time and keeps playing when already playing', async () => {
     const { engine, player } = await setup();
 
+    engine.playFromTick(0);
+    player.start.mockClear();
     engine.seekSeconds(3);
 
     expect(player.start).toHaveBeenLastCalledWith(3);
     expect(engine.getSnapshot().isPlaying).toBe(true);
+  });
+
+  it('repositions without starting playback when seeking while not playing', async () => {
+    const { engine, player } = await setup();
+
+    engine.seekSeconds(3);
+
+    expect(player.start).not.toHaveBeenCalled();
+    expect(engine.timeStore.get()).toBe(3);
+    expect(engine.getSnapshot().isPlaying).toBe(false);
+    expect(engine.getSnapshot().state).toBe('parked');
   });
 
   it('enters the ended state and forwards the callback', async () => {
@@ -536,5 +557,86 @@ describe('Transport', () => {
 
     expect(player.stop).toHaveBeenCalledTimes(1);
     expect(player.destroy).not.toHaveBeenCalled();
+  });
+
+  describe('loop region', () => {
+    it('repositions to the new loop start when the region jumps ahead while playing', async () => {
+      const { engine, player } = await setup();
+
+      engine.playFromTick(0);
+      expect(engine.getSnapshot().isPlaying).toBe(true);
+      player.start.mockClear();
+
+      engine.setLoopRegion({ startTick: 1920, endTick: 3840 });
+
+      expect(player.start).toHaveBeenCalledWith(expect.closeTo(2));
+      expect(engine.timeStore.get()).toBeCloseTo(2);
+    });
+
+    it('keeps playing without a restart when the new region still contains the playhead', async () => {
+      const { engine, player } = await setup();
+
+      engine.playFromTick(1920);
+      player.start.mockClear();
+
+      engine.setLoopRegion({ startTick: 0, endTick: 3840 });
+
+      expect(player.start).not.toHaveBeenCalled();
+    });
+
+    it('does not start playback when the region changes while paused', async () => {
+      const { engine, player } = await setup();
+
+      engine.playFromTick(0);
+      engine.pause();
+      player.start.mockClear();
+
+      engine.setLoopRegion({ startTick: 1920, endTick: 3840 });
+
+      expect(player.start).not.toHaveBeenCalled();
+      expect(engine.getSnapshot().state).toBe('parked');
+    });
+
+    it('does not restart when the region is set to the same value', async () => {
+      const { engine, player } = await setup();
+
+      engine.playFromTick(0);
+      engine.setLoopRegion({ startTick: 1920, endTick: 3840 });
+      player.start.mockClear();
+
+      engine.setLoopRegion({ startTick: 1920, endTick: 3840 });
+
+      expect(player.start).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('playback speed', () => {
+    it('applies a speed change immediately while playing', async () => {
+      const { engine, player } = await setup();
+
+      engine.playFromTick(0);
+      engine.setPlaybackSpeed(0.5);
+
+      expect(player.setPlaybackSpeed).toHaveBeenCalledWith(0.5);
+    });
+
+    it('does not disturb the scheduled count-in playback when speed changes mid-count-in', async () => {
+      const { engine, player } = await setup({}, { countInEnabled: true });
+
+      engine.playFromTick(1920);
+      expect(engine.getSnapshot().state).toBe('counting-in');
+
+      const startCallsDuringCountIn = player.start.mock.calls.length;
+
+      engine.setPlaybackSpeed(0.5);
+
+      expect(player.start.mock.calls.length).toBe(startCallsDuringCountIn);
+      expect(player.setPlaybackSpeed).not.toHaveBeenCalled();
+
+      advanceClockTo(player, 3);
+
+      expect(engine.getSnapshot().state).toBe('playing');
+      expect(player.setPlaybackSpeed).toHaveBeenCalledWith(0.5);
+    });
   });
 });

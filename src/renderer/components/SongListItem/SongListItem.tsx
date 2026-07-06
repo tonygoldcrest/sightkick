@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faHeart as faHeartSolid,
@@ -12,24 +11,25 @@ import { SongData } from '../../../types';
 import { cn } from '../../cn';
 import { Button, Tooltip } from 'antd';
 import { useMemo } from 'react';
-import { Mode } from '../SongFilter';
 import { SongMenu } from '../SongMenu';
 import { Stars } from '../Stars';
 import { IconButton } from '../IconButton';
 import { Difficulty } from 'scan-chart';
 import { calculateAccuracy, getStarRating } from '../../views/utils';
 import { DifficultyRing } from './DifficultyRing';
+import { LibraryMode } from '../../types';
 
 export interface SongListItemProps {
   songData: SongData;
   onLikeChange: (id: string, liked: boolean) => void;
   onDownload: (id: string) => void;
+  onClick: () => void;
   onSplit: (id: string) => void;
   downloading?: boolean;
   difficulty: Difficulty;
   splitting: boolean;
   downloaded?: boolean;
-  mode: Mode;
+  libraryMode: LibraryMode;
   downloadingDisabled: boolean;
   focused?: boolean;
 }
@@ -49,16 +49,16 @@ export function SongListItem({
   },
   onLikeChange,
   onDownload,
+  onClick,
   downloading,
   downloaded,
   difficulty,
   splitting,
   onSplit,
-  mode,
+  libraryMode,
   downloadingDisabled,
   focused,
 }: SongListItemProps) {
-  const navigate = useNavigate();
   const score = useMemo(() => {
     const result = scoreData?.[difficulty];
 
@@ -70,7 +70,7 @@ export function SongListItem({
       : null;
   }, [scoreData, difficulty]);
   const indicator = useMemo(() => {
-    if (mode === 'local') {
+    if (libraryMode === 'local') {
       return (
         <div className="flex flex-col gap-2 items-center h-full">
           <SongMenu
@@ -139,7 +139,7 @@ export function SongListItem({
     id,
     liked,
     onLikeChange,
-    mode,
+    libraryMode,
     downloadingDisabled,
     audio?.length,
     dir,
@@ -150,17 +150,13 @@ export function SongListItem({
   return (
     <div className="relative inline-flex w-full">
       <div
-        onClick={() => {
-          if (mode === 'local') {
-            navigate(`/${id}`);
-          }
-        }}
+        onClick={onClick}
         data-testid={`song-item-${id}`}
         className={cn(
           'flex border border-border-soft grow no-underline bg-surface rounded-[11px] transition-all duration-100 ease-in-out cursor-default p-2',
           {
             'hover:bg-accent-soft-bg hover:border-accent-soft-border cursor-pointer':
-              mode === 'local',
+              libraryMode === 'local',
             'bg-accent-soft-bg border-accent-soft-border outline-2 outline-accent':
               focused,
           },
@@ -193,7 +189,7 @@ export function SongListItem({
             </div>
           )}
 
-          {mode === 'local' && (
+          {libraryMode === 'local' && (
             <div className="flex flex-col gap-1 items-center">
               <div className="text-xs text-text-dim">{difficulty}</div>
 

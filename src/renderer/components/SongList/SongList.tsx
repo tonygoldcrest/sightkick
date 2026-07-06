@@ -3,14 +3,15 @@ import { useCallback, useEffect, useRef } from 'react';
 import { SongData } from '../../../types';
 import { cn } from '../../cn';
 import { SongListItem } from '../SongListItem';
-import { Mode } from '../SongFilter';
 import { Difficulty } from 'scan-chart';
+import { LibraryMode } from '../../types';
 
 export interface SongListProps {
   songList: SongData[];
   className?: string;
   onLikeChange: (id: string, liked: boolean) => void;
   onDownload: (id: string) => void;
+  onClickSong: (id: string) => void;
   onSplit: (id: string) => void;
   onLoadMore?: () => void;
   downloadingIds?: Set<string>;
@@ -18,7 +19,7 @@ export interface SongListProps {
   difficulty: Difficulty;
   downloadedIds?: Set<string>;
   scrollKey?: string;
-  mode: Mode;
+  libraryMode: LibraryMode;
   downloadingDisabled: boolean;
   focusedIndex?: number;
 }
@@ -30,11 +31,12 @@ export function SongList({
   className,
   onLikeChange,
   onDownload,
+  onClickSong,
   downloadingIds,
   downloadedIds,
   difficulty,
   scrollKey,
-  mode,
+  libraryMode,
   downloadingDisabled,
   splittingIds,
   onSplit,
@@ -103,11 +105,12 @@ export function SongList({
                 onLikeChange={onLikeChange}
                 onDownload={onDownload}
                 onSplit={onSplit}
+                onClick={() => onClickSong(songData.id)}
                 difficulty={difficulty}
                 downloading={downloadingIds?.has(songData.id)}
                 downloaded={downloadedIds?.has(songData.id)}
                 splitting={splittingIds.has(songData.id)}
-                mode={mode}
+                libraryMode={libraryMode}
                 downloadingDisabled={downloadingDisabled}
                 focused={virtualItem.index === focusedIndex}
               />

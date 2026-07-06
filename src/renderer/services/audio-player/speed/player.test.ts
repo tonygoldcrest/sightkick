@@ -141,6 +141,26 @@ describe('SpeedAudioPlayer', () => {
     expect(stream.seek).toHaveBeenCalled();
   });
 
+  it('keeps the deferred start when speed changes before playback begins', async () => {
+    const { player } = await makePlayer();
+    const deferredStart = context.currentTime + 5;
+
+    await player.start(0, deferredStart);
+    await flush();
+
+    const before = context.bufferSources.length;
+
+    player.setPlaybackSpeed(0.5);
+    await flush();
+
+    const scheduled = context.bufferSources
+      .slice(before)
+      .flatMap((source) => source.starts.map((start) => start.at));
+
+    expect(scheduled.length).toBeGreaterThan(0);
+    scheduled.forEach((at) => expect(at).toBeCloseTo(deferredStart, 5));
+  });
+
   it('stops tracks and clears initialisation on stop', async () => {
     const { player } = await makePlayer();
 

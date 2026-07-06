@@ -1,9 +1,17 @@
-import { ChannelStretcher } from './channel-stretcher';
+import {
+  buildUnits,
+  scatterBlocks,
+  StretchUnit,
+  VoiceGroup,
+} from './build-units';
 
 export class StretchStream {
   private worker: Worker | undefined;
-  private fallback: ChannelStretcher[] = [];
+  private units: StretchUnit[] = [];
   private channels: Float32Array[] = [];
+  private groups: VoiceGroup[] = [];
+  private sampleRate = 44100;
+  private onsetsByGroup: (number[] | undefined)[] = [];
   private pending = new Map<number, (blocks: Float32Array[]) => void>();
   private nextId = 0;
 
@@ -15,7 +23,9 @@ export class StretchStream {
     try {
       this.worker = new Worker(
         new URL('./stretch-worker.ts', import.meta.url),
-        { type: 'module' },
+        {
+          type: 'module',
+        },
       );
       this.worker.onmessage = (
         event: MessageEvent<{ id: number; blocks: Float32Array[] }>,
@@ -32,17 +42,35 @@ export class StretchStream {
     }
   }
 
-  init(channels: Float32Array[], speed: number) {
+  init(
+    channels: Float32Array[],
+    speed: number,
+    groups: VoiceGroup[],
+    sampleRate: number,
+  ) {
     this.channels = channels;
+    this.groups = groups;
+    this.sampleRate = sampleRate;
+    this.onsetsByGroup = new Array(groups.length).fill(undefined);
 
     if (this.worker) {
-      this.worker.postMessage({ type: 'init', channels, speed });
+      this.worker.postMessage({
+        type: 'init',
+        channels,
+        speed,
+        groups,
+        sampleRate,
+      });
 
       return;
     }
 
-    this.fallback = channels.map(
-      (channel) => new ChannelStretcher(channel, speed),
+    this.units = buildUnits(
+      channels,
+      groups,
+      speed,
+      sampleRate,
+      this.onsetsByGroup,
     );
   }
 
@@ -53,8 +81,12 @@ export class StretchStream {
       return;
     }
 
-    this.fallback = this.channels.map(
-      (channel) => new ChannelStretcher(channel, speed),
+    this.units = buildUnits(
+      this.channels,
+      this.groups,
+      speed,
+      this.sampleRate,
+      this.onsetsByGroup,
     );
   }
 
@@ -65,7 +97,7 @@ export class StretchStream {
       return;
     }
 
-    this.fallback.forEach((stretcher) => stretcher.seek(outputSample));
+    this.units.forEach((unit) => unit.seek(outputSample));
   }
 
   produce(frames: number): Promise<Float32Array[]> {
@@ -81,7 +113,7 @@ export class StretchStream {
     }
 
     return Promise.resolve(
-      this.fallback.map((stretcher) => stretcher.produce(frames)),
+      scatterBlocks(this.units, this.channels.length, frames),
     );
   }
 
@@ -89,7 +121,9 @@ export class StretchStream {
     this.worker?.terminate();
     this.worker = undefined;
     this.pending.clear();
-    this.fallback = [];
+    this.units = [];
     this.channels = [];
+    this.groups = [];
+    this.onsetsByGroup = [];
   }
 }

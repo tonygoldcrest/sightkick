@@ -19,3 +19,9 @@ export type MappingElement = {
   type: 'cymbal' | 'drum' | 'control';
   icon: IconDefinition;
 };
+
+export type LibraryMode = 'local' | 'online';
+
+export type GameMode = 'perform' | 'practice';
+
+export type PracticeRange = { start: number; end: number };

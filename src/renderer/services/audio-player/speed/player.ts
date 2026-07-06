@@ -1,5 +1,6 @@
 import { SpeedAudioTrack } from './track';
 import { StretchStream } from './stretch-stream';
+import { VoiceGroup } from './build-units';
 import { BaseAudioPlayer } from '../base-player';
 import { SpeedControllableAudioPlayer, TrackConfig } from '../types';
 
@@ -7,6 +8,7 @@ const FRAMES_PER_CHUNK = 64;
 const LOOKAHEAD_SECONDS = 2;
 const SCHEDULER_INTERVAL_MS = 100;
 const START_LEAD_SECONDS = 0.1;
+const DRUM_TRACK_NAME = 'drums';
 
 interface ChunkTarget {
   track: SpeedAudioTrack;
@@ -26,6 +28,7 @@ export class SpeedAudioPlayer
   private stream: StretchStream = new StretchStream();
   private voices: Float32Array[] = [];
   private targets: ChunkTarget[] = [];
+  private groups: VoiceGroup[] = [];
   private voicesBuilt: boolean = false;
   private timer: ReturnType<typeof setInterval> | undefined;
   private scheduledUntil: number = 0;
@@ -65,16 +68,18 @@ export class SpeedAudioPlayer
       return;
     }
 
-    const resumeAt =
-      this.isInitialised && this.context.state === 'running'
-        ? this.currentTime
+    const running = this.isInitialised && this.context.state === 'running';
+    const resumeAt = running ? this.currentTime : undefined;
+    const deferredStart =
+      running && this.startedAt > this.context.currentTime
+        ? this.startedAt
         : undefined;
 
     this._playbackSpeed = speed;
     this.prepare();
 
     if (resumeAt !== undefined) {
-      void this.start(resumeAt);
+      void this.start(resumeAt, deferredStart);
     }
   }
 
@@ -85,7 +90,12 @@ export class SpeedAudioPlayer
       .then((tracks) => {
         if (!this.voicesBuilt) {
           this.buildVoices(tracks);
-          this.stream.init(this.voices, speed);
+          this.stream.init(
+            this.voices,
+            speed,
+            this.groups,
+            this.context.sampleRate,
+          );
           this.voicesBuilt = true;
         } else {
           this.stream.setSpeed(speed);
@@ -97,6 +107,7 @@ export class SpeedAudioPlayer
   private buildVoices(tracks: SpeedAudioTrack[]) {
     this.voices = [];
     this.targets = [];
+    this.groups = [];
 
     tracks.forEach((track) => {
       track.buffers.forEach((buffer, fileIndex) => {
@@ -112,6 +123,12 @@ export class SpeedAudioPlayer
           channels: buffer.numberOfChannels,
           voiceStart,
           sampleRate: buffer.sampleRate,
+        });
+
+        this.groups.push({
+          start: voiceStart,
+          count: buffer.numberOfChannels,
+          kind: track.name === DRUM_TRACK_NAME ? 'transient' : 'vocoder',
         });
       });
     });
@@ -265,7 +282,7 @@ export class SpeedAudioPlayer
         this.offset,
         (this.context.currentTime - this.startedAt) * this._playbackSpeed +
           this.offset -
-          latency,
+          latency * this._playbackSpeed,
       ),
     );
   }

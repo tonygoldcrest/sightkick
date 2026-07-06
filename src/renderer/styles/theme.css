@@ -28,6 +28,16 @@
     var(--color-accent) 8%,
     transparent
   );
+  --color-accent-soft-bg-solid: color-mix(
+    in srgb,
+    var(--color-accent) 5%,
+    var(--color-paper)
+  );
+  --color-accent-medium-bg: color-mix(
+    in srgb,
+    var(--color-accent) 16%,
+    transparent
+  );
   --color-accent-soft-border: color-mix(
     in srgb,
     var(--color-accent) 22%,

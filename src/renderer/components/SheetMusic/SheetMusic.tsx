@@ -2,6 +2,7 @@ import {
   MouseEvent,
   RefObject,
   createRef,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -11,6 +12,10 @@ import { Measure, RenderData } from '../../../chart-parser/types';
 import { Engine } from '../../services/engine';
 import { SongData } from '../../../types';
 import { Reference } from './Reference';
+import { GameMode, PracticeRange } from '../../types';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRepeat, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { IconButton } from '../IconButton';
 
 export interface SheetMusicProps {
   engine: Engine | undefined;
@@ -18,6 +23,10 @@ export interface SheetMusicProps {
   renderData: RenderData[];
   vexflowContainerRef: RefObject<HTMLDivElement | null>;
   isDev: boolean;
+  gameMode?: GameMode;
+  practiceRange?: PracticeRange;
+  isLooping?: boolean;
+  onPracticeRangeChange?: (range?: PracticeRange) => void;
   onSelectMeasure: (measure: Measure, event: MouseEvent) => void;
   enableColors: boolean;
   showReference: boolean;
@@ -30,6 +39,10 @@ export function SheetMusic({
   renderData,
   vexflowContainerRef,
   isDev,
+  gameMode,
+  practiceRange,
+  isLooping,
+  onPracticeRangeChange,
   onSelectMeasure,
   showReference,
   enableColors,
@@ -40,6 +53,44 @@ export function SheetMusic({
     () => renderData.map(() => createRef<HTMLDivElement>()),
     [renderData],
   );
+  const isSelectable = isDev || gameMode === 'practice';
+  const dragAnchorRef = useRef<number | undefined>(undefined);
+  const handleMeasureMouseDown = useCallback(
+    (index: number) => {
+      if (!isSelectable || !isLooping) {
+        return;
+      }
+
+      dragAnchorRef.current = index;
+      onPracticeRangeChange?.({ start: index, end: index });
+    },
+    [isSelectable, onPracticeRangeChange, isLooping],
+  );
+  const handleMeasureMouseEnter = useCallback(
+    (index: number) => {
+      const anchor = dragAnchorRef.current;
+
+      if (anchor === undefined) {
+        return;
+      }
+
+      onPracticeRangeChange?.({
+        start: Math.min(anchor, index),
+        end: Math.max(anchor, index),
+      });
+    },
+    [onPracticeRangeChange],
+  );
+
+  useEffect(() => {
+    const endDrag = () => {
+      dragAnchorRef.current = undefined;
+    };
+
+    window.addEventListener('mouseup', endDrag);
+
+    return () => window.removeEventListener('mouseup', endDrag);
+  }, []);
 
   useEffect(() => {
     engine?.setRendererRefs({
@@ -48,9 +99,25 @@ export function SheetMusic({
     });
   }, [engine, renderData, highlightsRef]);
 
-  const measureHighlights = useMemo(
-    () =>
-      renderData.map(({ measure, stave, yOffset }, index) => (
+  const measureHighlights = useMemo(() => {
+    const isSelected = (index: number) =>
+      isLooping &&
+      practiceRange !== undefined &&
+      index >= practiceRange.start &&
+      index <= practiceRange.end;
+    const isSameRow = (a: number, b: number) =>
+      renderData[a] !== undefined &&
+      renderData[b] !== undefined &&
+      renderData[a].yOffset === renderData[b].yOffset;
+
+    return renderData.map(({ measure, stave, yOffset }, index) => {
+      const selected = isSelected(index);
+      const mergeLeft =
+        selected && isSelected(index - 1) && isSameRow(index, index - 1);
+      const mergeRight =
+        selected && isSelected(index + 1) && isSameRow(index, index + 1);
+
+      return (
         <div
           key={index}
           ref={highlightsRef[index]}
@@ -62,23 +129,59 @@ export function SheetMusic({
           }}
           className={cn(
             'absolute z-[-3] rounded-[11px] border-0 bg-transparent',
-            isDev &&
-              'cursor-pointer hover:bg-accent-soft-bg hover:shadow-accent-soft hover:border hover:border-accent-soft-border hover:z-[-1]',
+            {
+              'bg-accent-soft-bg-solid border-2! border-accent-bright!':
+                selected,
+              'border-l-0! rounded-l-none': mergeLeft,
+              'border-r-0! rounded-r-none': mergeRight,
+            },
+            (isDev || gameMode === 'practice') &&
+              'cursor-pointer hover:bg-accent-medium-bg hover:shadow-accent-soft hover:border hover:border-accent-soft-border hover:z-[-1]',
           )}
+          onMouseDown={() => handleMeasureMouseDown(index)}
+          onMouseEnter={() => handleMeasureMouseEnter(index)}
           onClick={(event) => {
-            if (!isDev) {
-              return;
+            if (isDev || (gameMode === 'practice' && !isLooping)) {
+              onSelectMeasure(measure, event);
             }
-
-            onSelectMeasure(measure, event);
           }}
         />
-      )),
-    [renderData, highlightsRef, isDev, onSelectMeasure],
-  );
+      );
+    });
+  }, [
+    isLooping,
+    renderData,
+    highlightsRef,
+    isDev,
+    onSelectMeasure,
+    gameMode,
+    practiceRange,
+    handleMeasureMouseDown,
+    handleMeasureMouseEnter,
+  ]);
 
   return (
     <div className="min-w-max" style={{ zoom }}>
+      {gameMode === 'practice' && isLooping && practiceRange && (
+        <div className="fixed top-35 ml-10 bg-bg rounded-md z-100 px-4 py-3 flex items-center gap-2">
+          <div className="text-accent bg-accent-soft-bg p-2 border border-accent-soft-border rounded-md w-10 h-10 flex items-center justify-center">
+            <FontAwesomeIcon icon={faRepeat} />
+          </div>
+          <div>
+            <div className="text-[16px] font-semibold">Looping Section</div>
+            <div className="text-xs text-text-muted">
+              Measure{' '}
+              {practiceRange.start === practiceRange.end
+                ? practiceRange.start + 1
+                : `${practiceRange.start + 1} - ${practiceRange.end + 1}`}
+            </div>
+          </div>
+          <IconButton
+            icon={faXmark}
+            onClick={() => onPracticeRangeChange?.(undefined)}
+          />
+        </div>
+      )}
       <div className="flex flex-col items-center min-w-max bg-paper rounded-[11px] p-10">
         <h1 className="my-0 mx-auto text-4xl text-ink font-semibold">
           {songData.name}

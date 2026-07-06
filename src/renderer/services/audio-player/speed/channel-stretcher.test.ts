@@ -47,4 +47,32 @@ describe('ChannelStretcher', () => {
 
     expect(Array.from(stretcher.produce(6))).toEqual(first);
   });
+
+  it('phase-resets at an onset, changing the output', () => {
+    const input = sine(8192, 40);
+    const plain = Array.from(new ChannelStretcher(input, 0.5).produce(8));
+    const withOnset = Array.from(
+      new ChannelStretcher(input, 0.5, [2000]).produce(8),
+    );
+
+    expect(withOnset).not.toEqual(plain);
+  });
+
+  it('is deterministic with onsets', () => {
+    const input = sine(8192, 40);
+    const a = Array.from(new ChannelStretcher(input, 0.5, [2000]).produce(8));
+    const b = Array.from(new ChannelStretcher(input, 0.5, [2000]).produce(8));
+
+    expect(a).toEqual(b);
+  });
+
+  it('seek re-aligns onset tracking so output repeats', () => {
+    const input = sine(8192, 40);
+    const stretcher = new ChannelStretcher(input, 0.5, [2000]);
+    const first = Array.from(stretcher.produce(8));
+
+    stretcher.seek(0);
+
+    expect(Array.from(stretcher.produce(8))).toEqual(first);
+  });
 });

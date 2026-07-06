@@ -1,16 +1,14 @@
 import { StaveNote } from 'vexflow';
 import { Measure, ParsedChart, RenderData } from '../../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../../types';
-import { PlayheadStyle } from '../../types';
+import { GameMode, PlayheadStyle } from '../../types';
 import { InputEvent } from '../../input/types';
 import { AudioPlayerFactory, TrackConfig } from '../audio-player';
-
-export type GameMode = 'game' | 'practice';
 
 export interface EngineOptions {
   trackData: TrackConfig[];
   isDev: boolean;
-  mode?: GameMode;
+  gameMode?: GameMode;
   subscribeInput: (listener: (event: InputEvent) => void) => () => void;
   onEnded: (score: ScoreData) => void;
   onError: () => void;
@@ -64,6 +62,11 @@ export type PlaybackState =
   | 'counting-in'
   | 'playing'
   | 'ended';
+
+export interface LoopRegion {
+  startTick: number;
+  endTick: number;
+}
 
 export interface TransportContext {
   chart: ParsedChart | undefined;

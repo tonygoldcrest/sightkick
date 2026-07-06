@@ -21,7 +21,7 @@ const meta: Meta<typeof SongListItem> = {
   args: {
     songData,
     difficulty: 'expert',
-    mode: 'local',
+    libraryMode: 'local',
     splitting: false,
     downloadingDisabled: false,
     onLikeChange: () => {},
@@ -49,14 +49,16 @@ export const Liked: Story = {
 
 export const Focused: Story = { args: { focused: true } };
 
-export const Online: Story = { args: { mode: 'online' } };
+export const Online: Story = { args: { libraryMode: 'online' } };
 
 export const Downloading: Story = {
-  args: { mode: 'online', downloading: true },
+  args: { libraryMode: 'online', downloading: true },
 };
 
-export const Downloaded: Story = { args: { mode: 'online', downloaded: true } };
+export const Downloaded: Story = {
+  args: { libraryMode: 'online', downloaded: true },
+};
 
 export const DownloadDisabled: Story = {
-  args: { mode: 'online', downloadingDisabled: true },
+  args: { libraryMode: 'online', downloadingDisabled: true },
 };

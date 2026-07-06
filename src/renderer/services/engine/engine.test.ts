@@ -400,6 +400,7 @@ describe('Engine', () => {
       highlightEls: [],
     });
     engine.setMapping({ snare: ['midi:38'] });
+    engine.playFromTick(0);
     engine.seekSeconds(0.5);
 
     emitInput('midi:38');
@@ -426,6 +427,7 @@ describe('Engine', () => {
     });
 
     engine.setMapping({ crash: ['midi:49'] });
+    engine.playFromTick(0);
     engine.seekSeconds(0.5);
     emitInput('midi:49');
     engine.seekSeconds(0.1);

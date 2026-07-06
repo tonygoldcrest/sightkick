@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { App, Button, Layout, Spin } from 'antd';
+import { App, Button, Divider, InputNumber, Layout, Spin, Switch } from 'antd';
 import { Content } from 'antd/es/layout/layout';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Playback } from '../components/Playback';
 import { SettingsButton } from '../components/SettingsButton';
 import { SheetMusic } from '../components/SheetMusic';
@@ -29,6 +29,7 @@ import { ScoreData } from '../../types';
 import { buildSheetPdfHtml } from '../services/pdf-export';
 import { serializeMeasureToDsl } from '../components/SheetMusic/drumDsl';
 import { AudioVolume } from '../components/AudioVolume';
+import { GameMode, PracticeRange } from '../types';
 
 export function SongView() {
   const { difficulty } = useApp();
@@ -48,6 +49,10 @@ export function SongView() {
   const [isDev, setIsDev] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const gameMode = useMemo<GameMode | undefined>(() => {
+    return (searchParams.get('gameMode') as GameMode) ?? undefined;
+  }, [searchParams]);
   const navigate = useNavigate();
   const { fileData, format, songData, trackData } = useSongLoader(id);
   const { chart, parsedMidi, renderData, vexflowContainerRef } = useSheetMusic({
@@ -79,6 +84,11 @@ export function SongView() {
       delaySeconds
     );
   }, [chart, parsedMidi, delaySeconds]);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [practiceRange, setPracticeRange] = useState<
+    PracticeRange | undefined
+  >();
+  const [isLooping, setIsLooping] = useState(true);
   const {
     engine,
     isReady,
@@ -96,6 +106,7 @@ export function SongView() {
     seekSeconds,
     setStemVolume,
     setMasterVolume: setEngineMasterVolume,
+    setPlaybackSpeed: setEnginePlaybackSpeed,
   } = useEngine({
     trackData,
     isDev,
@@ -105,9 +116,14 @@ export function SongView() {
     delaySeconds,
     minDurationSeconds,
     countInEnabled: countIn,
+    gameMode,
     playheadStyle,
     mapping: inputMapping,
     onEnded: (score) => {
+      if (gameMode === 'practice') {
+        return;
+      }
+
       setScoreData(score);
       setIsScoreModalOpen(true);
 
@@ -258,10 +274,38 @@ export function SongView() {
   }, [engine, clickVolume, clickTone]);
 
   useEffect(() => {
+    if (gameMode !== 'practice') {
+      return;
+    }
+
+    setEnginePlaybackSpeed(playbackSpeed);
+  }, [playbackSpeed, setEnginePlaybackSpeed, gameMode]);
+
+  useEffect(() => {
     if (isReady) {
       setEngineMasterVolume(masterVolume / 100);
     }
   }, [setEngineMasterVolume, masterVolume, isReady]);
+
+  useEffect(() => {
+    if (gameMode !== 'practice' || !isLooping || renderData.length === 0) {
+      engine?.setLoopRegion(undefined);
+
+      return;
+    }
+
+    const startMeasure =
+      (practiceRange && renderData[practiceRange.start]?.measure) ??
+      renderData[0].measure;
+    const endMeasure =
+      (practiceRange && renderData[practiceRange.end]?.measure) ??
+      renderData[renderData.length - 1].measure;
+
+    engine?.setLoopRegion({
+      startTick: startMeasure.startTick,
+      endTick: endMeasure.endTick,
+    });
+  }, [engine, gameMode, practiceRange, renderData, isLooping]);
 
   return (
     <Layout className="h-full pointer-events-auto">
@@ -328,7 +372,7 @@ export function SongView() {
           timeStore={timeStore}
           disabled={!isReady}
           duration={duration}
-          isDev={isDev}
+          allowScrubbing={isDev || gameMode === 'practice'}
           onChange={(value) => {
             if (!isReady) {
               return;
@@ -337,9 +381,50 @@ export function SongView() {
             seekSeconds((value / 100) * duration);
           }}
         />
+        {gameMode === 'practice' && (
+          <div className="flex items-center gap-2">
+            <div className="flex gap-2 items-center">
+              <div className="text-text-faint">Speed:</div>
+
+              <InputNumber
+                mode="spinner"
+                size="medium"
+                min={0.3}
+                max={2}
+                step={0.1}
+                value={playbackSpeed}
+                onChange={(newValue) => {
+                  if (newValue === null) {
+                    return;
+                  }
+
+                  setPlaybackSpeed(newValue);
+                }}
+                styles={{
+                  input: {
+                    width: '5ch',
+                  },
+                }}
+              />
+            </div>
+
+            <Divider vertical />
+
+            <div className="flex gap-2 items-center">
+              <div className="text-text-faint">Loop:</div>
+
+              <Switch
+                size="medium"
+                checked={isLooping}
+                onChange={setIsLooping}
+              />
+            </div>
+          </div>
+        )}
         <SettingsButton
           page="song-view"
           volumeSliders={volumeSliders}
+          gameMode={gameMode}
           clickControls={
             <ClickControls
               volume={clickVolume}
@@ -368,7 +453,11 @@ export function SongView() {
           {songData && chart && parsedMidi && (
             <SheetMusic
               engine={engine}
+              isLooping={isLooping}
               renderData={renderData}
+              practiceRange={practiceRange}
+              onPracticeRangeChange={setPracticeRange}
+              gameMode={gameMode}
               songData={songData}
               isDev={isDev}
               zoom={zoom}
@@ -383,9 +472,12 @@ export function SongView() {
                   message.success('Measure DSL copied');
 
                   return;
+                } else if (
+                  (event.altKey || (gameMode === 'practice' && !isLooping)) &&
+                  chart
+                ) {
+                  playFromTick(measure.startTick);
                 }
-
-                playFromTick(measure.startTick);
               }}
             />
           )}

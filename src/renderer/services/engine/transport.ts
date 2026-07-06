@@ -1,10 +1,16 @@
 import { Measure, ParsedChart } from '../../../chart-parser/types';
-import { AudioPlayer, AudioPlayerFactory, TrackConfig } from '../audio-player';
+import {
+  AudioPlayer,
+  AudioPlayerFactory,
+  SpeedControllableAudioPlayer,
+  TrackConfig,
+} from '../audio-player';
 import { TimeStore } from '../time-store';
 import { secondsToTicks, ticksToSeconds } from '../../views/utils';
 import { ClickTrack, DEFAULT_CLICK_TONE } from '../click-track';
 import { Beat, getBeatGrid, getCountInInfo } from '../beat-grid';
 import {
+  LoopRegion,
   PlaybackSnapshot,
   PlaybackState,
   TransportContext,
@@ -45,6 +51,8 @@ export class Transport {
   private countInBeats: number | undefined;
   private songStartCtx: number | undefined;
   private raf: number | undefined;
+  private loopRegion: LoopRegion | undefined;
+  private pendingSpeed: number | undefined;
   private disposed = false;
   private listeners = new Set<() => void>();
   private snapshot: PlaybackSnapshot;
@@ -104,6 +112,55 @@ export class Transport {
     this.isDev = isDev;
   }
 
+  setPlaybackSpeed(speed: number): void {
+    if (this.state === 'counting-in') {
+      this.pendingSpeed = speed;
+
+      return;
+    }
+
+    this.pendingSpeed = undefined;
+    this.applyPlaybackSpeed(speed);
+  }
+
+  private applyPlaybackSpeed(speed: number): void {
+    const player = this.audioPlayer;
+
+    if (player && 'setPlaybackSpeed' in player) {
+      (player as SpeedControllableAudioPlayer).setPlaybackSpeed(speed);
+    }
+  }
+
+  setLoopRegion(region: LoopRegion | undefined): void {
+    const previous = this.loopRegion;
+
+    this.loopRegion = region;
+
+    if (
+      !region ||
+      (previous &&
+        previous.startTick === region.startTick &&
+        previous.endTick === region.endTick)
+    ) {
+      return;
+    }
+
+    const active = this.state === 'playing' || this.state === 'counting-in';
+
+    if (!active) {
+      return;
+    }
+
+    const startTime = this.tickToTime(region.startTick);
+    const endTime = this.tickToTime(region.endTick);
+
+    if (this.position >= startTime && this.position < endTime) {
+      return;
+    }
+
+    this.playFromTick(region.startTick);
+  }
+
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
 
@@ -116,6 +173,12 @@ export class Transport {
 
   play(): void {
     if (!this.chart) {
+      return;
+    }
+
+    if (this.loopRegion) {
+      this.playFromTick(this.loopRegion.startTick);
+
       return;
     }
 
@@ -146,6 +209,16 @@ export class Transport {
     this.nextBeatIndex = this.firstBeatIndexAtOrAfter(startTime);
 
     void this.beginPlayback(tick, startTime);
+  }
+
+  private get playbackSpeed(): number {
+    const player = this.audioPlayer;
+
+    if (player && 'playbackSpeed' in player) {
+      return (player as SpeedControllableAudioPlayer).playbackSpeed;
+    }
+
+    return 1;
   }
 
   private async beginPlayback(tick: number, startTime: number): Promise<void> {
@@ -180,15 +253,16 @@ export class Transport {
       this.measures,
       this.chart,
     );
+    const realBeatDuration = beatDurationSeconds / this.playbackSpeed;
     const now = ctx.currentTime;
-    const songStart = now + beats * beatDurationSeconds;
+    const songStart = now + beats * realBeatDuration;
 
     this.songStartCtx = songStart;
     this.countInStartCtx = now;
-    this.countInBeatDuration = beatDurationSeconds;
+    this.countInBeatDuration = realBeatDuration;
     this.countInBeats = beats;
     this.countInBeat = 1;
-    this.countInBeatMs = beatDurationSeconds * 1000;
+    this.countInBeatMs = realBeatDuration * 1000;
 
     this.clickTrack.cancelGain();
     this.clickTrack.setGain(
@@ -198,7 +272,7 @@ export class Transport {
     this.clickTrack.setGain(this.clickVolume, songStart);
 
     for (let i = 0; i < beats; i += 1) {
-      this.clickTrack.scheduleClick(now + i * beatDurationSeconds, i === 0);
+      this.clickTrack.scheduleClick(now + i * realBeatDuration, i === 0);
     }
 
     this.state = 'counting-in';
@@ -235,9 +309,9 @@ export class Transport {
       return;
     }
 
+    const wasActive = this.state === 'playing' || this.state === 'counting-in';
+
     this.clearScheduling();
-    this.isStarted = true;
-    this.state = 'playing';
     this.setPosition(seconds);
     this.nextBeatIndex = this.firstBeatIndexAtOrAfter(seconds);
 
@@ -251,6 +325,16 @@ export class Transport {
       );
     }
 
+    if (!wasActive) {
+      this.audioPlayer.stop();
+      this.state = 'parked';
+      this.emit();
+
+      return;
+    }
+
+    this.isStarted = true;
+    this.state = 'playing';
     this.songStartCtx = this.audioPlayer.context.currentTime;
     this.clickTrack?.cancelGain();
     this.clickTrack?.setGain(this.clickVolume);
@@ -348,6 +432,7 @@ export class Transport {
 
       if (this.state === 'playing' && this.audioPlayer?.isInitialised) {
         this.setPosition(this.audioPlayer.currentTime);
+        this.checkLoop();
       }
 
       this.scheduleClicks();
@@ -357,6 +442,18 @@ export class Transport {
     };
 
     this.raf = requestAnimationFrame(poll);
+  }
+
+  private checkLoop(): void {
+    if (!this.loopRegion || !this.audioPlayer) {
+      return;
+    }
+
+    const endTime = this.tickToTime(this.loopRegion.endTick);
+
+    if (this.audioPlayer.currentTime >= endTime) {
+      this.playFromTick(this.loopRegion.startTick);
+    }
   }
 
   private scheduleClicks(): void {
@@ -404,6 +501,12 @@ export class Transport {
       this.countInStartCtx = undefined;
       this.isStarted = true;
       this.state = 'playing';
+
+      if (this.pendingSpeed !== undefined) {
+        this.applyPlaybackSpeed(this.pendingSpeed);
+        this.pendingSpeed = undefined;
+      }
+
       this.emit();
 
       return;
@@ -422,6 +525,12 @@ export class Transport {
   }
 
   private handleEnded(): void {
+    if (this.loopRegion) {
+      this.playFromTick(this.loopRegion.startTick);
+
+      return;
+    }
+
     this.state = 'ended';
     this.clickTrack?.clearPending();
     this.emit();

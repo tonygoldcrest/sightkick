@@ -5,16 +5,16 @@ import {
   faFolder,
   faGlobe,
 } from '@fortawesome/free-solid-svg-icons';
-import { Mode } from '../SongFilter';
+import { LibraryMode } from '../../types';
 
 interface Props {
-  mode: Mode;
+  libraryMode: LibraryMode;
   hasFolder: boolean;
   hasSongs: boolean;
 }
 
-export function EmptySongState({ mode, hasFolder, hasSongs }: Props) {
-  if (mode === 'online' || hasSongs) {
+export function EmptySongState({ libraryMode, hasFolder, hasSongs }: Props) {
+  if (libraryMode === 'online' || hasSongs) {
     return (
       <div className="m-auto text-text-faint flex items-center gap-1 flex-col">
         <div>No songs match your filter.</div>

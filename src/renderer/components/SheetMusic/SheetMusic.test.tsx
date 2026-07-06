@@ -132,6 +132,136 @@ describe('SheetMusic', () => {
   });
 });
 
+describe('SheetMusic practice range selection', () => {
+  it('starts a one-measure range on mouse down and extends it on enter', () => {
+    const onPracticeRangeChange = vi.fn();
+    const { container } = renderSheet({
+      gameMode: 'practice',
+      isLooping: true,
+      onPracticeRangeChange,
+    });
+    const [a, b] = overlays(container);
+
+    fireEvent.mouseDown(a);
+    expect(onPracticeRangeChange).toHaveBeenLastCalledWith({
+      start: 0,
+      end: 0,
+    });
+
+    fireEvent.mouseEnter(b);
+    expect(onPracticeRangeChange).toHaveBeenLastCalledWith({
+      start: 0,
+      end: 1,
+    });
+  });
+
+  it('normalizes a backward drag', () => {
+    const onPracticeRangeChange = vi.fn();
+    const { container } = renderSheet({
+      gameMode: 'practice',
+      isLooping: true,
+      onPracticeRangeChange,
+    });
+    const [a, b] = overlays(container);
+
+    fireEvent.mouseDown(b);
+    fireEvent.mouseEnter(a);
+
+    expect(onPracticeRangeChange).toHaveBeenLastCalledWith({
+      start: 0,
+      end: 1,
+    });
+  });
+
+  it('ends the drag on window mouse up', () => {
+    const onPracticeRangeChange = vi.fn();
+    const { container } = renderSheet({
+      gameMode: 'practice',
+      isLooping: true,
+      onPracticeRangeChange,
+    });
+    const [a, b] = overlays(container);
+
+    fireEvent.mouseDown(a);
+    fireEvent.mouseUp(document.body);
+    onPracticeRangeChange.mockClear();
+    fireEvent.mouseEnter(b);
+
+    expect(onPracticeRangeChange).not.toHaveBeenCalled();
+  });
+
+  it('does not select while looping is off', () => {
+    const onPracticeRangeChange = vi.fn();
+    const { container } = renderSheet({
+      gameMode: 'practice',
+      isLooping: false,
+      onPracticeRangeChange,
+    });
+
+    fireEvent.mouseDown(overlays(container)[0]);
+
+    expect(onPracticeRangeChange).not.toHaveBeenCalled();
+  });
+
+  it('does not select outside dev or practice', () => {
+    const onPracticeRangeChange = vi.fn();
+    const { container } = renderSheet({
+      gameMode: 'perform',
+      isLooping: true,
+      onPracticeRangeChange,
+    });
+
+    fireEvent.mouseDown(overlays(container)[0]);
+
+    expect(onPracticeRangeChange).not.toHaveBeenCalled();
+  });
+
+  it('marks the selected range and merges adjacent overlays', () => {
+    const { container } = renderSheet({
+      gameMode: 'practice',
+      isLooping: true,
+      practiceRange: { start: 0, end: 1 },
+    });
+    const [a, b] = overlays(container) as HTMLElement[];
+
+    expect(a.className).toContain('bg-accent-soft-bg-solid');
+    expect(b.className).toContain('bg-accent-soft-bg-solid');
+
+    expect(a.className).toContain('border-r-0!');
+    expect(a.className).toContain('rounded-r-none');
+    expect(b.className).toContain('border-l-0!');
+    expect(b.className).toContain('rounded-l-none');
+
+    expect(a.className).not.toContain('border-l-0!');
+    expect(b.className).not.toContain('border-r-0!');
+  });
+
+  it('does not highlight the range while looping is off', () => {
+    const { container } = renderSheet({
+      gameMode: 'practice',
+      isLooping: false,
+      practiceRange: { start: 0, end: 1 },
+    });
+    const [a] = overlays(container) as HTMLElement[];
+
+    expect(a.className).not.toContain('bg-accent-soft-bg-solid');
+  });
+
+  it('clears the range from the looping-section control', () => {
+    const onPracticeRangeChange = vi.fn();
+    const { getByRole } = renderSheet({
+      gameMode: 'practice',
+      isLooping: true,
+      practiceRange: { start: 0, end: 1 },
+      onPracticeRangeChange,
+    });
+
+    fireEvent.click(getByRole('button'));
+
+    expect(onPracticeRangeChange).toHaveBeenCalledWith(undefined);
+  });
+});
+
 describe('SheetMusic reference legend', () => {
   it('shows the reference when colors are on and the reference is enabled', () => {
     const { getByText } = renderSheet({

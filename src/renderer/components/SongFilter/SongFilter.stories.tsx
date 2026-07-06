@@ -8,13 +8,13 @@ const meta: Meta<typeof SongFilter> = {
     nameFilter: '',
     difficulty: 'expert',
     filteredSongsCount: 42,
-    mode: 'local',
+    libraryMode: 'local',
     onChangeFilter: () => {},
-    onChangeMode: () => {},
+    onChangeLibraryMode: () => {},
     setDifficulty: () => {},
   },
   argTypes: {
-    mode: { control: 'radio', options: ['local', 'online'] },
+    libraryMode: { control: 'radio', options: ['local', 'online'] },
     difficulty: {
       control: 'radio',
       options: ['easy', 'medium', 'hard', 'expert'],
@@ -37,7 +37,7 @@ type Story = StoryObj<typeof SongFilter>;
 export const Local: Story = {};
 
 export const Online: Story = {
-  args: { mode: 'online', filteredSongsCount: 1280 },
+  args: { libraryMode: 'online', filteredSongsCount: 1280 },
 };
 
 export const WithQuery: Story = {

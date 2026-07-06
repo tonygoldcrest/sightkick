@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import Fuse from 'fuse.js';
 import { Difficulty } from 'scan-chart';
 import { SongData } from '../../types';
-import { Mode } from '../components/SongFilter';
 import { type SortState } from '../components/SortButton';
 import { useOnlineSearch } from './useOnlineSearch';
 import { usePersisted } from './usePersisted';
+import { LibraryMode } from '../types';
 
 function parseDifficulty(value: string | undefined): number {
   const parsed = parseInt(value ?? '', 10);
@@ -15,7 +15,7 @@ function parseDifficulty(value: string | undefined): number {
 
 export function useSongFilter(songList: SongData[], difficulty: Difficulty) {
   const [nameFilter, setNameFilter] = useState('');
-  const [mode, setMode] = useState<Mode>('local');
+  const [libraryMode, setLibraryMode] = useState<LibraryMode>('local');
   const [sort, setSort] = usePersisted<SortState>('settings.sort', {
     key: 'favorite',
     direction: 'asc',
@@ -25,9 +25,9 @@ export function useSongFilter(songList: SongData[], difficulty: Difficulty) {
     total: onlineTotal,
     loading: onlineLoading,
     loadMore,
-  } = useOnlineSearch(mode === 'online', nameFilter, difficulty);
+  } = useOnlineSearch(libraryMode === 'online', nameFilter, difficulty);
   const filteredSongList = useMemo(() => {
-    if (mode === 'online') {
+    if (libraryMode === 'online') {
       return onlineResults;
     }
 
@@ -72,13 +72,13 @@ export function useSongFilter(songList: SongData[], difficulty: Difficulty) {
           return a.name.localeCompare(b.name);
       }
     });
-  }, [songList, nameFilter, mode, onlineResults, sort, difficulty]);
+  }, [songList, nameFilter, libraryMode, onlineResults, sort, difficulty]);
 
   return {
     nameFilter,
     setNameFilter,
-    mode,
-    setMode,
+    libraryMode,
+    setLibraryMode,
     sort,
     setSort,
     filteredSongList,
