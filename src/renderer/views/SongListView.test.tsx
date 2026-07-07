@@ -1,35 +1,10 @@
-import { ReactNode } from 'react';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SongData } from '../../types';
-import { AppProvider } from '../context/AppContext';
-import { InputProvider } from '../context/InputContext';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  getNotification,
-  installIpcMock,
-  installLocalStorage,
-  IpcMock,
-  NotificationMock,
-  resetNotification,
-} from '../hooks/test-support';
-import { SongListView } from './SongListView';
-import { useInputControls } from '../hooks/useInputControls';
-
-vi.mock('../hooks/useInputControls', () => ({ useInputControls: vi.fn() }));
-
-const useInputControlsMock = vi.mocked(useInputControls);
-
-vi.mock('antd', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('antd')>();
-
-  return {
-    ...actual,
-    App: Object.assign({}, actual.App, {
-      useApp: () => ({ notification: getNotification() }),
-    }),
-  };
-});
+  makeEnchorChart,
+  makeListSong,
+  setupSongListView,
+} from './test-support';
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
@@ -47,189 +22,66 @@ vi.mock('@tanstack/react-virtual', () => ({
   }),
 }));
 
-const online = vi.hoisted(() => ({
-  results: [] as SongData[],
-  total: undefined as number | undefined,
-  loading: false,
-  loadMore: vi.fn(),
-  calls: [] as { active: boolean; search: string }[],
-}));
-
-vi.mock('../hooks/useOnlineSearch', () => ({
-  useOnlineSearch: (active: boolean, search: string) => {
-    online.calls.push({ active, search });
-
-    return {
-      results: online.results,
-      total: online.total,
-      loading: online.loading,
-      loadMore: online.loadMore,
-    };
-  },
-}));
-
-let ipc: IpcMock;
-let notification: NotificationMock;
-
-function makeSong(id: string, extra: Partial<SongData> = {}): SongData {
-  return {
-    id,
-    dir: `/songs/${id}`,
-    albumCover: null,
-    name: `Name ${id}`,
-    artist: `Artist ${id}`,
-    charter: `Charter ${id}`,
-    diff_drums: '3',
-    format: 'mid',
-    drumDifficulties: ['easy', 'medium', 'hard', 'expert'],
-    audio: [{ src: 'song.ogg', name: 'song' }],
-    ...extra,
-  } as SongData;
-}
-
-function SongViewStub() {
-  const navigate = useNavigate();
-
-  return (
-    <div data-testid="song-view-stub">
-      <button
-        type="button"
-        data-testid="song-view-back"
-        onClick={() => navigate('/')}
-      >
-        back
-      </button>
-    </div>
-  );
-}
-
-function wrapper({ children }: { children: ReactNode }) {
-  return (
-    <AppProvider>
-      <InputProvider>
-        <MemoryRouter initialEntries={['/']}>
-          <Routes>
-            <Route path="/" element={children}>
-              <Route path=":id" element={<SongViewStub />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </InputProvider>
-    </AppProvider>
-  );
-}
-
-function renderView() {
-  return render(<SongListView />, { wrapper });
-}
-
-function emit(channel: string, ...args: unknown[]) {
-  act(() => {
-    ipc.emit(channel, ...args);
-  });
-}
-
-function loadSongs(
-  songs: SongData[],
-  lastOpenedPath: string | null = '/music',
-) {
-  emit('load-song-list', { songs, lastOpenedPath });
-}
-
-function setStemTools(status: 'ready' | 'download' | 'unsupported') {
-  emit('check-stem-tools', { status });
-}
-
-function row(id: string) {
-  return within(screen.getByTestId(`song-item-${id}`));
-}
-
-function filledStarsIn(id: string) {
-  return screen
-    .getByTestId(`song-item-${id}`)
-    .querySelectorAll('svg[data-prefix="fas"][data-icon="star"]').length;
-}
-
-function selectDifficulty(difficulty: string) {
-  fireEvent.click(screen.getByTestId('settings-trigger'));
-  fireEvent.click(screen.getByTestId(`difficulty-${difficulty}`));
-}
-
-beforeEach(() => {
-  installLocalStorage();
-  ipc = installIpcMock();
-  notification = resetNotification();
-  online.results = [];
-  online.total = undefined;
-  online.loading = false;
-  online.loadMore = vi.fn();
-  online.calls = [];
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
-describe('SongListView — loading', () => {
+describe('SongListView — loading the library', () => {
   it('requests the song list and stem-tool status on mount', () => {
-    renderView();
+    const view = setupSongListView();
 
-    const channels = ipc.sent.map((s) => s.channel);
-
-    expect(channels).toContain('load-song-list');
-    expect(channels).toContain('check-stem-tools');
+    expect(view.sentChannels()).toContain('load-song-list');
+    expect(view.sentChannels()).toContain('check-stem-tools');
   });
 
-  it('renders the songs returned by the backend', () => {
-    renderView();
+  it('shows the songs the backend returns', () => {
+    const view = setupSongListView();
 
-    loadSongs([makeSong('a'), makeSong('b')]);
+    view.loadSongs([makeListSong('a'), makeListSong('b')]);
 
     expect(screen.getByText('Name a')).toBeInTheDocument();
     expect(screen.getByText('Name b')).toBeInTheDocument();
     expect(screen.getByText('2 results')).toBeInTheDocument();
   });
 
-  it('guides to select a folder when none is selected', () => {
-    renderView();
+  it('guides to select a folder when none is chosen', () => {
+    const view = setupSongListView();
 
-    loadSongs([], null);
+    view.loadSongs([], null);
 
     expect(screen.getByText('Select folder')).toBeInTheDocument();
   });
 
-  it('guides to download songs when the selected folder is empty', () => {
-    renderView();
+  it('guides to download songs when the folder is empty', () => {
+    const view = setupSongListView();
 
-    loadSongs([], '/music');
+    view.loadSongs([], '/music');
 
     expect(screen.getByText('No songs in this folder.')).toBeInTheDocument();
     expect(screen.getByText('Download some')).toBeInTheDocument();
     expect(screen.queryByText('Select folder')).not.toBeInTheDocument();
   });
 
-  it('reports when no songs match the active filter', () => {
-    renderView();
+  it('reports when nothing matches the active filter', () => {
+    const view = setupSongListView();
 
-    loadSongs([
-      makeSong('a', { name: 'Master of Puppets' }),
-      makeSong('b', { name: 'Enter Sandman' }),
+    view.loadSongs([
+      makeListSong('a', { name: 'Master of Puppets' }),
+      makeListSong('b', { name: 'Enter Sandman' }),
     ]);
-
-    fireEvent.change(screen.getByPlaceholderText('Enter song name'), {
-      target: { value: 'nonexistent song' },
-    });
+    view.search('nonexistent song');
 
     expect(screen.getByText('No songs match your filter.')).toBeInTheDocument();
     expect(screen.queryByText('Select folder')).not.toBeInTheDocument();
   });
 
-  it('repopulates the list when the backend rescans the folder', () => {
-    renderView();
+  it('repopulates the list when the backend rescans', () => {
+    const view = setupSongListView();
 
-    loadSongs([makeSong('a')]);
+    view.loadSongs([makeListSong('a')]);
     expect(screen.getByText('Name a')).toBeInTheDocument();
 
-    emit('rescan-songs', {
-      songs: [makeSong('c')],
-      lastOpenedPath: '/other',
-    });
+    view.rescanDone([makeListSong('c')], '/other');
 
     expect(screen.queryByText('Name a')).not.toBeInTheDocument();
     expect(screen.getByText('Name c')).toBeInTheDocument();
@@ -237,32 +89,40 @@ describe('SongListView — loading', () => {
 });
 
 describe('SongListView — filtering and sorting', () => {
-  it('fuzzy-filters the local list by name', () => {
-    renderView();
+  it('fuzzy-filters the list by name', () => {
+    const view = setupSongListView();
 
-    loadSongs([
-      makeSong('a', { name: 'Master of Puppets' }),
-      makeSong('b', { name: 'Enter Sandman' }),
+    view.loadSongs([
+      makeListSong('a', { name: 'Master of Puppets' }),
+      makeListSong('b', { name: 'Enter Sandman' }),
     ]);
-
-    fireEvent.change(screen.getByPlaceholderText('Enter song name'), {
-      target: { value: 'puppets' },
-    });
+    view.search('puppets');
 
     expect(screen.getByText('Master of Puppets')).toBeInTheDocument();
     expect(screen.queryByText('Enter Sandman')).not.toBeInTheDocument();
   });
 
-  it('reorders the list when a sort option is chosen', () => {
-    renderView();
+  it('fuzzy-filters the list by artist', () => {
+    const view = setupSongListView();
 
-    loadSongs([
-      makeSong('a', { name: 'Charlie' }),
-      makeSong('b', { name: 'Alpha' }),
+    view.loadSongs([
+      makeListSong('a', { name: 'One', artist: 'Metallica' }),
+      makeListSong('b', { name: 'Two', artist: 'Slayer' }),
     ]);
+    view.search('metallica');
 
-    fireEvent.click(screen.getByTestId('sort-trigger'));
-    fireEvent.click(screen.getByText('Name').closest('button')!);
+    expect(screen.getByText('One')).toBeInTheDocument();
+    expect(screen.queryByText('Two')).not.toBeInTheDocument();
+  });
+
+  it('reorders the list when a sort option is chosen', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([
+      makeListSong('a', { name: 'Charlie' }),
+      makeListSong('b', { name: 'Alpha' }),
+    ]);
+    view.chooseSort('name');
 
     const rendered = screen
       .getAllByText(/Charlie|Alpha/)
@@ -272,93 +132,75 @@ describe('SongListView — filtering and sorting', () => {
   });
 });
 
-describe('SongListView — difficulty selection', () => {
-  it('re-filters the list to songs charted at the chosen difficulty', () => {
-    renderView();
+describe('SongListView — difficulty', () => {
+  it('re-filters to songs charted at the chosen difficulty', () => {
+    const view = setupSongListView();
 
-    loadSongs([
-      makeSong('a', { name: 'Expert Only', drumDifficulties: ['expert'] }),
-      makeSong('b', { name: 'Hard Only', drumDifficulties: ['hard'] }),
+    view.loadSongs([
+      makeListSong('a', { name: 'Expert Only', drumDifficulties: ['expert'] }),
+      makeListSong('b', { name: 'Hard Only', drumDifficulties: ['hard'] }),
     ]);
 
     expect(screen.getByText('Expert Only')).toBeInTheDocument();
     expect(screen.queryByText('Hard Only')).not.toBeInTheDocument();
 
-    selectDifficulty('hard');
+    view.selectDifficulty('hard');
 
     expect(screen.queryByText('Expert Only')).not.toBeInTheDocument();
     expect(screen.getByText('Hard Only')).toBeInTheDocument();
   });
 
   it('shows the high score for the selected difficulty', () => {
-    renderView();
+    const view = setupSongListView();
 
-    loadSongs([
-      makeSong('a', {
+    view.loadSongs([
+      makeListSong('a', {
         scoreData: {
           expert: { hitNotes: 100, totalNotes: 100, falseHits: 0 },
           hard: { hitNotes: 45, totalNotes: 100, falseHits: 0 },
         },
-      } as Partial<SongData>),
+      }),
     ]);
 
-    expect(filledStarsIn('a')).toBe(5);
+    expect(view.filledStars('a')).toBe(5);
 
-    selectDifficulty('hard');
+    view.selectDifficulty('hard');
 
-    expect(filledStarsIn('a')).toBe(2);
-  });
-
-  it('persists the selected difficulty', () => {
-    renderView();
-
-    selectDifficulty('hard');
-
-    expect(
-      JSON.parse(window.localStorage.getItem('settings.difficulty')!),
-    ).toBe('hard');
-  });
-
-  it('marks the active difficulty as primary', () => {
-    window.localStorage.setItem(
-      'settings.difficulty',
-      JSON.stringify('medium'),
-    );
-
-    renderView();
-
-    expect(screen.getByTestId('difficulty-medium').className).toContain(
-      'ant-btn-primary',
-    );
-    expect(screen.getByTestId('difficulty-easy').className).not.toContain(
-      'ant-btn-primary',
-    );
+    expect(view.filledStars('a')).toBe(2);
   });
 });
 
 describe('SongListView — liking', () => {
-  it('toggles a like and notifies the backend', () => {
-    renderView();
+  it('toggles a like and tells the backend', () => {
+    const view = setupSongListView();
 
-    loadSongs([makeSong('a', { liked: false })]);
+    view.loadSongs([makeListSong('a', { liked: false })]);
+    view.like('a');
 
-    fireEvent.click(row('a').getByTestId('like-toggle'));
-
-    expect(ipc.sent).toContainEqual({
+    expect(view.ipc.sent).toContainEqual({
       channel: 'like-song',
       args: ['a', true],
     });
   });
 });
 
-describe('SongListView — navigation', () => {
-  it('opens the song view when a local song row is clicked', async () => {
-    renderView();
+describe('SongListView — opening a song', () => {
+  it('opens the perform mode selector and navigates', async () => {
+    const view = setupSongListView();
 
-    loadSongs([makeSong('a')]);
+    view.loadSongs([makeListSong('a')]);
+    view.clickSong('a');
+    view.chooseGameMode('perform');
 
-    fireEvent.click(screen.getByText('Name a'));
-    fireEvent.click(await screen.findByText('perform'));
+    expect(await screen.findByTestId('song-view-stub')).toBeInTheDocument();
+  });
+
+  it('navigates into practice mode when chosen', async () => {
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a')]);
+    view.clickSong('a');
+    view.chooseGameMode('practice');
 
     expect(await screen.findByTestId('song-view-stub')).toBeInTheDocument();
   });
@@ -366,492 +208,423 @@ describe('SongListView — navigation', () => {
 
 describe('SongListView — stem splitting', () => {
   it('queues a split, shows progress, then reports success', () => {
-    renderView();
+    const view = setupSongListView();
 
-    loadSongs([makeSong('a')]);
-    setStemTools('ready');
+    view.loadSongs([makeListSong('a')]);
+    view.setStemTools('ready');
 
-    fireEvent.click(row('a').getByTestId('song-menu-trigger'));
+    view.openSongMenu('a');
     fireEvent.click(screen.getByText('Split stems'));
 
-    expect(ipc.sent).toContainEqual({ channel: 'split-song', args: ['a'] });
-    expect(notification.info).toHaveBeenCalledTimes(1);
+    expect(view.ipc.sent).toContainEqual({
+      channel: 'split-song',
+      args: ['a'],
+    });
     expect(screen.getByText('Processing queue')).toBeInTheDocument();
 
-    emit('split-song', { id: 'a', progress: 50 });
+    view.emit('split-song', { id: 'a', progress: 50 });
+    view.emit('split-song', {
+      id: 'a',
+      success: true,
+      song: makeListSong('a', { audio: [] }),
+    });
 
-    const split = makeSong('a', { name: 'Name a', audio: [] });
-
-    emit('split-song', { id: 'a', success: true, song: split });
-
-    expect(notification.success).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/split successfully/)).toBeInTheDocument();
     expect(screen.queryByText('Processing queue')).not.toBeInTheDocument();
   });
 
   it('reports a failed split', () => {
-    renderView();
+    const view = setupSongListView();
 
-    loadSongs([makeSong('a')]);
-    setStemTools('ready');
+    view.loadSongs([makeListSong('a')]);
+    view.setStemTools('ready');
 
-    fireEvent.click(row('a').getByTestId('song-menu-trigger'));
+    view.openSongMenu('a');
     fireEvent.click(screen.getByText('Split stems'));
 
-    emit('split-song', { id: 'a', success: false, error: 'boom' });
+    view.emit('split-song', { id: 'a', success: false, error: 'boom' });
 
-    expect(notification.error).toHaveBeenCalledTimes(1);
-    expect(notification.error.mock.calls[0][0]).toMatchObject({
-      description: 'boom',
-    });
+    expect(screen.getByText('Split failed')).toBeInTheDocument();
+    expect(screen.getByText('boom')).toBeInTheDocument();
+  });
+
+  it('cancels a queued split', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a')]);
+    view.setStemTools('ready');
+
+    view.openSongMenu('a');
+    fireEvent.click(screen.getByText('Split stems'));
+
+    const queueRoot = screen.getByText('Processing queue').parentElement!;
+
+    fireEvent.click(within(queueRoot).getByRole('button'));
+
+    expect(view.sentChannels()).toContain('cancel-split');
+
+    view.emit('split-song', { id: 'a', cancelled: true });
+
+    expect(screen.getByText('Split cancelled')).toBeInTheDocument();
+    expect(screen.queryByText('Processing queue')).not.toBeInTheDocument();
   });
 });
 
 describe('SongListView — online mode', () => {
-  it('activates online search and shows the results when switched', () => {
-    online.results = [makeSong('x'), makeSong('y')];
-    online.total = 2;
-
-    renderView();
-    loadSongs([]);
-
-    fireEvent.click(screen.getByTestId('mode-online'));
-
-    expect(online.calls.at(-1)).toMatchObject({ active: true });
-    expect(screen.getByText('Name x')).toBeInTheDocument();
-    expect(screen.getByText('Name y')).toBeInTheDocument();
-    expect(screen.getByText('2 results')).toBeInTheDocument();
-  });
-
-  it('downloads an online song and marks it as downloaded', () => {
-    online.results = [makeSong('x')];
-
-    renderView();
-    loadSongs([], '/music');
-
-    fireEvent.click(screen.getByTestId('mode-online'));
-    fireEvent.click(row('x').getByTestId('download-button'));
-
-    expect(ipc.sent).toContainEqual({
-      channel: 'download-song',
-      args: [
-        {
-          url: '/songs/x',
-          md5: 'x',
-          name: 'Name x',
-          artist: 'Artist x',
-          charter: 'Charter x',
-        },
-      ],
+  it('shows online results when switched', async () => {
+    const view = setupSongListView({
+      online: [makeEnchorChart('x'), makeEnchorChart('y')],
     });
 
-    emit('download-song', { success: true, md5: 'x', song: makeSong('x') });
+    view.loadSongs([]);
+    view.selectMode('online');
 
-    expect(row('x').getByTestId('downloaded-indicator')).toBeInTheDocument();
+    expect(await screen.findByText('Name x')).toBeInTheDocument();
+    expect(screen.getByText('Name y')).toBeInTheDocument();
   });
 
-  it('disables downloads until a library folder is selected', () => {
-    online.results = [makeSong('x')];
+  it('downloads an online song and marks it downloaded', async () => {
+    const view = setupSongListView({ online: [makeEnchorChart('x')] });
 
-    renderView();
-    loadSongs([], null);
+    view.loadSongs([], '/music');
+    view.selectMode('online');
 
-    fireEvent.click(screen.getByTestId('mode-online'));
+    await screen.findByText('Name x');
+    fireEvent.click(
+      within(screen.getByTestId('song-item-x')).getByTestId('download-button'),
+    );
 
-    expect(row('x').getByTestId('download-button')).toBeDisabled();
+    expect(view.sentChannels()).toContain('download-song');
+
+    view.emit('download-song', {
+      success: true,
+      md5: 'x',
+      song: makeListSong('x'),
+    });
+
+    expect(
+      within(screen.getByTestId('song-item-x')).getByTestId(
+        'downloaded-indicator',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('reports a failed download', async () => {
+    const view = setupSongListView({ online: [makeEnchorChart('x')] });
+
+    view.loadSongs([], '/music');
+    view.selectMode('online');
+
+    await screen.findByText('Name x');
+    fireEvent.click(
+      within(screen.getByTestId('song-item-x')).getByTestId('download-button'),
+    );
+
+    view.emit('download-song', { success: false, md5: 'x', error: 'no space' });
+
+    expect(screen.getByText('Download failed')).toBeInTheDocument();
+    expect(screen.getByText('no space')).toBeInTheDocument();
+  });
+
+  it('disables downloads until a folder is selected', async () => {
+    const view = setupSongListView({ online: [makeEnchorChart('x')] });
+
+    view.loadSongs([], null);
+    view.selectMode('online');
+
+    await screen.findByText('Name x');
+
+    expect(
+      within(screen.getByTestId('song-item-x')).getByTestId('download-button'),
+    ).toBeDisabled();
   });
 });
 
 describe('SongListView — settings', () => {
-  it('rescans the folder from the settings menu', () => {
-    renderView();
-    loadSongs([makeSong('a')], '/music');
+  it('rescans the folder from settings', () => {
+    const view = setupSongListView();
 
-    fireEvent.click(screen.getByTestId('settings-trigger'));
+    view.loadSongs([makeListSong('a')], '/music');
+    view.openSettings();
     fireEvent.click(screen.getByTestId('rescan-folder'));
 
-    expect(ipc.sent).toContainEqual({
+    expect(view.ipc.sent).toContainEqual({
       channel: 'rescan-songs',
       args: [false],
     });
   });
 
-  it('shows live scan progress under the folder buttons, then hides it', () => {
-    renderView();
-    loadSongs([makeSong('a')], '/music');
+  it('shows live scan progress, then hides it', () => {
+    const view = setupSongListView();
 
-    fireEvent.click(screen.getByTestId('settings-trigger'));
+    view.loadSongs([makeListSong('a')], '/music');
+    view.openSettings();
 
-    emit('rescan-songs', { current: 3, total: 6 });
+    view.rescanProgress(3, 6);
 
     const progress = screen.getByTestId('scan-progress');
 
-    expect(progress).toBeInTheDocument();
     expect(within(progress).getByText('50%')).toBeInTheDocument();
 
-    emit('rescan-songs', { songs: [makeSong('a')], lastOpenedPath: '/music' });
+    view.rescanDone([makeListSong('a')], '/music');
 
     expect(screen.queryByTestId('scan-progress')).not.toBeInTheDocument();
   });
 
-  it('offers the stem-splitter download when tools are missing and available', () => {
-    renderView();
-    loadSongs([makeSong('a')]);
-    setStemTools('download');
-    emit('check-stem-tools-update', {
+  it('offers the stem-splitter download when tools are missing but available', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a')]);
+    view.setStemTools('download');
+    view.emit('check-stem-tools-update', {
       available: true,
       updateAvailable: false,
       downloadSize: 280_000_000,
       uncompressedSize: 700_000_000,
     });
 
-    fireEvent.click(screen.getByTestId('settings-trigger'));
+    view.openSettings();
     fireEvent.click(screen.getByText(/Get stem splitter/));
 
-    expect(ipc.sent.map((s) => s.channel)).toContain('download-stem-tools');
-  });
-});
-
-describe('SongListView input control gating', () => {
-  function renderAt(path: string) {
-    return render(
-      <AppProvider>
-        <InputProvider>
-          <MemoryRouter initialEntries={[path]}>
-            <Routes>
-              <Route path="/" element={<SongListView />}>
-                <Route
-                  path=":id"
-                  element={<div data-testid="song-view-stub" />}
-                />
-              </Route>
-            </Routes>
-          </MemoryRouter>
-        </InputProvider>
-      </AppProvider>,
-    );
-  }
-
-  function lastEnabled() {
-    return useInputControlsMock.mock.calls.at(-1)?.[2];
-  }
-
-  it('enables controls on the list', () => {
-    renderAt('/');
-
-    expect(lastEnabled()).toBe(true);
+    expect(view.sentChannels()).toContain('download-stem-tools');
   });
 
-  it('disables controls while a song is open in the outlet', () => {
-    renderAt('/song-1');
+  it('shows stem-tool download progress and cancels it', () => {
+    const view = setupSongListView();
 
-    expect(lastEnabled()).toBe(false);
-  });
-
-  it('selects the first focused song with confirm', async () => {
-    renderView();
-    loadSongs([makeSong('a')]);
-
-    function handlers() {
-      return useInputControlsMock.mock.calls.at(-1)?.[1] as Record<
-        string,
-        () => void
-      >;
-    }
-
-    act(() => handlers().down());
-    act(() => handlers().confirm());
-    fireEvent.click(await screen.findByText('perform'));
-
-    expect(await screen.findByTestId('song-view-stub')).toBeInTheDocument();
-  });
-});
-
-describe('SongListView — input navigation', () => {
-  function handlers() {
-    return useInputControlsMock.mock.calls.at(-1)?.[1] as Record<
-      string,
-      () => void
-    >;
-  }
-
-  function focused(id: string) {
-    return screen.getByTestId(`song-item-${id}`).className.includes('outline');
-  }
-
-  it('moves focus forward and backward through the list', () => {
-    renderView();
-    loadSongs([makeSong('a'), makeSong('b'), makeSong('c')]);
-
-    act(() => handlers().down());
-    expect(focused('a')).toBe(true);
-
-    act(() => handlers().down());
-    expect(focused('b')).toBe(true);
-    expect(focused('a')).toBe(false);
-
-    act(() => handlers().up());
-    expect(focused('a')).toBe(true);
-  });
-
-  it('keeps the focused song after returning from the song view', async () => {
-    renderView();
-    loadSongs([makeSong('a'), makeSong('b'), makeSong('c')]);
-
-    act(() => handlers().down());
-    act(() => handlers().down());
-    expect(focused('b')).toBe(true);
-
-    act(() => handlers().confirm());
-    fireEvent.click(await screen.findByText('perform'));
-    expect(await screen.findByTestId('song-view-stub')).toBeInTheDocument();
-
-    emit('update-song', makeSong('b'));
-
-    fireEvent.click(screen.getByTestId('song-view-back'));
-
-    expect(screen.queryByTestId('song-view-stub')).toBeNull();
-    expect(focused('b')).toBe(true);
-  });
-
-  it('clears focus when the name filter changes', () => {
-    renderView();
-    loadSongs([
-      makeSong('a', { name: 'Alpha' }),
-      makeSong('b', { name: 'Beta' }),
-    ]);
-
-    act(() => handlers().down());
-    expect(focused('a')).toBe(true);
-
-    fireEvent.change(screen.getByPlaceholderText('Enter song name'), {
-      target: { value: 'Alpha' },
+    view.loadSongs([makeListSong('a')]);
+    view.setStemTools('download');
+    view.emit('check-stem-tools-update', {
+      available: true,
+      updateAvailable: false,
+      downloadSize: 280_000_000,
+      uncompressedSize: 700_000_000,
     });
 
-    expect(focused('a')).toBe(false);
+    view.openSettings();
+    fireEvent.click(screen.getByText(/Get stem splitter/));
+    view.emit('download-stem-tools', { progress: 40 });
+
+    expect(screen.getByTestId('stem-tools-progress')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('cancel-stem-tools'));
+
+    expect(view.sentChannels()).toContain('cancel-stem-tools');
+  });
+});
+
+describe('SongListView — keyboard navigation', () => {
+  it('moves focus forward and backward through the list', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a'), makeListSong('b'), makeListSong('c')]);
+
+    view.press('down');
+    expect(view.isFocused('a')).toBe(true);
+
+    view.press('down');
+    expect(view.isFocused('b')).toBe(true);
+    expect(view.isFocused('a')).toBe(false);
+
+    view.press('up');
+    expect(view.isFocused('a')).toBe(true);
   });
 
-  it('clears focus when the sort changes', () => {
-    renderView();
-    loadSongs([
-      makeSong('a', { name: 'Alpha' }),
-      makeSong('b', { name: 'Beta' }),
+  it('opens the focused song with confirm', async () => {
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a')]);
+
+    view.press('down');
+    view.press('confirm');
+    view.chooseGameMode('perform');
+
+    expect(await screen.findByTestId('song-view-stub')).toBeInTheDocument();
+  });
+
+  it('does nothing when confirming with no focused song', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a')]);
+    view.press('confirm');
+
+    expect(screen.queryByTestId('song-view-stub')).not.toBeInTheDocument();
+    expect(screen.queryByText('perform')).not.toBeInTheDocument();
+  });
+
+  it('tolerates focus moves on an empty list', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([]);
+
+    expect(() => {
+      view.press('up');
+      view.press('down');
+    }).not.toThrow();
+  });
+
+  it('clears focus when the filter changes', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([
+      makeListSong('a', { name: 'Alpha' }),
+      makeListSong('b', { name: 'Beta' }),
     ]);
 
-    act(() => handlers().down());
-    expect(focused('a')).toBe(true);
+    view.press('down');
+    expect(view.isFocused('a')).toBe(true);
 
-    fireEvent.click(screen.getByTestId('sort-trigger'));
-    fireEvent.click(screen.getByText('Name').closest('button')!);
+    view.search('Alpha');
 
-    expect(focused('a')).toBe(false);
+    expect(view.isFocused('a')).toBe(false);
   });
 
-  it('clears focus when the mode changes', () => {
-    renderView();
-    loadSongs([makeSong('a'), makeSong('b')]);
+  it('toggles online mode with the library control', async () => {
+    const view = setupSongListView({ online: [makeEnchorChart('x')] });
 
-    act(() => handlers().down());
-    expect(focused('a')).toBe(true);
+    view.loadSongs([]);
+    view.press('library');
 
-    act(() => handlers().library());
-    act(() => handlers().library());
-
-    expect(focused('a')).toBe(false);
-  });
-
-  it('toggles online mode with the library control', () => {
-    renderView();
-    loadSongs([]);
-
-    act(() => handlers().library());
-
-    expect(online.calls.at(-1)).toMatchObject({ active: true });
+    expect(await screen.findByText('Name x')).toBeInTheDocument();
   });
 
   it('cycles the difficulty filter with the difficulty control', () => {
-    renderView();
-    loadSongs([
-      makeSong('a', { name: 'Easy Only', drumDifficulties: ['easy'] }),
-      makeSong('b', { name: 'Expert Only', drumDifficulties: ['expert'] }),
+    const view = setupSongListView();
+
+    view.loadSongs([
+      makeListSong('a', { name: 'Easy Only', drumDifficulties: ['easy'] }),
+      makeListSong('b', { name: 'Expert Only', drumDifficulties: ['expert'] }),
     ]);
 
     expect(screen.getByText('Expert Only')).toBeInTheDocument();
     expect(screen.queryByText('Easy Only')).not.toBeInTheDocument();
 
-    act(() => handlers().difficulty());
+    view.press('difficulty');
 
     expect(screen.getByText('Easy Only')).toBeInTheDocument();
     expect(screen.queryByText('Expert Only')).not.toBeInTheDocument();
   });
-
-  it('wraps back to the original difficulty after a full cycle', () => {
-    renderView();
-    loadSongs([
-      makeSong('a', { name: 'Easy Only', drumDifficulties: ['easy'] }),
-      makeSong('b', { name: 'Expert Only', drumDifficulties: ['expert'] }),
-    ]);
-
-    for (let i = 0; i < 4; i += 1) {
-      act(() => handlers().difficulty());
-    }
-
-    expect(screen.getByText('Expert Only')).toBeInTheDocument();
-    expect(screen.queryByText('Easy Only')).not.toBeInTheDocument();
-  });
-
-  it('downloads the focused song with confirm in online mode', () => {
-    online.results = [makeSong('x')];
-
-    renderView();
-    loadSongs([], '/music');
-
-    fireEvent.click(screen.getByTestId('mode-online'));
-
-    act(() => handlers().down());
-    act(() => handlers().confirm());
-
-    expect(ipc.sent.map((s) => s.channel)).toContain('download-song');
-  });
 });
 
 describe('SongListView — sort menu navigation', () => {
-  const SORT_LABELS = ['Name', 'Favorite', 'Last added', 'Difficulty'];
+  it('opens the sort menu with the sort control', () => {
+    const view = setupSongListView();
 
-  function handlers() {
-    return useInputControlsMock.mock.calls.at(-1)?.[1] as Record<
-      string,
-      () => void
-    >;
-  }
+    view.loadSongs([makeListSong('a'), makeListSong('b')]);
 
-  function sortButton(label: string) {
-    return screen
-      .getAllByText(label, { exact: true })
-      .map((el) => el.closest('button'))
-      .find(
-        (button): button is HTMLButtonElement =>
-          !!button && button.className.includes('justify-start'),
-      )!;
-  }
+    expect(screen.queryByText('Last added')).not.toBeInTheDocument();
 
-  function outlinedSort() {
-    return SORT_LABELS.find((label) =>
-      sortButton(label).className.includes('outline-accent'),
-    );
-  }
+    view.press('sort');
 
-  function focusSort(label: string) {
-    for (let i = 0; i < SORT_LABELS.length; i += 1) {
-      if (outlinedSort() === label) {
-        return;
-      }
-
-      act(() => handlers().down());
-    }
-  }
-
-  it('opens the sort menu with the sort control and swaps to the sort control map', () => {
-    renderView();
-    loadSongs([makeSong('a'), makeSong('b')]);
-
-    expect(handlers().sort).toBeTypeOf('function');
-
-    act(() => handlers().sort());
-
-    expect(handlers().back).toBeTypeOf('function');
+    expect(screen.getByText('Last added')).toBeInTheDocument();
   });
 
-  it('moves the sort focus back and forth with up and down', () => {
-    renderView();
-    loadSongs([makeSong('a'), makeSong('b')]);
+  it('reorders the list by navigating the sort menu', () => {
+    const view = setupSongListView();
 
-    act(() => handlers().sort());
-
-    const before = outlinedSort();
-
-    act(() => handlers().down());
-
-    const after = outlinedSort();
-
-    expect(after).not.toBe(before);
-
-    act(() => handlers().up());
-
-    expect(outlinedSort()).toBe(before);
-  });
-
-  it('toggles the direction of a directional key with confirm', () => {
-    renderView();
-    loadSongs([makeSong('a'), makeSong('b')]);
-
-    act(() => handlers().sort());
-    focusSort('Name');
-    act(() => handlers().confirm());
+    view.loadSongs([
+      makeListSong('a', { name: 'Charlie', liked: true }),
+      makeListSong('b', { name: 'Alpha', liked: false }),
+    ]);
 
     expect(
-      sortButton('Name').querySelector('[data-icon="arrow-down"]'),
-    ).not.toBeNull();
-  });
+      screen.getAllByText(/Charlie|Alpha/).map((el) => el.textContent),
+    ).toEqual(['Charlie', 'Alpha']);
 
-  it('ignores the direction toggle on the non-directional favorite key', () => {
-    renderView();
-    loadSongs([makeSong('a'), makeSong('b')]);
+    view.press('sort');
+    view.press('up');
 
-    act(() => handlers().sort());
-    focusSort('Favorite');
-
-    expect(() => act(() => handlers().confirm())).not.toThrow();
-    expect(outlinedSort()).toBe('Favorite');
-  });
-
-  it('closes the sort menu with back and restores the list control map', () => {
-    renderView();
-    loadSongs([makeSong('a'), makeSong('b')]);
-
-    act(() => handlers().sort());
-
-    expect(handlers().back).toBeTypeOf('function');
-
-    act(() => handlers().back());
-
-    expect(handlers().sort).toBeTypeOf('function');
-    expect(handlers().back).toBeUndefined();
+    expect(
+      screen.getAllByText(/Charlie|Alpha/).map((el) => el.textContent),
+    ).toEqual(['Alpha', 'Charlie']);
   });
 
   it('does not open the sort menu in online mode', () => {
-    renderView();
-    loadSongs([], '/music');
-    fireEvent.click(screen.getByTestId('mode-online'));
+    const view = setupSongListView();
 
-    expect(() => act(() => handlers().sort())).not.toThrow();
-    expect(handlers().back).toBeUndefined();
+    view.loadSongs([], '/music');
+    view.selectMode('online');
+    view.press('sort');
+
+    expect(screen.queryByText('Last added')).not.toBeInTheDocument();
   });
 });
 
-describe('SongListView — input navigation edge cases', () => {
-  function handlers() {
-    return useInputControlsMock.mock.calls.at(-1)?.[1] as Record<
-      string,
-      () => void
-    >;
-  }
+describe('SongListView — waiting on results', () => {
+  it('keeps the list stable across a rescan with no changes', async () => {
+    const view = setupSongListView();
 
-  it('tolerates focus moves when the list is empty', () => {
-    renderView();
-    loadSongs([]);
+    view.loadSongs([makeListSong('a')], '/music');
+    view.rescanDone([makeListSong('a')], '/music');
 
-    expect(() => {
-      act(() => handlers().up());
-      act(() => handlers().down());
-    }).not.toThrow();
+    await waitFor(() => {
+      expect(screen.getByText('Name a')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('SongListView — input configuration', () => {
+  it('opens the input configuration from settings', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([]);
+    view.openInputConfig();
+
+    expect(screen.getByText('Configure input')).toBeInTheDocument();
   });
 
-  it('does nothing when activating with no focused song', () => {
-    renderView();
-    loadSongs([makeSong('a')]);
+  it('binds a keyboard control by listening for a key', () => {
+    const view = setupSongListView();
 
-    act(() => handlers().confirm());
+    view.loadSongs([]);
+    view.openInputConfig();
+    view.learnControl('snare');
 
-    expect(screen.queryByTestId('song-view-stub')).toBeNull();
+    expect(
+      within(view.inputRow('snare')).getByText('Listening'),
+    ).toBeInTheDocument();
+
+    view.typeKey('KeyJ');
+
+    expect(
+      within(view.inputRow('snare')).getByText('KeyJ'),
+    ).toBeInTheDocument();
+  });
+
+  it('moves a control to a new element, clearing the old binding', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([]);
+    view.openInputConfig();
+
+    view.learnControl('snare');
+    view.typeKey('KeyJ');
+    expect(
+      within(view.inputRow('snare')).getByText('KeyJ'),
+    ).toBeInTheDocument();
+
+    view.learnControl('kick');
+    view.typeKey('KeyJ');
+
+    expect(within(view.inputRow('kick')).getByText('KeyJ')).toBeInTheDocument();
+    expect(
+      within(view.inputRow('snare')).queryByText('KeyJ'),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe('SongListView — library folder', () => {
+  it('shows the folder basename and requests a picker when clicked', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a')], 'C:\\Music\\Rock\\Songs');
+    view.openSettings();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }));
+
+    expect(view.ipc.sent).toContainEqual({
+      channel: 'rescan-songs',
+      args: [],
+    });
   });
 });

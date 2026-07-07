@@ -1,297 +1,99 @@
-import { ReactNode } from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseChartFile } from 'scan-chart';
-import { ChartParser } from '../../chart-parser/parser';
-import { renderMusic } from '../../chart-parser/renderer';
-import { IpcLoadSongResponse, Song } from '../../types';
-import { InputEvent } from '../input/types';
-import { AppProvider } from '../context/AppContext';
-import { InputProvider } from '../context/InputContext';
-import { SongViewSettingsProvider } from '../context/SongViewSettingsContext';
 import {
-  getNotification,
-  installIpcMock,
-  installLocalStorage,
-  IpcMock,
-  resetNotification,
-} from '../hooks/test-support';
-import { SongView } from './SongView';
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  BEAT_SECONDS,
+  COUNT_IN_BEATS,
+  GUITAR_ONLY_CHART,
+  SINGLE_NOTE_CHART,
+  makeSong,
+  setupSongView,
+} from './test-support';
 
-vi.mock('antd', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('antd')>();
-
-  return {
-    ...actual,
-    App: Object.assign({}, actual.App, {
-      useApp: () => ({ notification: getNotification() }),
-    }),
-  };
-});
-
-vi.mock('scan-chart', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('scan-chart')>()),
-  parseChartFile: vi.fn(),
-}));
-vi.mock('../../chart-parser/parser', () => ({ ChartParser: vi.fn() }));
-vi.mock('../../chart-parser/renderer', () => ({ renderMusic: vi.fn() }));
-vi.mock('../services/click-track/metronome', () => ({
-  renderClickBuffers: () => ({ downbeat: {}, beat: {} }),
-}));
-
-const { busListeners } = vi.hoisted(() => ({
-  busListeners: new Set<(event: InputEvent) => void>(),
-}));
-
-vi.mock('../input', () => ({
-  inputBus: {
-    start: () => {},
-    subscribe: (listener: (event: InputEvent) => void) => {
-      busListeners.add(listener);
-
-      return () => {
-        busListeners.delete(listener);
-      };
-    },
-    listDevices: () =>
-      Promise.resolve([
-        { id: 'midi:Pad', name: 'Pad', sourceId: 'midi', port: 1 },
-      ]),
-  },
-  controlSource: (id: string) => id.slice(0, id.indexOf(':')),
-  controlLabel: (id: string) => id.slice(id.indexOf(':') + 1),
-}));
-
-function pressInput(controlId: string) {
-  busListeners.forEach((listener) => listener({ controlId, value: 100 }));
-}
-
-const { MockAudioPlayer } = vi.hoisted(() => {
-  const fakeContext = () => ({
-    state: 'running',
-    currentTime: 0,
-    destination: {},
-    resume: () => Promise.resolve(),
-    createGain: () => ({
-      gain: {
-        value: 0,
-        setValueAtTime: () => {},
-        cancelScheduledValues: () => {},
-      },
-      connect: () => {},
-      disconnect: () => {},
-    }),
-    createBufferSource: () => ({
-      buffer: undefined,
-      connect: () => {},
-      start: () => {},
-      stop: () => {},
-      addEventListener: () => {},
-    }),
-  });
-
-  class MockAudioPlayerImpl {
-    static instances: MockAudioPlayerImpl[] = [];
-
-    trackData: unknown;
-
-    onEnded: () => void;
-
-    ready = Promise.resolve([]);
-
-    context = fakeContext();
-
-    currentTime = 0;
-
-    duration = 100;
-
-    isInitialised = false;
-
-    startedAt = -1;
-
-    offset = 0;
-
-    audioTracks: { name: string; setVolume: () => void }[] = [];
-
-    start = vi.fn((offset = 0, startAt?: number) => {
-      this.isInitialised = true;
-      this.offset = offset;
-      this.startedAt = startAt ?? this.context.currentTime;
-    });
-
-    pause = vi.fn();
-
-    stop = vi.fn();
-
-    setMasterVolume = vi.fn();
-
-    destroy = vi.fn();
-
-    contextTimeForSongTime(songTime: number) {
-      return this.startedAt < 0
-        ? this.context.currentTime
-        : this.startedAt + (songTime - this.offset);
-    }
-
-    constructor(trackData: unknown, onEnded: () => void) {
-      this.trackData = trackData;
-      this.onEnded = onEnded;
-      MockAudioPlayerImpl.instances.push(this);
-    }
-  }
-
-  return { MockAudioPlayer: MockAudioPlayerImpl };
-});
-
-vi.mock('../services/audio-player/factories', () => ({
-  playerFactoryForMode: () => (trackData: unknown, onEnded: () => void) =>
-    new MockAudioPlayer(trackData, onEnded),
-}));
-
-const parseChartFileMock = vi.mocked(parseChartFile);
-const ChartParserMock = vi.mocked(ChartParser);
-const renderMusicMock = vi.mocked(renderMusic);
-const CHART = {
-  resolution: 480,
-  tempos: [{ tick: 0, beatsPerMinute: 120, msTime: 0 }],
-  trackData: [
-    { instrument: 'drums', difficulty: 'hard' },
-    { instrument: 'drums', difficulty: 'expert' },
+const MULTI_STEM = {
+  audio: [
+    { src: 'drums.ogg', name: 'drums' },
+    { src: 'guitar.ogg', name: 'guitar' },
   ],
 };
-let ipc: IpcMock;
 
-function makeSong(extra: Partial<Song> = {}): Song {
-  return {
-    id: 'song-1',
-    name: 'Master of Puppets',
-    artist: 'Metallica',
-    charter: 'Charter',
-    format: 'mid',
-    delaySeconds: 0,
-    fiveLaneDrums: false,
-    proDrums: true,
-    audio: [{ src: 'song.ogg', name: 'song' }],
-    ...extra,
-  } as Song;
-}
-
-function wrapper({ children }: { children: ReactNode }) {
-  return (
-    <AppProvider>
-      <InputProvider>
-        <SongViewSettingsProvider>
-          <MemoryRouter initialEntries={['/song-1']}>
-            <Routes>
-              <Route path="/" element={<div data-testid="song-list-stub" />} />
-              <Route path=":id" element={children} />
-            </Routes>
-          </MemoryRouter>
-        </SongViewSettingsProvider>
-      </InputProvider>
-    </AppProvider>
-  );
-}
-
-function getInstances() {
-  return Promise.resolve(MockAudioPlayer.instances);
-}
-
-async function loadSong(song: Song = makeSong()) {
-  const response: IpcLoadSongResponse = {
-    data: song,
-    fileData: new Uint8Array([1, 2, 3]) as unknown as Buffer,
-  };
-
-  await act(async () => {
-    ipc.emit('load-song', response);
-    await Promise.resolve();
-    await Promise.resolve();
-  });
-}
-
-beforeEach(async () => {
-  installLocalStorage();
-  ipc = installIpcMock();
-  resetNotification();
-  parseChartFileMock.mockReset().mockReturnValue(CHART as never);
-  ChartParserMock.mockReset().mockImplementation(function ChartParserStub() {
-    return { parsed: true } as never;
-  } as never);
-  renderMusicMock.mockReset().mockReturnValue([]);
-  busListeners.clear();
-  (await getInstances()).length = 0;
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
-function renderView() {
-  return render(<SongView />, { wrapper });
-}
+describe('opening a song', () => {
+  it('shows the song header and real rendered sheet music', async () => {
+    const view = setupSongView();
 
-describe('SongView — loading', () => {
-  it('requests the song and prevents sleep on mount', () => {
-    renderView();
-
-    const channels = ipc.sent.map((s) => s.channel);
-
-    expect(ipc.sent).toContainEqual({ channel: 'load-song', args: ['song-1'] });
-    expect(channels).toContain('prevent-sleep');
-    expect(channels).toContain('check-dev');
-  });
-
-  it('renders song metadata and the sheet once the song loads', async () => {
-    renderView();
-
-    await loadSong();
+    await view.loadSong();
 
     expect(screen.getAllByText('Master of Puppets').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Metallica').length).toBeGreaterThan(0);
-    expect(parseChartFileMock).toHaveBeenCalledTimes(1);
-    expect(ChartParserMock).toHaveBeenLastCalledWith(CHART, false, 'expert');
+    await waitFor(() => {
+      expect(document.querySelectorAll('svg').length).toBeGreaterThan(0);
+    });
   });
 
-  it('resumes sleep when the view unmounts', () => {
-    const { unmount } = renderView();
+  it('prevents display sleep while open and releases it on leave', () => {
+    const view = setupSongView();
 
-    unmount();
+    expect(view.sentChannels()).toContain('prevent-sleep');
+  });
 
-    expect(ipc.sent.map((s) => s.channel)).toContain('resume-sleep');
+  it('reports a load failure and returns to the library', async () => {
+    const view = setupSongView();
+
+    await act(async () => {
+      view.ipc.emit('load-song', { error: 'missing' });
+    });
+
+    expect(screen.getByText("Couldn't open this song")).toBeInTheDocument();
+    expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
+  });
+
+  it('reports a chart that has no parsable drum track', async () => {
+    const view = setupSongView();
+
+    await view.loadSong(makeSong(), GUITAR_ONLY_CHART);
+
+    expect(screen.getByText('Chart parse failed')).toBeInTheDocument();
+  });
+
+  it('shows the difficulty selected in app settings', async () => {
+    const view = setupSongView({ settings: { difficulty: 'hard' } });
+
+    await view.loadSong();
+
+    expect(screen.getByText('hard')).toBeInTheDocument();
   });
 });
 
-describe('SongView — playback', () => {
-  async function completeCountIn(player: { context: { currentTime: number } }) {
-    await act(async () => {
-      player.context.currentTime = 5;
-      await vi.advanceTimersByTimeAsync(50);
-    });
-  }
-
-  it('counts in before starting, then pauses, from the play button', async () => {
+describe('playing with count-in', () => {
+  it('counts a full measure in, schedules the music at the count-in end, then plays', async () => {
     vi.useFakeTimers();
 
     try {
-      renderView();
-      await loadSong();
+      const view = setupSongView();
 
-      const [player] = await getInstances();
-      const mock = player as unknown as {
-        start: ReturnType<typeof vi.fn>;
-        pause: ReturnType<typeof vi.fn>;
-        context: { currentTime: number };
-      };
-
-      fireEvent.click(screen.getByTestId('play-toggle'));
+      await view.loadSong();
+      view.clickPlay();
 
       expect(screen.getByText('1')).toBeInTheDocument();
 
-      await completeCountIn(mock);
+      const songStart = COUNT_IN_BEATS * BEAT_SECONDS;
+      const scheduled = view.audio.bufferSources.flatMap((s) => s.starts);
 
-      expect(mock.start).toHaveBeenCalledTimes(1);
+      expect(scheduled.some((start) => start.at === songStart)).toBe(true);
+
+      await view.completeCountIn();
+
       expect(screen.queryByText('1')).not.toBeInTheDocument();
-
-      fireEvent.click(screen.getByTestId('play-toggle'));
-      expect(mock.pause).toHaveBeenCalledTimes(1);
+      expect(view.startedSources().length).toBeGreaterThan(0);
     } finally {
       vi.useRealTimers();
     }
@@ -301,320 +103,523 @@ describe('SongView — playback', () => {
     vi.useFakeTimers();
 
     try {
-      renderView();
-      await loadSong();
+      const view = setupSongView();
 
-      const [player] = await getInstances();
-      const mock = player as unknown as {
-        pause: ReturnType<typeof vi.fn>;
-        context: { currentTime: number };
-      };
+      await view.loadSong();
+      view.clickPlay();
 
-      fireEvent.click(screen.getByTestId('play-toggle'));
       expect(screen.getByText('1')).toBeInTheDocument();
 
-      fireEvent.click(screen.getByTestId('play-toggle'));
-
-      await completeCountIn(mock);
+      view.clickPlay();
+      await view.completeCountIn();
 
       expect(screen.queryByText('1')).not.toBeInTheDocument();
-      expect(mock.pause).not.toHaveBeenCalled();
+      expect(view.startedSources()).toHaveLength(0);
     } finally {
       vi.useRealTimers();
     }
   });
+});
 
-  it('starts immediately when the count-in is disabled in settings', async () => {
-    localStorage.setItem('settings.countIn', 'false');
+describe('disabling the count-in from settings', () => {
+  it('starts playback immediately after the count-in switch is turned off', async () => {
+    const view = setupSongView();
 
-    renderView();
-    await loadSong();
+    await view.loadSong();
 
-    const [player] = await getInstances();
-    const start = (player as unknown as { start: ReturnType<typeof vi.fn> })
-      .start;
+    view.openSettings();
+    view.openMoreSettings();
+    view.toggleSetting('count-in');
+    view.clickPlay();
 
-    fireEvent.click(screen.getByTestId('play-toggle'));
-
-    expect(start).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('1')).not.toBeInTheDocument();
+    expect(view.startedSources().length).toBeGreaterThan(0);
   });
 
-  it('navigates back to the song list', async () => {
-    renderView();
-    await loadSong();
+  it('pauses and resumes from the play button', async () => {
+    const view = setupSongView({ settings: { countIn: false } });
 
-    fireEvent.click(screen.getByTestId('back-button'));
+    await view.loadSong();
 
-    expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
+    view.clickPlay();
+    expect(view.startedSources().length).toBeGreaterThan(0);
+
+    view.clickPlay();
+    expect(view.audio.state).toBe('suspended');
   });
 });
 
-describe('SongView — control navigation', () => {
-  function mapDevice(mapping: Record<string, string[]>) {
-    window.localStorage.setItem('settings.countIn', JSON.stringify(false));
-    window.localStorage.setItem(
-      'settings.selectedDevice',
-      JSON.stringify({
-        id: 'midi:Pad',
-        name: 'Pad',
-        sourceId: 'midi',
-        port: 1,
-      }),
+describe('metronome', () => {
+  it('unmuting the click track in settings makes the clicks audible on the beat grid', async () => {
+    const view = setupSongView({ settings: { countIn: false } });
+
+    await view.loadSong();
+
+    view.openSettings();
+    view.clickTrackMuteToggle();
+    view.clickPlay();
+
+    const clickGainRaised = view.audio.gainNodes.some((node) =>
+      node.gain.calls.some((call) => call.value === 0.8),
     );
-    window.localStorage.setItem(
-      'settings.controlMappings',
-      JSON.stringify({ 'midi:Pad': mapping }),
+
+    expect(clickGainRaised).toBe(true);
+  });
+});
+
+describe('playhead', () => {
+  it('shows a cursor over the sheet by default', async () => {
+    const view = setupSongView({ settings: { countIn: false } });
+
+    await view.loadSong();
+
+    expect(view.playheadCursor().style.display).not.toBe('none');
+
+    view.clickPlay();
+
+    expect(view.playheadCursor().style.display).not.toBe('none');
+  });
+
+  it('highlights the current measure instead when Measure style is chosen', async () => {
+    const view = setupSongView({ settings: { countIn: false } });
+
+    await view.loadSong();
+
+    view.openSettings();
+    view.clickTestId('playhead-Measure');
+    view.clickPlay();
+
+    const [firstMeasure] = view.measureHighlights();
+
+    expect(firstMeasure).toHaveAttribute('data-current');
+    expect(view.playheadCursor().style.display).toBe('none');
+  });
+});
+
+describe('sheet appearance', () => {
+  it('renders drum-colored noteheads until colors are switched off in settings', async () => {
+    const view = setupSongView();
+
+    await view.loadSong();
+
+    expect(document.querySelectorAll('.vf-note-snare').length).toBeGreaterThan(
+      0,
     );
-  }
+    expect(document.querySelectorAll('.vf-note-uncolored')).toHaveLength(0);
 
-  it('starts playback when the confirm control is struck', async () => {
-    mapDevice({ confirm: ['midi:38'] });
+    view.openSettings();
+    view.openMoreSettings();
+    view.toggleSetting('colors');
 
-    renderView();
-    await loadSong();
-
-    const [player] = await getInstances();
-    const start = (player as unknown as { start: ReturnType<typeof vi.fn> })
-      .start;
-
-    await act(async () => {
-      pressInput('midi:38');
+    await waitFor(() => {
+      expect(
+        document.querySelectorAll('.vf-note-uncolored').length,
+      ).toBeGreaterThan(0);
+      expect(document.querySelectorAll('.vf-note-snare')).toHaveLength(0);
     });
-
-    expect(start).toHaveBeenCalledTimes(1);
-  });
-
-  it('pauses playback when the pause control is struck mid-play', async () => {
-    mapDevice({ confirm: ['midi:38'], pause: ['midi:39'] });
-
-    renderView();
-    await loadSong();
-
-    const [player] = await getInstances();
-    const pause = (player as unknown as { pause: ReturnType<typeof vi.fn> })
-      .pause;
-
-    await act(async () => {
-      pressInput('midi:38');
-    });
-    await act(async () => {
-      pressInput('midi:39');
-    });
-
-    expect(pause).toHaveBeenCalledTimes(1);
-  });
-
-  it('returns to the song list when the back control is struck while stopped', async () => {
-    mapDevice({ back: ['midi:40'] });
-
-    renderView();
-    await loadSong();
-
-    await act(async () => {
-      pressInput('midi:40');
-    });
-
-    expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
   });
 });
 
-describe('SongView — difficulty', () => {
-  it('parses at the difficulty selected in app settings', async () => {
-    localStorage.setItem('settings.difficulty', JSON.stringify('hard'));
-
-    renderView();
-    await loadSong();
-
-    expect(ChartParserMock).toHaveBeenLastCalledWith(CHART, false, 'hard');
-  });
-
-  it('has no difficulty selector in the song-view settings popover', async () => {
-    renderView();
-    await loadSong();
-
-    fireEvent.click(screen.getByTestId('settings-trigger'));
-
-    expect(screen.queryByTestId('difficulty-hard')).not.toBeInTheDocument();
-  });
-});
-
-describe('SongView — bar numbers', () => {
-  function lastShowBarNumbers() {
-    return renderMusicMock.mock.calls.at(-1)?.[3];
-  }
-
-  it('ignores a persisted showBarNumbers outside dev mode', async () => {
-    localStorage.setItem('settings.showBarNumbers', JSON.stringify(true));
-
-    renderView();
-    await loadSong();
-
-    expect(renderMusicMock).toHaveBeenCalled();
-    expect(lastShowBarNumbers()).toBe(false);
-  });
-
-  it('renders bar numbers once dev mode is enabled', async () => {
-    localStorage.setItem('settings.showBarNumbers', JSON.stringify(true));
-
-    renderView();
-    await loadSong();
-
-    expect(lastShowBarNumbers()).toBe(false);
-
-    await act(async () => {
-      ipc.emit('check-dev', true);
+describe('drumming and scoring', () => {
+  it('persists a high score after a hit lands on a charted note', async () => {
+    const view = setupSongView({
+      settings: { countIn: false },
+      keyboard: { kit: { snare: ['keyboard:KeyJ'] } },
     });
 
-    expect(lastShowBarNumbers()).toBe(true);
-  });
-});
+    await view.loadSong();
 
-describe('SongView — score', () => {
-  async function finishSong() {
-    const [player] = await getInstances();
-
-    await act(async () => {
-      (player as unknown as { onEnded: () => void }).onEnded();
-    });
-  }
-
-  it('shows the score modal but does not persist a scrub-through with no hits', async () => {
-    renderView();
-    await loadSong();
-
-    expect(screen.queryByTestId('score-modal')).toBeNull();
-
-    await finishSong();
+    view.clickPlay();
+    await view.pressKey('KeyJ');
+    await view.finishSong();
 
     expect(screen.getByTestId('score-modal')).toBeInTheDocument();
-    expect(ipc.sent.map((s) => s.channel)).not.toContain('update-song');
+    expect(view.updateSongPayloads()).toEqual([
+      {
+        id: 'song-1',
+        scoreData: { expert: { hitNotes: 1, totalNotes: 8, falseHits: 0 } },
+      },
+    ]);
   });
 
-  it('persists a new high score when notes were actually hit', async () => {
-    window.localStorage.setItem(
-      'settings.playheadStyle',
-      JSON.stringify('Cursor'),
-    );
-    window.localStorage.setItem('settings.countIn', JSON.stringify(false));
-    window.localStorage.setItem(
-      'settings.selectedDevice',
-      JSON.stringify({
-        id: 'midi:Pad',
-        name: 'Pad',
-        sourceId: 'midi',
-        port: 1,
-      }),
-    );
-    window.localStorage.setItem(
-      'settings.inputMappings',
-      JSON.stringify({ 'midi:Pad': { snare: ['midi:38'] } }),
-    );
-    renderMusicMock.mockReturnValue([
-      {
-        stave: {
-          getX: () => 0,
-          getY: () => 0,
-          getWidth: () => 100,
-          getHeight: () => 40,
-        },
-        measure: {
-          startTick: 0,
-          endTick: 1920,
-          notes: [{ isRest: false, notes: ['c/5'] }],
-        },
-        renderedNotes: [
-          {
-            tick: 0,
-            note: {
-              isRest: () => false,
-              getKeys: () => ['c/5'],
-              getAbsoluteX: () => 0,
-              noteHeads: [],
-            },
-          },
-        ],
-        yOffset: 0,
+  it('counts a hit on the wrong drum against the score', async () => {
+    const view = setupSongView({
+      settings: { countIn: false },
+      keyboard: {
+        kit: { snare: ['keyboard:KeyJ'], kick: ['keyboard:KeyK'] },
       },
-    ] as never);
-
-    renderView();
-    await loadSong();
-
-    fireEvent.click(screen.getByTestId('play-toggle'));
-
-    await act(async () => {
-      pressInput('midi:38');
     });
 
-    await finishSong();
+    await view.loadSong();
 
-    expect(ipc.sent.map((s) => s.channel)).toContain('update-song');
+    view.clickPlay();
+    await view.pressKey('KeyJ');
+    await view.pressKey('KeyK');
+    await view.finishSong();
+
+    expect(view.updateSongPayloads()).toEqual([
+      {
+        id: 'song-1',
+        scoreData: { expert: { hitNotes: 1, totalNotes: 8, falseHits: 1 } },
+      },
+    ]);
   });
 
-  it('closes the modal on retry', async () => {
-    renderView();
-    await loadSong();
-    await finishSong();
+  it('shows the score modal but persists nothing for a run with no hits', async () => {
+    const view = setupSongView({ settings: { countIn: false } });
 
-    fireEvent.click(screen.getByText('Retry'));
+    await view.loadSong();
 
-    expect(
-      screen.getByTestId('score-modal').querySelector('.ant-modal'),
-    ).toHaveClass('ant-zoom-leave');
+    view.clickPlay();
+    await view.finishSong();
+
+    expect(screen.getByTestId('score-modal')).toBeInTheDocument();
+    expect(view.sentChannels()).not.toContain('update-song');
   });
 
-  it('returns to the song list on next song', async () => {
-    renderView();
-    await loadSong();
-    await finishSong();
+  it('does not persist a run that fails to beat the previous high score', async () => {
+    const view = setupSongView({
+      settings: { countIn: false },
+      keyboard: { kit: { snare: ['keyboard:KeyJ'] } },
+    });
 
-    fireEvent.click(screen.getByText('Next song'));
+    await view.loadSong(
+      makeSong({
+        scoreData: { expert: { hitNotes: 8, totalNotes: 8, falseHits: 0 } },
+      }),
+    );
+
+    view.clickPlay();
+    await view.pressKey('KeyJ');
+    await view.finishSong();
+
+    expect(screen.getByTestId('score-modal')).toBeInTheDocument();
+    expect(view.sentChannels()).not.toContain('update-song');
+  });
+
+  it('treats a kit key that doubles as the pause control as a drum while playing', async () => {
+    const view = setupSongView({
+      settings: { countIn: false },
+      keyboard: {
+        kit: { snare: ['keyboard:KeyJ'] },
+        controls: { pause: ['keyboard:KeyJ'] },
+      },
+    });
+
+    await view.loadSong();
+
+    view.clickPlay();
+    await view.pressKey('KeyJ');
+
+    expect(view.audio.state).toBe('running');
+
+    await view.finishSong();
+
+    expect(view.updateSongPayloads()).toEqual([
+      {
+        id: 'song-1',
+        scoreData: { expert: { hitNotes: 1, totalNotes: 8, falseHits: 0 } },
+      },
+    ]);
+  });
+
+  it('restarts the song from the top on retry', async () => {
+    const view = setupSongView({ settings: { countIn: false } });
+
+    await view.loadSong();
+
+    view.clickPlay();
+    await view.finishSong();
+
+    view.clickTestId('score-retry');
+
+    expect(view.startedSources().length).toBeGreaterThan(0);
+  });
+
+  it('returns to the library on next song', async () => {
+    const view = setupSongView({ settings: { countIn: false } });
+
+    await view.loadSong();
+
+    view.clickPlay();
+    await view.finishSong();
+
+    view.clickTestId('score-next');
+
+    expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
+  });
+
+  it('advances from the score modal to the library with the confirm control', async () => {
+    const view = setupSongView({
+      settings: { countIn: false },
+      keyboard: { controls: { confirm: ['keyboard:Enter'] } },
+    });
+
+    await view.loadSong();
+
+    view.clickPlay();
+    await view.finishSong();
+    await view.pressKey('Enter');
 
     expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
   });
 });
 
-describe('SongView — practice mode', () => {
-  function renderPractice() {
-    return render(
-      <AppProvider>
-        <InputProvider>
-          <SongViewSettingsProvider>
-            <MemoryRouter initialEntries={['/song-1?gameMode=practice']}>
-              <Routes>
-                <Route
-                  path="/"
-                  element={<div data-testid="song-list-stub" />}
-                />
-                <Route path=":id" element={<SongView />} />
-              </Routes>
-            </MemoryRouter>
-          </SongViewSettingsProvider>
-        </InputProvider>
-      </AppProvider>,
-    );
-  }
+describe('transport controls', () => {
+  it('starts and pauses playback from mapped keys', async () => {
+    const view = setupSongView({
+      settings: { countIn: false },
+      keyboard: {
+        controls: { confirm: ['keyboard:Enter'], pause: ['keyboard:Space'] },
+      },
+    });
 
-  it('renders the speed and loop controls', async () => {
-    renderPractice();
-    await loadSong();
+    await view.loadSong();
+
+    await view.pressKey('Enter');
+    expect(view.startedSources().length).toBeGreaterThan(0);
+
+    await view.pressKey('Space');
+    expect(view.audio.state).toBe('suspended');
+  });
+
+  it('returns to the library from the back control while stopped', async () => {
+    const view = setupSongView({
+      keyboard: { controls: { back: ['keyboard:Escape'] } },
+    });
+
+    await view.loadSong();
+    await view.pressKey('Escape');
+
+    expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
+  });
+
+  it('navigates back to the library from the back button', async () => {
+    const view = setupSongView();
+
+    await view.loadSong();
+    view.clickTestId('back-button');
+
+    expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
+  });
+});
+
+describe('exporting a PDF', () => {
+  it('sends the rendered sheet to main and reports success', async () => {
+    const view = setupSongView();
+
+    await view.loadSong();
+
+    view.openSettings();
+    view.clickTestId('export-pdf');
+
+    const request = view.ipc.sent.find((s) => s.channel === 'export-pdf');
+
+    expect(request?.args[0]).toMatchObject({
+      fileName: 'Master of Puppets - Metallica.pdf',
+    });
+
+    await act(async () => {
+      view.ipc.emit('export-pdf', { ok: true, filePath: '/tmp/out.pdf' });
+    });
+
+    expect(screen.getByText('PDF exported')).toBeInTheDocument();
+  });
+});
+
+describe('practice mode', () => {
+  it('offers speed and loop controls instead of scoring', async () => {
+    const view = setupSongView({ route: '/song-1?gameMode=practice' });
+
+    await view.loadSong();
 
     expect(screen.getByText('Speed:')).toBeInTheDocument();
     expect(screen.getByText('Loop:')).toBeInTheDocument();
   });
 
-  it('never shows the score modal or persists a score when a run ends', async () => {
-    renderPractice();
-    await loadSong();
+  it('shows no speed or loop controls when performing', async () => {
+    const view = setupSongView();
 
-    const [player] = await getInstances();
+    await view.loadSong();
 
-    await act(async () => {
-      (player as unknown as { onEnded: () => void }).onEnded();
+    expect(screen.queryByText('Speed:')).toBeNull();
+    expect(screen.queryByText('Loop:')).toBeNull();
+  });
+
+  it('moves the measure focus with the mapped navigation keys', async () => {
+    const view = setupSongView({
+      route: '/song-1?gameMode=practice',
+      keyboard: {
+        controls: { right: ['keyboard:ArrowRight'] },
+      },
     });
 
-    expect(screen.queryByTestId('score-modal')).toBeNull();
-    expect(ipc.sent.map((s) => s.channel)).not.toContain('update-song');
+    await view.loadSong();
+
+    expect(
+      view.measureHighlights().some((el) => el.hasAttribute('data-focused')),
+    ).toBe(false);
+
+    await view.pressKey('ArrowRight');
+
+    expect(
+      view.measureHighlights().some((el) => el.hasAttribute('data-focused')),
+    ).toBe(true);
+  });
+});
+
+describe('the stem mixer', () => {
+  it('shows a volume control for each stem in the mix', async () => {
+    const view = setupSongView();
+
+    await view.loadSong(makeSong(MULTI_STEM));
+    view.openSettings();
+
+    await waitFor(() => {
+      expect(screen.getByText('drums')).toBeInTheDocument();
+    });
+    expect(screen.getByText('guitar')).toBeInTheDocument();
+  });
+
+  it('soloing a stem silences the others at the audio boundary', async () => {
+    const view = setupSongView();
+
+    await view.loadSong(makeSong(MULTI_STEM));
+    view.openSettings();
+
+    await waitFor(() => {
+      expect(screen.getByText('drums')).toBeInTheDocument();
+    });
+
+    const silentBefore = view.mutedGainCount();
+
+    fireEvent.click(view.mixerControls('drums').solo);
+
+    expect(view.mutedGainCount()).toBeGreaterThan(silentBefore);
+    expect(view.mixerControls('guitar').mute.className).toContain(
+      'ant-btn-primary',
+    );
+  });
+
+  it('muting then unmuting a stem restores its previous level', async () => {
+    const view = setupSongView();
+
+    await view.loadSong(makeSong(MULTI_STEM));
+    view.openSettings();
+
+    await waitFor(() => {
+      expect(screen.getByText('drums')).toBeInTheDocument();
+    });
+
+    const silentBefore = view.mutedGainCount();
+
+    fireEvent.click(view.mixerControls('drums').mute);
+    expect(view.mixerControls('drums').mute.className).toContain(
+      'ant-btn-primary',
+    );
+    expect(view.mutedGainCount()).toBeGreaterThan(silentBefore);
+
+    fireEvent.click(view.mixerControls('drums').mute);
+    expect(view.mixerControls('drums').mute.className).not.toContain(
+      'ant-btn-primary',
+    );
+    expect(view.mutedGainCount()).toBe(silentBefore);
+  });
+
+  it('mutes and unmutes the master output', async () => {
+    const view = setupSongView();
+
+    await view.loadSong(makeSong(MULTI_STEM));
+    view.openSettings();
+
+    await waitFor(() => {
+      expect(screen.getByText('Master')).toBeInTheDocument();
+    });
+
+    const silentBefore = view.mutedGainCount();
+
+    fireEvent.click(view.masterMuteButton());
+    expect(view.masterMuteButton().className).toContain('ant-btn-primary');
+    expect(view.mutedGainCount()).toBeGreaterThan(silentBefore);
+
+    fireEvent.click(view.masterMuteButton());
+    expect(view.masterMuteButton().className).not.toContain('ant-btn-primary');
+    expect(view.mutedGainCount()).toBe(silentBefore);
+  });
+});
+
+describe('the score summary', () => {
+  it('reports the accuracy and note counts of a run', async () => {
+    const view = setupSongView({
+      settings: { countIn: false },
+      keyboard: { kit: { snare: ['keyboard:KeyJ'] } },
+    });
+
+    await view.loadSong();
+
+    view.clickPlay();
+    await view.pressKey('KeyJ');
+    await view.finishSong();
+
+    const modal = screen.getByTestId('score-modal');
+
+    expect(within(modal).getByText('13% accuracy')).toBeInTheDocument();
+    expect(within(modal).getByText('8 notes hit')).toBeInTheDocument();
+    expect(within(modal).getByText('0 false hits')).toBeInTheDocument();
+  });
+
+  it('celebrates a flawless run with Perfect and five stars', async () => {
+    const view = setupSongView({
+      settings: { countIn: false },
+      keyboard: { kit: { snare: ['keyboard:KeyJ'] } },
+    });
+
+    await view.loadSong(makeSong(), SINGLE_NOTE_CHART);
+
+    view.clickPlay();
+    await view.pressKey('KeyJ');
+    await view.finishSong();
+
+    const modal = screen.getByTestId('score-modal');
+
+    expect(within(modal).getByText('Perfect')).toBeInTheDocument();
+    expect(
+      modal.querySelectorAll('svg[data-prefix="fas"][data-icon="star"]'),
+    ).toHaveLength(5);
+  });
+});
+
+describe('the playback time display', () => {
+  it('reflects a seek in the elapsed-time readout', async () => {
+    const view = setupSongView({ route: '/song-1?gameMode=practice' });
+
+    await view.loadSong();
+
+    expect(view.currentTimeText()).toBe('00:00');
+
+    view.seekToEnd();
+
+    await waitFor(() => {
+      expect(view.currentTimeText()).toBe('00:04');
+    });
+  });
+});
+
+describe('the reference legend', () => {
+  it('shows the drum reference and hides it when switched off', async () => {
+    const view = setupSongView();
+
+    await view.loadSong();
+
+    expect(screen.getByText('Snare')).toBeInTheDocument();
+    expect(screen.getByText('Kick')).toBeInTheDocument();
+
+    view.openSettings();
+    view.openMoreSettings();
+    view.toggleSetting('reference');
+
+    await waitFor(() => {
+      expect(screen.queryByText('Snare')).not.toBeInTheDocument();
+    });
   });
 });

@@ -47,6 +47,7 @@ export function SongFilter({
         prefix={
           <FontAwesomeIcon icon={faSearch} color="var(--color-text-dim)" />
         }
+        data-testid="song-search"
         placeholder="Enter song name"
         value={nameFilter}
         onChange={(event) => {

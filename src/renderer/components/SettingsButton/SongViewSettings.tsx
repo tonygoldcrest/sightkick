@@ -59,6 +59,7 @@ export function SongViewSettings({
           placement="bottom"
         >
           <Button
+            data-testid="export-pdf"
             icon={<FontAwesomeIcon icon={faFilePdf} />}
             loading={isExporting}
             onClick={onExportPdf}
@@ -82,6 +83,7 @@ export function SongViewSettings({
               {PLAYHEAD_STYLES.map((s) => (
                 <Button
                   key={s}
+                  data-testid={`playhead-${s}`}
                   className="grow"
                   type={playheadStyle === s ? 'primary' : 'default'}
                   onClick={() => setPlayheadStyle(s)}
@@ -101,7 +103,7 @@ export function SongViewSettings({
         items={[
           {
             key: '1',
-            label: 'More settings',
+            label: <span data-testid="more-settings">More settings</span>,
             children: (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-3">
@@ -111,6 +113,7 @@ export function SongViewSettings({
                   />
                   <Switch
                     size="small"
+                    data-testid="setting-colors"
                     checked={enableColors}
                     onChange={setEnableColors}
                   />
@@ -125,6 +128,7 @@ export function SongViewSettings({
                       />
                       <Switch
                         size="small"
+                        data-testid="setting-bar-numbers"
                         checked={showBarNumbers}
                         onChange={setShowBarNumbers}
                       />
@@ -141,6 +145,7 @@ export function SongViewSettings({
                   />
                   <Switch
                     size="small"
+                    data-testid="setting-tempo"
                     checked={showTempo}
                     onChange={setShowTempo}
                   />
@@ -157,6 +162,7 @@ export function SongViewSettings({
                       />
                       <Switch
                         size="small"
+                        data-testid="setting-reference"
                         checked={showReference}
                         onChange={setShowReference}
                       />
@@ -173,6 +179,7 @@ export function SongViewSettings({
                   />
                   <Switch
                     size="small"
+                    data-testid="setting-count-in"
                     checked={countIn}
                     onChange={setCountIn}
                   />

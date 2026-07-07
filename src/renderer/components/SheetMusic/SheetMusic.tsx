@@ -151,6 +151,10 @@ export function SheetMusic({
         <div
           key={index}
           ref={highlightsRef[index]}
+          data-testid="measure-overlay"
+          data-measure-index={index}
+          data-focused={focused ? 'true' : undefined}
+          data-selected={selected ? 'true' : undefined}
           style={{
             top: yOffset + stave.getY(),
             left: stave.getX() - 5,
@@ -234,6 +238,7 @@ export function SheetMusic({
           {measureHighlights}
           <div
             ref={cursorRef}
+            data-testid="playhead-cursor"
             className="absolute top-0 left-0 z-1 pointer-events-none shadow-accent-button will-change-transform"
             style={{ display: 'none' }}
           >

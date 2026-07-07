@@ -54,6 +54,7 @@ export function SortMenu({ sort, onSortChange, focusedIndex }: Props) {
         return (
           <Button
             key={key}
+            data-testid={`sort-option-${key}`}
             type={sort.key === key ? 'primary' : 'default'}
             onClick={() => handleClick(key)}
             className={cn('w-full justify-start', {

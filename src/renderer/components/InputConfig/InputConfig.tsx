@@ -43,6 +43,7 @@ export function InputConfig({
   const renderElement = (element: MappingElement) => (
     <div
       key={element.value}
+      data-testid={`input-row-${element.value}`}
       className="bg-surface text-text-body border border-border p-2 rounded-md flex flex-col"
     >
       <div className="flex items-center gap-3">
@@ -81,6 +82,7 @@ export function InputConfig({
         </div>
         {element.value === listeningTo ? (
           <Button
+            data-testid={`learn-${element.value}`}
             className="ml-auto animate-pulse"
             type="primary"
             onClick={onStopLearn}
@@ -89,6 +91,7 @@ export function InputConfig({
           </Button>
         ) : (
           <Button
+            data-testid={`learn-${element.value}`}
             icon={<FontAwesomeIcon icon={faPlus} />}
             className="ml-auto"
             type="default"

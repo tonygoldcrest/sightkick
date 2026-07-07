@@ -70,7 +70,11 @@ export function SongListSettings({
         title="Hook up your e-kit (or keyboard if you fancy) so we can score your hits"
         placement="bottom"
       >
-        <Button icon={<FontAwesomeIcon icon={faDrum} />} onClick={onSetupInput}>
+        <Button
+          data-testid="setup-input"
+          icon={<FontAwesomeIcon icon={faDrum} />}
+          onClick={onSetupInput}
+        >
           {currentInputName ?? 'Setup input'}
         </Button>
       </Tooltip>

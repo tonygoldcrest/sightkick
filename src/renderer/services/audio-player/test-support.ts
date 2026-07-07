@@ -50,6 +50,8 @@ export class FakeAudioParam {
     this.value = value;
     this.calls.push({ value, time });
   }
+
+  cancelScheduledValues(_time: number) {}
 }
 
 export class FakeGainNode {

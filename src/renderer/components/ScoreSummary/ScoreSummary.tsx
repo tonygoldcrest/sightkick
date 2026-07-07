@@ -59,6 +59,7 @@ export function ScoreSummary({
   const footer = (
     <div className="flex gap-3 w-full">
       <Button
+        data-testid="score-retry"
         className="grow"
         onClick={() => onRetry()}
         icon={<FontAwesomeIcon icon={faRepeat} />}
@@ -67,6 +68,7 @@ export function ScoreSummary({
         Retry
       </Button>
       <Button
+        data-testid="score-next"
         className="grow"
         type="primary"
         onClick={() => onNextSong()}

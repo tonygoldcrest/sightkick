@@ -64,6 +64,7 @@ export function useGameModeSelector() {
         {GAME_MODES.map((name) => (
           <Button
             key={name}
+            data-testid={`game-mode-${name}`}
             size="large"
             className="w-full"
             type={name === selectedMode ? 'primary' : 'default'}

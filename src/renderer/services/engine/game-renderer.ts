@@ -319,6 +319,7 @@ export class GameRenderer {
 
       el.style.backgroundColor = on ? 'var(--color-accent-soft-bg)' : '';
       el.style.border = on ? '2px solid var(--color-accent-bright)' : '';
+      el.toggleAttribute('data-current', on);
     });
   }
 

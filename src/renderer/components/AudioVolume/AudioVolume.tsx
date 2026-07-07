@@ -33,6 +33,7 @@ export function AudioVolume({
         className={cn({ 'col-span-2': !canSolo })}
       />
       <Button
+        data-testid={`mute-${name}`}
         type={isMuted ? 'primary' : 'default'}
         size="small"
         icon={<FontAwesomeIcon size="xs" icon={faVolumeMute} />}
@@ -40,6 +41,7 @@ export function AudioVolume({
       />
       {canSolo && (
         <Button
+          data-testid={`solo-${name}`}
           type={isSoloed ? 'primary' : 'default'}
           size="small"
           icon={<FontAwesomeIcon size="xs" icon={faS} />}
