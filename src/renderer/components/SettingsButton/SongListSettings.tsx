@@ -22,6 +22,7 @@ export function SongListSettings({
   currentInputName,
 }: Props) {
   const { currentPath } = useApp();
+  const isScanning = scanPercent !== undefined;
   const selectFolder = () =>
     window.electron.ipcRenderer.sendMessage('rescan-songs');
   const rescan = () =>
@@ -39,6 +40,7 @@ export function SongListSettings({
           <Button
             icon={<FontAwesomeIcon icon={faFolder} />}
             onClick={selectFolder}
+            disabled={isScanning}
             className="grow"
           >
             {currentPath ? currentPath.split(/[\\/]/).pop() : 'Select folder'}
@@ -57,7 +59,7 @@ export function SongListSettings({
           </Tooltip>
         ) : null}
       </div>
-      {scanPercent !== undefined && (
+      {isScanning && (
         <div className="flex flex-col gap-1" data-testid="scan-progress">
           <div className="text-sm text-text-muted">Scanning songs</div>
           <Progress percent={scanPercent} />
