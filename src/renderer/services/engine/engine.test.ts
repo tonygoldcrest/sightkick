@@ -189,6 +189,7 @@ async function setup(over: Partial<EngineContext> = {}) {
   const engine = new Engine({
     trackData: TRACKS,
     isDev: false,
+    player: 'default',
     subscribeInput: (listener) => {
       inputListeners.add(listener);
 

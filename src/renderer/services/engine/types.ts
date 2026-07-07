@@ -1,13 +1,13 @@
 import { Measure, ParsedChart, RenderData } from '../../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../../types';
-import { GameMode, PlayheadStyle } from '../../types';
+import { PlayheadStyle } from '../../types';
 import { InputEvent } from '../../input/types';
-import { AudioPlayerFactory, TrackConfig } from '../audio-player';
+import { AudioPlayerFactory, PlayerMode, TrackConfig } from '../audio-player';
 
 export interface EngineOptions {
   trackData: TrackConfig[];
   isDev: boolean;
-  gameMode?: GameMode;
+  player: PlayerMode;
   subscribeInput: (listener: (event: InputEvent) => void) => () => void;
   onEnded: (score: ScoreData) => void;
   onError: () => void;

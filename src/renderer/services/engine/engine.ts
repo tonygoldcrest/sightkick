@@ -35,9 +35,7 @@ export class Engine {
   constructor(options: EngineOptions) {
     this.onEndedCb = options.onEnded;
 
-    const createPlayer = playerFactoryForMode(
-      options.gameMode === 'practice' ? 'speed' : 'default',
-    );
+    const createPlayer = playerFactoryForMode(options.player);
 
     this.transport = new Transport({
       trackData: options.trackData,

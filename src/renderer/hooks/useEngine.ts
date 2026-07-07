@@ -10,7 +10,8 @@ import { TrackConfig } from '../services/audio-player/types';
 import { TimeStore } from '../services/time-store';
 import { Measure, ParsedChart, RenderData } from '../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../types';
-import { GameMode, PlayheadStyle } from '../types';
+import { PlayheadStyle } from '../types';
+import { PlayerMode } from '../services/audio-player';
 import { Engine, PlaybackSnapshot, PlaybackState } from '../services/engine';
 import { inputBus } from '../input';
 
@@ -25,7 +26,7 @@ interface UseEngineParams {
   countInEnabled: boolean;
   playheadStyle: PlayheadStyle;
   mapping: InputMapping;
-  gameMode?: GameMode;
+  player: PlayerMode;
   onEnded: (score: ScoreData) => void;
 }
 
@@ -74,13 +75,13 @@ export function useEngine({
   countInEnabled,
   playheadStyle,
   mapping,
-  gameMode,
+  player,
   onEnded,
 }: UseEngineParams): UseEngineResult {
   const { notification } = App.useApp();
   const onEndedRef = useRef(onEnded);
   const isDevRef = useRef(isDev);
-  const gameModeRef = useRef(gameMode);
+  const playerRef = useRef(player);
   const [fallbackTimeStore] = useState(() => new TimeStore());
   const [engine, setEngine] = useState<Engine | undefined>(undefined);
 
@@ -89,8 +90,8 @@ export function useEngine({
   }, [onEnded]);
 
   useEffect(() => {
-    gameModeRef.current = gameMode;
-  }, [gameMode]);
+    playerRef.current = player;
+  }, [player]);
 
   useEffect(() => {
     isDevRef.current = isDev;
@@ -101,7 +102,7 @@ export function useEngine({
     const instance = new Engine({
       trackData,
       isDev: isDevRef.current,
-      gameMode: gameModeRef.current,
+      player: playerRef.current,
       subscribeInput: inputBus.subscribe,
       onEnded: (score) => onEndedRef.current(score),
       onError: () =>
@@ -141,10 +142,8 @@ export function useEngine({
   ]);
 
   useEffect(() => {
-    engine?.setSettings({
-      playheadStyle: gameMode === 'practice' ? 'Cursor' : playheadStyle,
-    });
-  }, [engine, playheadStyle, gameMode]);
+    engine?.setSettings({ playheadStyle });
+  }, [engine, playheadStyle]);
 
   useEffect(() => {
     engine?.setMapping(mapping);

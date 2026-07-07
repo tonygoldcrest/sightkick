@@ -1,7 +1,14 @@
-import { Dispatch, SetStateAction, useCallback, useState } from 'react';
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import { clamp } from 'es-toolkit';
 import { ParsedChart, RenderData } from '../../../chart-parser/types';
 import { PracticeRange } from '../../types';
+import { ModePolicy } from '../../modes';
 import { Engine } from '../../services/engine';
 import { secondsToTicks } from '../../../chart-parser/timing';
 import { InputControlHandlers } from '../useInputControls';
@@ -14,38 +21,77 @@ import {
 const MIN_SPEED = 0.3;
 const MAX_SPEED = 2;
 
-interface UsePracticeNavParams {
+interface UsePracticeSessionParams {
   engine: Engine | undefined;
+  policy: ModePolicy;
   chart: ParsedChart | null;
   renderData: RenderData[];
   delaySeconds: number;
-  isLooping: boolean;
-  practiceRange: PracticeRange | undefined;
-  setPracticeRange: (range?: PracticeRange) => void;
-  setPlaybackSpeed: Dispatch<SetStateAction<number>>;
+  isEnded: boolean;
   onExit: () => void;
 }
 
-interface UsePracticeNavResult {
+interface UsePracticeSessionResult {
   focusIndex: number | undefined;
   controlHandlers: InputControlHandlers;
+  practiceRange: PracticeRange | undefined;
+  playbackSpeed: number;
+  setPlaybackSpeed: Dispatch<SetStateAction<number>>;
+  isLooping: boolean;
+  setIsLooping: Dispatch<SetStateAction<boolean>>;
   onPracticeRangeChange: (range?: PracticeRange) => void;
   clearSelection: () => void;
 }
 
-export function usePracticeNav({
+export function usePracticeSession({
   engine,
+  policy,
   chart,
   renderData,
   delaySeconds,
-  isLooping,
-  practiceRange,
-  setPracticeRange,
-  setPlaybackSpeed,
+  isEnded,
   onExit,
-}: UsePracticeNavParams): UsePracticeNavResult {
+}: UsePracticeSessionParams): UsePracticeSessionResult {
   const [focusIndex, setFocusIndex] = useState<number>();
   const [loopAnchor, setLoopAnchor] = useState<number>();
+  const [practiceRange, setPracticeRange] = useState<PracticeRange>();
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isLooping, setIsLooping] = useState(true);
+
+  useEffect(() => {
+    if (!policy.speedControl) {
+      return;
+    }
+
+    engine?.setPlaybackSpeed(playbackSpeed);
+  }, [engine, policy.speedControl, playbackSpeed]);
+
+  useEffect(() => {
+    if (policy.parkAtStartOnEnd && isEnded) {
+      engine?.seekSeconds(delaySeconds);
+    }
+  }, [engine, policy.parkAtStartOnEnd, isEnded, delaySeconds]);
+
+  useEffect(() => {
+    if (!policy.looping || !isLooping || renderData.length === 0) {
+      engine?.setLoopRegion(undefined);
+
+      return;
+    }
+
+    const startMeasure =
+      (practiceRange && renderData[practiceRange.start]?.measure) ??
+      renderData[0].measure;
+    const endMeasure =
+      (practiceRange && renderData[practiceRange.end]?.measure) ??
+      renderData[renderData.length - 1].measure;
+
+    engine?.setLoopRegion({
+      startTick: startMeasure.startTick,
+      endTick: endMeasure.endTick,
+    });
+  }, [engine, policy.looping, isLooping, practiceRange, renderData]);
+
   const clearSelection = useCallback(() => {
     setFocusIndex(undefined);
     setLoopAnchor(undefined);
@@ -161,13 +207,21 @@ export function usePracticeNav({
     faster: () => changeSpeed(0.1),
     slower: () => changeSpeed(-0.1),
   };
-  const onPracticeRangeChange = useCallback(
-    (range?: PracticeRange) => {
-      setPracticeRange(range);
-      clearSelection();
-    },
-    [setPracticeRange, clearSelection],
-  );
+  const onPracticeRangeChange = useCallback((range?: PracticeRange) => {
+    setPracticeRange(range);
+    setFocusIndex(undefined);
+    setLoopAnchor(undefined);
+  }, []);
 
-  return { focusIndex, controlHandlers, onPracticeRangeChange, clearSelection };
+  return {
+    focusIndex,
+    controlHandlers,
+    practiceRange,
+    playbackSpeed,
+    setPlaybackSpeed,
+    isLooping,
+    setIsLooping,
+    onPracticeRangeChange,
+    clearSelection,
+  };
 }
