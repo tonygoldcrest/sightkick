@@ -16,6 +16,7 @@ import { GameMode, PracticeRange } from '../../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRepeat, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { IconButton } from '../IconButton';
+import { getScrollParent } from '../../services/engine/helpers';
 
 export interface SheetMusicProps {
   engine: Engine | undefined;
@@ -100,6 +101,30 @@ export function SheetMusic({
       highlightEls: highlightsRef.map((ref) => ref.current ?? undefined),
     });
   }, [engine, renderData, highlightsRef]);
+
+  useEffect(() => {
+    if (focusIndex === undefined) {
+      return;
+    }
+
+    const el = highlightsRef[focusIndex]?.current;
+    const container = getScrollParent(el ?? undefined);
+
+    if (!el || !container) {
+      return;
+    }
+
+    const elRect = el.getBoundingClientRect();
+    const parentRect = container.getBoundingClientRect();
+    const margin = parentRect.height * 0.25;
+    const outOfView =
+      elRect.top < parentRect.top + margin ||
+      elRect.bottom > parentRect.bottom - margin;
+
+    if (outOfView) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [focusIndex, highlightsRef]);
 
   const measureHighlights = useMemo(() => {
     const isSelected = (index: number) =>

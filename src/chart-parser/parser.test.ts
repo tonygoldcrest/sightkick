@@ -374,6 +374,31 @@ describe('rhythm notation', () => {
     expect(measure.tuplets.some((t) => t.numNotes === 6)).toBe(true);
   });
 
+  it('reads snare on the beat, "e" and "a" as straight sixteenths, not a triplet', () => {
+    const parser = parse({
+      resolution: 480,
+      groups: [group(0, KICK, SNARE), group(120, SNARE), group(360, SNARE)],
+    });
+    const measure = parser.measures[0];
+    const beatOne = nonRest(measure).filter((n) => n.tick < 480);
+
+    expect(beatOne.map((n) => n.tick)).toEqual([0, 120, 360]);
+    expect(measure.tuplets).toEqual([]);
+  });
+
+  it('reads evenly spaced hits as straight thirty-second notes, not triplets', () => {
+    const ticks = Array.from({ length: 32 }, (_, i) => i * 60);
+    const parser = parse({
+      resolution: 480,
+      groups: ticks.map((tick) => group(tick, TOM_BLUE)),
+    });
+    const measure = parser.measures[0];
+
+    expect(measure.tuplets).toEqual([]);
+    expect(nonRest(measure).map((n) => n.tick)).toEqual(ticks);
+    expect(nonRest(measure).every((n) => n.duration === '32')).toBe(true);
+  });
+
   it('places thirty-second-triplet onsets exactly without displacing them', () => {
     const parser = parse({
       groups: [group(0, SNARE), group(160, SNARE), group(176, SNARE)],

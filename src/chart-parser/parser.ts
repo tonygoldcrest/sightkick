@@ -103,6 +103,7 @@ const W_VAR = 1.0;
 const W_EVT = 0.5;
 const W_SPLIT = 0.5;
 const LAMBDA = 35;
+const TUPLET_DISTORTION_WEIGHT = 3;
 const BASE_DURATIONS: Array<[number, string]> = [
   [1, 'w'],
   [1 / 2, 'h'],
@@ -363,8 +364,10 @@ function candidateCost(candidate: Candidate, beatTicks: number): number {
   const distortion = candidate.onsetCount
     ? candidate.dispSum / candidate.onsetCount / beatTicks
     : 0;
+  const distortionWeight =
+    candidate.tuplets.length > 0 ? LAMBDA * TUPLET_DISTORTION_WEIGHT : LAMBDA;
 
-  return candidate.complexity + LAMBDA * distortion;
+  return candidate.complexity + distortionWeight * distortion;
 }
 
 function restFill(startTick: number, fraction: number): Candidate {
