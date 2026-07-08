@@ -22,6 +22,7 @@ import {
   TransportOptions,
 } from './types';
 import {
+  CLICK_GAIN_RAMP_SECONDS,
   COUNT_IN_MIN_VOLUME,
   LOOKAHEAD_SECONDS,
   SNAPSHOT_KEYS,
@@ -106,9 +107,16 @@ export class Transport {
       this.state === 'counting-in' &&
       this.songStartCtx !== undefined
     ) {
+      const countInVolume = Math.max(this.clickVolume, COUNT_IN_MIN_VOLUME);
+
       this.clickTrack.cancelGain();
-      this.clickTrack.setGain(Math.max(this.clickVolume, COUNT_IN_MIN_VOLUME));
-      this.clickTrack.setGain(this.clickVolume, this.songStartCtx);
+      this.clickTrack.setGain(countInVolume);
+      this.clickTrack.rampGain(
+        countInVolume,
+        this.clickVolume,
+        this.songStartCtx,
+        CLICK_GAIN_RAMP_SECONDS,
+      );
     }
   }
 
@@ -261,12 +269,16 @@ export class Transport {
     this.countIn = new CountInScheduler(now, beats, realBeatDuration);
     this.songStartCtx = this.countIn.songStartCtx;
 
+    const countInVolume = Math.max(this.clickVolume, COUNT_IN_MIN_VOLUME);
+
     this.clickTrack.cancelGain();
-    this.clickTrack.setGain(
-      Math.max(this.clickVolume, COUNT_IN_MIN_VOLUME),
-      now,
+    this.clickTrack.setGain(countInVolume, now);
+    this.clickTrack.rampGain(
+      countInVolume,
+      this.clickVolume,
+      this.songStartCtx,
+      CLICK_GAIN_RAMP_SECONDS,
     );
-    this.clickTrack.setGain(this.clickVolume, this.songStartCtx);
 
     for (let i = 0; i < beats; i += 1) {
       this.clickTrack.scheduleClick(now + i * realBeatDuration, i === 0);

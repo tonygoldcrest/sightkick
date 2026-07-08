@@ -32,6 +32,8 @@ export const LOOKAHEAD_SECONDS = 0.2;
 
 export const COUNT_IN_MIN_VOLUME = 0.7;
 
+export const CLICK_GAIN_RAMP_SECONDS = 0.03;
+
 export const SNAPSHOT_KEYS: (keyof PlaybackSnapshot)[] = [
   'state',
   'isPlaying',

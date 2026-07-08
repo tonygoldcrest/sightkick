@@ -8,28 +8,58 @@ vi.mock('../click-track/metronome', () => ({
   renderClickBuffers: () => ({ downbeat: {}, beat: {} }),
 }));
 
-const fakeContext = () => ({
-  state: 'running',
-  currentTime: 0,
-  destination: {},
-  resume: () => Promise.resolve(),
-  createGain: () => ({
-    gain: {
-      value: 0,
-      setValueAtTime: () => {},
-      cancelScheduledValues: () => {},
+type FakeGain = {
+  gain: {
+    value: number;
+    calls: { value: number; time: number }[];
+    ramps: { value: number; time: number }[];
+    setValueAtTime: (value: number, time: number) => void;
+    linearRampToValueAtTime: (value: number, time: number) => void;
+    cancelScheduledValues: (time: number) => void;
+  };
+  connect: () => void;
+  disconnect: () => void;
+};
+
+const fakeContext = () => {
+  const gainNodes: FakeGain[] = [];
+
+  return {
+    state: 'running',
+    currentTime: 0,
+    destination: {},
+    gainNodes,
+    resume: () => Promise.resolve(),
+    createGain: () => {
+      const gain = {
+        value: 0,
+        calls: [] as { value: number; time: number }[],
+        ramps: [] as { value: number; time: number }[],
+        setValueAtTime(value: number, time: number) {
+          this.value = value;
+          this.calls.push({ value, time });
+        },
+        linearRampToValueAtTime(value: number, time: number) {
+          this.value = value;
+          this.ramps.push({ value, time });
+        },
+        cancelScheduledValues() {},
+      };
+      const node: FakeGain = { gain, connect: () => {}, disconnect: () => {} };
+
+      gainNodes.push(node);
+
+      return node;
     },
-    connect: () => {},
-    disconnect: () => {},
-  }),
-  createBufferSource: () => ({
-    buffer: undefined,
-    connect: () => {},
-    start: () => {},
-    stop: () => {},
-    addEventListener: () => {},
-  }),
-});
+    createBufferSource: () => ({
+      buffer: undefined,
+      connect: () => {},
+      start: () => {},
+      stop: () => {},
+      addEventListener: () => {},
+    }),
+  };
+};
 
 class MockAudioPlayer {
   static instances: MockAudioPlayer[] = [];
@@ -250,6 +280,26 @@ describe('Transport', () => {
     advanceClockTo(player, 2.5);
 
     expect(engine.getSnapshot().isPlaying).toBe(true);
+  });
+
+  it('ramps the click gain down to the play volume at the song start', async () => {
+    const { engine, player } = await setup({}, { countInEnabled: true });
+
+    engine.setClickSettings(0.5, 0.5);
+    engine.playFromTick(0);
+
+    const [clickGain] = (player.context as unknown as { gainNodes: FakeGain[] })
+      .gainNodes;
+    const rampToPlayVolume = clickGain.gain.ramps.find(
+      (call) => call.value === 0.5,
+    );
+    const stepToPlayVolume = clickGain.gain.calls.find(
+      (call) => call.value === 0.5,
+    );
+
+    expect(rampToPlayVolume).toBeDefined();
+    expect(rampToPlayVolume?.time).toBeCloseTo(2);
+    expect(stepToPlayVolume).toBeUndefined();
   });
 
   it('advances the count-in beat number off the audio clock', async () => {

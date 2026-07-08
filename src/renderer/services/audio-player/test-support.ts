@@ -46,9 +46,16 @@ export class FakeAudioParam {
 
   calls: { value: number; time: number }[] = [];
 
+  ramps: { value: number; time: number }[] = [];
+
   setValueAtTime(value: number, time: number) {
     this.value = value;
     this.calls.push({ value, time });
+  }
+
+  linearRampToValueAtTime(value: number, time: number) {
+    this.value = value;
+    this.ramps.push({ value, time });
   }
 
   cancelScheduledValues(_time: number) {}

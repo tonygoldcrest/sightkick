@@ -26,6 +26,7 @@ const { MockAudioPlayer } = vi.hoisted(() => {
       gain: {
         value: 0,
         setValueAtTime: () => {},
+        linearRampToValueAtTime: () => {},
         cancelScheduledValues: () => {},
       },
       connect: () => {},

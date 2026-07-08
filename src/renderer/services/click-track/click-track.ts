@@ -41,6 +41,19 @@ export class ClickTrack {
     );
   }
 
+  rampGain(
+    fromValue: number,
+    toValue: number,
+    atContextTime: number,
+    rampSeconds: number,
+  ): void {
+    const end = Math.max(atContextTime, this.context.currentTime);
+    const start = Math.max(end - rampSeconds, this.context.currentTime);
+
+    this.gain.gain.setValueAtTime(fromValue, start);
+    this.gain.gain.linearRampToValueAtTime(toValue, end);
+  }
+
   cancelGain(): void {
     this.gain.gain.cancelScheduledValues(this.context.currentTime);
   }

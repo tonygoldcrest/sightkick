@@ -77,6 +77,31 @@ describe('ClickTrack', () => {
     });
   });
 
+  it('ramps the gain over the given slope ending at the target time', () => {
+    const track = new ClickTrack(context as unknown as AudioContext);
+
+    track.rampGain(0.7, 0.2, 2, 0.03);
+
+    const { gain } = context.gainNodes[0];
+
+    expect(gain.calls.at(-1)?.value).toBe(0.7);
+    expect(gain.calls.at(-1)?.time).toBeCloseTo(1.97);
+    expect(gain.ramps.at(-1)).toEqual({ value: 0.2, time: 2 });
+  });
+
+  it('never anchors a ramp before the current time', () => {
+    context.currentTime = 5;
+
+    const track = new ClickTrack(context as unknown as AudioContext);
+
+    track.rampGain(0.7, 0.2, 5.01, 0.03);
+
+    const { gain } = context.gainNodes[0];
+
+    expect(gain.calls.at(-1)).toEqual({ value: 0.7, time: 5 });
+    expect(gain.ramps.at(-1)).toEqual({ value: 0.2, time: 5.01 });
+  });
+
   it('stops pending sources when cleared', () => {
     const track = new ClickTrack(context as unknown as AudioContext);
 
