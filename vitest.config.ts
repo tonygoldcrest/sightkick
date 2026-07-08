@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -38,7 +39,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      src: '/Users/antosha/code/sightkick/src',
+      src: path.resolve(__dirname, 'src'),
     },
   },
 });

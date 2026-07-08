@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { App, Button, Divider, InputNumber, Layout, Spin, Switch } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -51,6 +51,7 @@ export function SongView() {
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
   const [isDev, setIsDev] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const exportPdfOffRef = useRef<(() => void) | undefined>(undefined);
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const gameMode = useMemo<GameMode | undefined>(() => {
@@ -182,12 +183,14 @@ export function SongView() {
     );
 
     setIsExporting(true);
-    window.electron.ipcRenderer.once<{
+    exportPdfOffRef.current?.();
+    exportPdfOffRef.current = window.electron.ipcRenderer.once<{
       ok?: boolean;
       canceled?: boolean;
       filePath?: string;
       error?: string;
     }>('export-pdf', (result) => {
+      exportPdfOffRef.current = undefined;
       setIsExporting(false);
 
       if (result.error) {
@@ -281,9 +284,12 @@ export function SongView() {
     };
   }, []);
 
+  useEffect(() => () => exportPdfOffRef.current?.(), []);
+
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('check-dev');
-    window.electron.ipcRenderer.once('check-dev', (dev: boolean) => {
+
+    return window.electron.ipcRenderer.once('check-dev', (dev: boolean) => {
       setIsDev(dev);
     });
   }, []);

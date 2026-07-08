@@ -36,6 +36,17 @@ export function installIpcMock(): IpcMock {
 
     arr.push(func);
     onceHandlers.set(channel, arr);
+
+    return () => {
+      const current = onceHandlers.get(channel);
+
+      if (current) {
+        onceHandlers.set(
+          channel,
+          current.filter((h) => h !== func),
+        );
+      }
+    };
   });
   const sendMessage = vi.fn((channel: string, ...args: unknown[]) => {
     sent.push({ channel, args });

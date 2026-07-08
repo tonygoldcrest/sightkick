@@ -46,7 +46,8 @@ export function SongViewSettings({
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('check-dev');
-    window.electron.ipcRenderer.once('check-dev', (dev: boolean) => {
+
+    return window.electron.ipcRenderer.once('check-dev', (dev: boolean) => {
       setIsDev(dev);
     });
   }, []);

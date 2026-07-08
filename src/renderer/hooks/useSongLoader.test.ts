@@ -88,4 +88,23 @@ describe('useSongLoader', () => {
       { channel: 'load-song', args: ['song-2'] },
     ]);
   });
+
+  it('drops the pending listener when the id changes so a stale reply is not double-handled', () => {
+    const { rerender } = renderHook(({ id }) => useSongLoader(id), {
+      wrapper,
+      initialProps: { id: 'song-1' as string | undefined },
+    });
+
+    rerender({ id: 'song-2' });
+
+    expect(ipc.onceCount('load-song')).toBe(1);
+  });
+
+  it('drops the pending listener on unmount', () => {
+    const { unmount } = renderHook(() => useSongLoader('song-1'), { wrapper });
+
+    unmount();
+
+    expect(ipc.onceCount('load-song')).toBe(0);
+  });
 });

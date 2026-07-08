@@ -22,7 +22,8 @@ export function useSongList() {
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('load-song-list');
-    window.electron.ipcRenderer.once<IpcResult<IpcLoadSongListResponse>>(
+
+    return window.electron.ipcRenderer.once<IpcResult<IpcLoadSongListResponse>>(
       'load-song-list',
       (payload) => {
         if (isIpcError(payload)) {

@@ -28,6 +28,7 @@ export function useStemTools() {
   >();
 
   useEffect(() => {
+    let offRecheck: (() => void) | undefined;
     const applyStatus = (response: IpcCheckStemToolsResponse) => {
       setStemToolsStatus(response.status);
       setInstalledVersion(response.installedVersion);
@@ -38,11 +39,12 @@ export function useStemTools() {
     };
 
     window.electron.ipcRenderer.sendMessage('check-stem-tools');
-    window.electron.ipcRenderer.once<IpcCheckStemToolsResponse>(
-      'check-stem-tools',
-      applyStatus,
-    );
 
+    const offCheck =
+      window.electron.ipcRenderer.once<IpcCheckStemToolsResponse>(
+        'check-stem-tools',
+        applyStatus,
+      );
     const offUpdate =
       window.electron.ipcRenderer.on<IpcStemToolsRemoteResponse>(
         'check-stem-tools-update',
@@ -83,10 +85,12 @@ export function useStemTools() {
             setStemToolsStatus('ready');
             setUpdateAvailable(false);
             window.electron.ipcRenderer.sendMessage('check-stem-tools');
-            window.electron.ipcRenderer.once<IpcCheckStemToolsResponse>(
-              'check-stem-tools',
-              applyStatus,
-            );
+            offRecheck?.();
+            offRecheck =
+              window.electron.ipcRenderer.once<IpcCheckStemToolsResponse>(
+                'check-stem-tools',
+                applyStatus,
+              );
           }
         },
       );
@@ -114,6 +118,8 @@ export function useStemTools() {
       );
 
     return () => {
+      offCheck();
+      offRecheck?.();
       offUpdate();
       offDownload();
       offDelete();
