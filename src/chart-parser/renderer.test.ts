@@ -203,8 +203,8 @@ describe('renderMusic', () => {
     const textOf = (div: HTMLDivElement) =>
       Array.from(div.querySelectorAll('svg text')).map((el) => el.textContent);
 
-    expect(textOf(withNumbers)).toContain('0');
-    expect(textOf(withoutNumbers)).not.toContain('0');
+    expect(textOf(withNumbers)).toContain('1');
+    expect(textOf(withoutNumbers)).not.toContain('1');
   });
 
   it('renders flam grace notes without dropping the main note', () => {

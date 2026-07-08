@@ -366,7 +366,7 @@ function renderMeasure(
   }
 
   if (showBarNumbers) {
-    stave.setText(`${index}`, ModifierPosition.ABOVE, {
+    stave.setText(`${index + 1}`, ModifierPosition.ABOVE, {
       justification: TextJustification.LEFT,
     });
   }
