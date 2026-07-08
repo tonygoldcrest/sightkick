@@ -90,4 +90,27 @@ describe('StretchStream (worker-less fallback)', () => {
 
     expect(unit.seek).not.toHaveBeenCalled();
   });
+
+  it('settles pending produce promises with no blocks on destroy', async () => {
+    vi.stubGlobal(
+      'Worker',
+      class {
+        onmessage: ((_event: MessageEvent) => void) | undefined;
+        postMessage(_msg: unknown) {}
+        terminate() {}
+        addEventListener() {}
+        removeEventListener() {}
+      },
+    );
+
+    const stream = new StretchStream();
+
+    stream.init(CHANNELS, 1.5, GROUPS, 48000);
+
+    const producePromise = stream.produce(4);
+
+    stream.destroy();
+
+    await expect(producePromise).resolves.toEqual([]);
+  });
 });

@@ -120,6 +120,11 @@ export class StretchStream {
   destroy() {
     this.worker?.terminate();
     this.worker = undefined;
+
+    for (const resolve of this.pending.values()) {
+      resolve([]);
+    }
+
     this.pending.clear();
     this.units = [];
     this.channels = [];
