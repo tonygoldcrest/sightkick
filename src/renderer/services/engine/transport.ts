@@ -54,6 +54,7 @@ export class Transport {
   private songStartCtx: number | undefined;
   private raf: number | undefined;
   private loopRegion: LoopRegion | undefined;
+  private loopRestarting = false;
   private pendingSpeed: number | undefined;
   private disposed = false;
   private listeners = new Set<() => void>();
@@ -436,8 +437,19 @@ export class Transport {
     const endTime = this.tickToTime(this.loopRegion.endTick);
 
     if (this.audioPlayer.currentTime >= endTime) {
-      this.playFromTick(this.loopRegion.startTick);
+      this.restartLoop();
+    } else {
+      this.loopRestarting = false;
     }
+  }
+
+  private restartLoop(): void {
+    if (this.loopRestarting || !this.loopRegion) {
+      return;
+    }
+
+    this.loopRestarting = true;
+    this.playFromTick(this.loopRegion.startTick);
   }
 
   private scheduleClicks(): void {
@@ -495,7 +507,7 @@ export class Transport {
 
   private handleEnded(): void {
     if (this.loopRegion) {
-      this.playFromTick(this.loopRegion.startTick);
+      this.restartLoop();
 
       return;
     }

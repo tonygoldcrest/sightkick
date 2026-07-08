@@ -608,6 +608,40 @@ describe('Transport', () => {
 
       expect(player.start).not.toHaveBeenCalled();
     });
+
+    it('restarts once when a stale ended arrives after the loop already wrapped', async () => {
+      const { engine, player } = await setup();
+
+      engine.setLoopRegion({ startTick: 0, endTick: 1920 });
+      engine.playFromTick(0);
+      player.start.mockClear();
+
+      player.currentTime = 3;
+      flushFrame();
+      player.onEnded();
+
+      expect(player.start).toHaveBeenCalledTimes(1);
+      expect(player.start).toHaveBeenCalledWith(0);
+    });
+
+    it('wraps again on each successive pass past the loop end', async () => {
+      const { engine, player } = await setup();
+
+      engine.setLoopRegion({ startTick: 0, endTick: 1920 });
+      engine.playFromTick(0);
+      player.start.mockClear();
+
+      player.currentTime = 3;
+      flushFrame();
+      expect(player.start).toHaveBeenCalledTimes(1);
+
+      player.currentTime = 1;
+      flushFrame();
+      player.currentTime = 3;
+      flushFrame();
+
+      expect(player.start).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('playback speed', () => {
