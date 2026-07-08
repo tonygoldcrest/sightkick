@@ -77,13 +77,13 @@ export class Judge {
     this.falseHitTicks = [];
   }
 
-  private isInSilentMeasure(tick: number): boolean {
+  private isInSilentRegion(tick: number): boolean {
     const containing = this.measures.find(
       (measure) => tick >= measure.startTick && tick < measure.endTick,
     );
 
     if (!containing) {
-      return false;
+      return true;
     }
 
     return containing.notes.every((note) => note.isRest);
@@ -160,7 +160,7 @@ export class Judge {
 
     if (!bestNote || !bestPos) {
       if (
-        !this.isInSilentMeasure(tick) ||
+        !this.isInSilentRegion(tick) ||
         this.hasScoreableNoteNear(tick, toleranceTicks)
       ) {
         this.falseHitTicks.push(tick);
@@ -195,7 +195,7 @@ export class Judge {
 
     if (newPrefixes.length === 0) {
       if (
-        !this.isInSilentMeasure(tick) ||
+        !this.isInSilentRegion(tick) ||
         this.hasScoreableNoteNear(tick, toleranceTicks)
       ) {
         this.falseHitTicks.push(tick);

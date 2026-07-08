@@ -441,6 +441,38 @@ describe('Judge', () => {
     expect(engine.falseHitCount).toBe(1);
   });
 
+  it('does not count a false hit past the last measure', () => {
+    const { engine } = setup(
+      {
+        measures: [
+          measure([note(['c/5'], 480)], { startTick: 0, endTick: 1920 }),
+        ],
+      },
+      { tick: 5000 },
+    );
+
+    engine.handleInput(hit('midi:38'));
+
+    expect(engine.hitCount).toBe(0);
+    expect(engine.falseHitCount).toBe(0);
+  });
+
+  it('still registers a late hit on the final note past the last measure', () => {
+    const { engine } = setup(
+      {
+        measures: [
+          measure([note(['c/5'], 1900)], { startTick: 0, endTick: 1920 }),
+        ],
+      },
+      { tick: 1950 },
+    );
+
+    engine.handleInput(hit('midi:38'));
+
+    expect(engine.isHit(1900, 'c/5')).toBe(true);
+    expect(engine.falseHitCount).toBe(0);
+  });
+
   it('counts a false hit played alongside a correct early hit into a silent measure', () => {
     const { engine } = setup(
       {
