@@ -139,6 +139,7 @@ class AppState {
           : getAssetPath('icon.png'),
       webPreferences: {
         preload: path.join(__dirname, '../preload/index.js'),
+        backgroundThrottling: false,
       },
     });
     this.mainWindow.loadURL(resolveHtmlPath('index.html'));
