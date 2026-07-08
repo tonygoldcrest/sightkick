@@ -64,7 +64,7 @@ export function useSheetMusic({
   useEffect(() => {
     if (chart && songId && !parsedMidi) {
       notification.error({
-        message: 'Chart parse failed',
+        title: 'Chart parse failed',
         description:
           "This song's chart could not be parsed and cannot be displayed.",
         placement: 'bottomRight',

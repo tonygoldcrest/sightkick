@@ -77,7 +77,7 @@ export function useStemTools() {
 
           if (status.error) {
             notification.error({
-              message: 'Error downloading stem tools',
+              title: 'Error downloading stem tools',
               description: status.error,
               placement: 'bottomRight',
             });
@@ -109,7 +109,7 @@ export function useStemTools() {
 
           if (response.error) {
             notification.error({
-              message: 'Error deleting stem tools',
+              title: 'Error deleting stem tools',
               description: response.error,
               placement: 'bottomRight',
             });

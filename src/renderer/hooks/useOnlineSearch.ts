@@ -173,7 +173,7 @@ export function useOnlineSearch(
         }
 
         notification.error({
-          message: 'Search failed',
+          title: 'Search failed',
           description:
             'Unable to fetch songs from Encore. Please check your connection.',
           placement: 'bottomRight',
@@ -238,7 +238,7 @@ export function useOnlineSearch(
         }
 
         notification.error({
-          message: 'Search failed',
+          title: 'Search failed',
           description:
             'Unable to fetch songs from Encore. Please check your connection.',
           placement: 'bottomRight',

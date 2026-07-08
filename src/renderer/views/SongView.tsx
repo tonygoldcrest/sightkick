@@ -195,7 +195,7 @@ export function SongView() {
 
       if (result.error) {
         notification.error({
-          message: 'Export failed',
+          title: 'Export failed',
           description: result.error,
           placement: 'bottomRight',
         });
@@ -205,7 +205,7 @@ export function SongView() {
 
       if (result.ok) {
         notification.success({
-          message: 'PDF exported',
+          title: 'PDF exported',
           description: result.filePath,
           placement: 'bottomRight',
         });

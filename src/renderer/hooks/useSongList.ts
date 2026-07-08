@@ -28,7 +28,7 @@ export function useSongList() {
       (payload) => {
         if (isIpcError(payload)) {
           notification.error({
-            message: "Couldn't load your songs",
+            title: "Couldn't load your songs",
             description:
               'Something went wrong reading your library. Rescan the folder to refresh it.',
             placement: 'bottomRight',
@@ -49,7 +49,7 @@ export function useSongList() {
       if (isIpcError(payload)) {
         setScanProgress(undefined);
         notification.error({
-          message: "Couldn't scan your library",
+          title: "Couldn't scan your library",
           description:
             'Check that the folder still exists and try rescanning again.',
           placement: 'bottomRight',
@@ -75,7 +75,7 @@ export function useSongList() {
       (payload) => {
         if (isIpcError(payload)) {
           notification.error({
-            message: "Couldn't save your progress",
+            title: "Couldn't save your progress",
             description:
               'Your latest score may not have been saved. Try again.',
             placement: 'bottomRight',
@@ -123,12 +123,12 @@ export function useSongList() {
           });
         } else if (cancelled) {
           notification.info({
-            message: 'Split cancelled',
+            title: 'Split cancelled',
             placement: 'bottomRight',
           });
         } else {
           notification.error({
-            message: 'Split failed',
+            title: 'Split failed',
             description: error,
             placement: 'bottomRight',
           });
@@ -142,7 +142,7 @@ export function useSongList() {
       setSplittingIds((prev) => new Set(prev).add(id));
       window.electron.ipcRenderer.sendMessage('split-song', id);
       notification.info({
-        message: `Splitting "${songList.find((s) => s.id === id)?.name}"`,
+        title: `Splitting "${songList.find((s) => s.id === id)?.name}"`,
         description: "You will be notified when it's done",
         placement: 'bottomRight',
       });

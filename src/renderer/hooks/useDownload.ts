@@ -37,7 +37,7 @@ export function useDownload(
           onSongAddedRef.current(newSong);
         } else {
           notification.error({
-            message: 'Download failed',
+            title: 'Download failed',
             description: error,
             placement: 'bottomRight',
           });

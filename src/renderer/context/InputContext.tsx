@@ -216,7 +216,7 @@ export function InputProvider({ children }: { children: ReactNode }) {
       'midi-error',
       () => {
         notification.error({
-          message: "Couldn't connect to your MIDI device",
+          title: "Couldn't connect to your MIDI device",
           description: `"${selectedDevice.name}" isn't responding. Reconnect it, close any other app using it, or pick another device in settings.`,
           placement: 'bottomRight',
         });

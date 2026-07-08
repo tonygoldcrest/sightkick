@@ -107,7 +107,7 @@ export function useEngine({
       onEnded: (score) => onEndedRef.current(score),
       onError: () =>
         notification.error({
-          message: 'Audio failed to load',
+          title: 'Audio failed to load',
           description:
             'One or more audio tracks could not be loaded for this song.',
           placement: 'bottomRight',

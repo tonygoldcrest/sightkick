@@ -110,7 +110,7 @@ describe('InputContext midi stream ownership', () => {
 
     expect(notification.error).toHaveBeenCalledTimes(1);
     expect(notification.error.mock.calls[0][0]).toMatchObject({
-      message: "Couldn't connect to your MIDI device",
+      title: "Couldn't connect to your MIDI device",
     });
   });
 

@@ -23,7 +23,7 @@ export function useAppUpdate() {
 
       notification.info({
         key: 'app-update',
-        message: phase === 'downloaded' ? 'Update ready' : 'Update available',
+        title: phase === 'downloaded' ? 'Update ready' : 'Update available',
         description: (
           <div>
             <div>
@@ -56,7 +56,7 @@ export function useAppUpdate() {
         ),
         placement: 'bottomRight',
         duration: 0,
-        btn: (
+        actions: (
           <Space>
             <Button
               size="small"

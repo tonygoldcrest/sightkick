@@ -31,7 +31,7 @@ export function useSongLoader(id: string | undefined): SongLoaderResult {
     >('load-song', (payload) => {
       if (isIpcError(payload)) {
         notification.error({
-          message: "Couldn't open this song",
+          title: "Couldn't open this song",
           description:
             'The chart file may have been moved or deleted. Rescan your library from the song list to refresh it.',
           placement: 'bottomRight',
