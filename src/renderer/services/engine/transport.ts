@@ -55,6 +55,7 @@ export class Transport {
   private raf: number | undefined;
   private loopRegion: LoopRegion | undefined;
   private loopRestarting = false;
+  private playGeneration = 0;
   private pendingSpeed: number | undefined;
   private disposed = false;
   private listeners = new Set<() => void>();
@@ -198,6 +199,10 @@ export class Transport {
       return;
     }
 
+    this.playGeneration += 1;
+
+    const generation = this.playGeneration;
+
     this.clearScheduling();
     this.audioPlayer.stop();
 
@@ -207,14 +212,18 @@ export class Transport {
     this.onSeekCb(tick);
     this.nextBeatIndex = this.firstBeatIndexAtOrAfter(startTime);
 
-    void this.beginPlayback(tick, startTime);
+    void this.beginPlayback(tick, startTime, generation);
   }
 
   private get playbackSpeed(): number {
     return this.speedPlayer?.playbackSpeed ?? 1;
   }
 
-  private async beginPlayback(tick: number, startTime: number): Promise<void> {
+  private async beginPlayback(
+    tick: number,
+    startTime: number,
+    generation: number,
+  ): Promise<void> {
     if (!this.chart || !this.audioPlayer || !this.clickTrack) {
       return;
     }
@@ -225,7 +234,7 @@ export class Transport {
       await ctx.resume().catch(() => {});
     }
 
-    if (this.disposed) {
+    if (this.disposed || generation !== this.playGeneration) {
       return;
     }
 
@@ -286,6 +295,7 @@ export class Transport {
       return;
     }
 
+    this.playGeneration += 1;
     this.clearScheduling();
     this.audioPlayer?.stop();
     this.state = 'parked';
@@ -296,6 +306,8 @@ export class Transport {
     if (!this.audioPlayer) {
       return;
     }
+
+    this.playGeneration += 1;
 
     const wasActive = this.state === 'playing' || this.state === 'counting-in';
 
@@ -357,6 +369,7 @@ export class Transport {
 
   dispose(): void {
     this.disposed = true;
+    this.playGeneration += 1;
     this.clearScheduling();
     this.clickTrack?.dispose();
 

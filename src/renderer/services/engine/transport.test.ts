@@ -470,6 +470,37 @@ describe('Transport', () => {
     );
   });
 
+  it('ignores a stale count-in whose resume settles after a newer play', async () => {
+    const { engine, player } = await setup({}, { countInEnabled: true });
+    const resumes: Array<() => void> = [];
+    const ctx = player.context as unknown as {
+      state: string;
+      resume: () => Promise<void>;
+    };
+
+    ctx.state = 'suspended';
+    ctx.resume = () =>
+      new Promise<void>((resolve) => {
+        resumes.push(() => {
+          ctx.state = 'running';
+          resolve();
+        });
+      });
+
+    engine.playFromTick(0);
+    engine.playFromTick(1920);
+
+    resumes[1]();
+    await flush();
+    resumes[0]();
+    await flush();
+
+    expect(player.start).toHaveBeenLastCalledWith(
+      expect.closeTo(2),
+      expect.anything(),
+    );
+  });
+
   it('can restart after the song ends', async () => {
     const { engine, player } = await setup();
 
