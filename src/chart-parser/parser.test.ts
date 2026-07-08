@@ -230,6 +230,23 @@ describe('measure creation', () => {
     ]);
   });
 
+  it('contains drift from a mid-measure time-signature change', () => {
+    const parser = parse({
+      timeSignatures: [
+        { tick: 0, numerator: 4, denominator: 4 },
+        { tick: 288, numerator: 3, denominator: 4 },
+      ],
+      groups: [group(0, SNARE), group(288, SNARE)],
+    });
+    const measureWithNote = parser.measures.find((m) =>
+      m.notes.some((n) => n.tick === 288 && !n.isRest),
+    );
+
+    expect(measureWithNote).toBeDefined();
+    expect(measureWithNote!.timeSig).toEqual([3, 4]);
+    expect(measureWithNote!.sigChange).toBe(true);
+  });
+
   it('handles a compound 6/8 meter', () => {
     const parser = parse({
       resolution: 192,

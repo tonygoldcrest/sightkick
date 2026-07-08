@@ -913,6 +913,13 @@ export class ChartParser {
         this.meters.push(meter);
         startTick += measureTicks;
       }
+
+      // Re-anchor to the next sig's actual tick. A sig change that lands
+      // mid-measure makes Math.ceil round the section up to a full measure,
+      // pushing the accumulated startTick past the next sig. Snapping here
+      // contains the drift to this section instead of shifting every
+      // subsequent measure boundary for the rest of the chart.
+      startTick = sigs[index + 1]?.tick ?? startTick;
     });
   }
 
