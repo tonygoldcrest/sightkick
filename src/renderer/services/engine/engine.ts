@@ -74,6 +74,7 @@ export class Engine {
     this.chart = context.chart;
     this.measures = context.measures;
     this.delaySeconds = context.delaySeconds;
+    this.mapping = context.mapping;
     this.renderer.setContext({
       chart: context.chart,
       renderData: context.renderData,
@@ -88,7 +89,7 @@ export class Engine {
     this.judge.setContext({
       chart: context.chart,
       measures: context.measures,
-      mapping: this.mapping,
+      mapping: context.mapping,
     });
 
     this.renderFrame();

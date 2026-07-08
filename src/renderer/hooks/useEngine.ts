@@ -130,6 +130,7 @@ export function useEngine({
       delaySeconds,
       countInEnabled,
       minDurationSeconds,
+      mapping,
     });
   }, [
     engine,
@@ -139,15 +140,12 @@ export function useEngine({
     delaySeconds,
     minDurationSeconds,
     countInEnabled,
+    mapping,
   ]);
 
   useEffect(() => {
     engine?.setSettings({ playheadStyle });
   }, [engine, playheadStyle]);
-
-  useEffect(() => {
-    engine?.setMapping(mapping);
-  }, [engine, mapping]);
 
   const subscribe = useCallback(
     (listener: () => void) => engine?.subscribe(listener) ?? (() => {}),

@@ -20,6 +20,7 @@ export interface EngineContext {
   delaySeconds: number;
   countInEnabled: boolean;
   minDurationSeconds: number;
+  mapping: InputMapping;
 }
 
 export interface EngineSettings {

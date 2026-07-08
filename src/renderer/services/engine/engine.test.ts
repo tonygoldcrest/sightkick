@@ -211,6 +211,7 @@ async function setup(over: Partial<EngineContext> = {}) {
     delaySeconds: 0,
     minDurationSeconds: 0,
     countInEnabled: false,
+    mapping: {},
     ...over,
   });
 
