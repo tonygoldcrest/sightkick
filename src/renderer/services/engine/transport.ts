@@ -227,6 +227,10 @@ export class Transport {
     return this.speedPlayer?.playbackSpeed ?? 1;
   }
 
+  private startAudio(...args: [offset: number, startAt?: number]): void {
+    Promise.resolve(this.audioPlayer?.start(...args)).catch(this.onErrorCb);
+  }
+
   private async beginPlayback(
     tick: number,
     startTime: number,
@@ -250,7 +254,7 @@ export class Transport {
       this.songStartCtx = ctx.currentTime;
       this.clickTrack.cancelGain();
       this.clickTrack.setGain(this.clickVolume);
-      void this.audioPlayer.start(startTime);
+      this.startAudio(startTime);
       this.isStarted = true;
       this.state = 'playing';
       this.emit();
@@ -287,7 +291,7 @@ export class Transport {
     this.state = 'counting-in';
     this.emit();
 
-    void this.audioPlayer.start(startTime, this.songStartCtx);
+    this.startAudio(startTime, this.songStartCtx);
   }
 
   pause(): void {
@@ -350,7 +354,7 @@ export class Transport {
     this.songStartCtx = this.audioPlayer.context.currentTime;
     this.clickTrack?.cancelGain();
     this.clickTrack?.setGain(this.clickVolume);
-    void this.audioPlayer.start(seconds);
+    this.startAudio(seconds);
     this.emit();
   }
 

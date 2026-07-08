@@ -429,6 +429,16 @@ describe('Transport', () => {
     expect(engine.getSnapshot().state).toBe('parked');
   });
 
+  it('reports an error when audio playback fails to start', async () => {
+    const { engine, player, onError } = await setup();
+
+    player.start.mockImplementation(() => Promise.reject(new Error('boom')));
+    engine.playFromTick(0);
+    await flush();
+
+    expect(onError).toHaveBeenCalled();
+  });
+
   it('enters the ended state and forwards the callback', async () => {
     const { engine, onEnded, player } = await setup();
 
