@@ -73,6 +73,26 @@ describe('SpeedAudioTrack', () => {
     expect(source.disconnected).toBe(true);
   });
 
+  it('removes the ended listener on stop so a pending ended event cannot corrupt later sources', () => {
+    const track = makeTrack();
+
+    track.scheduleChunk(0, makeBuffer([[1]]) as unknown as AudioBuffer, 0);
+
+    const [first] = context.bufferSources;
+
+    track.stop();
+
+    track.scheduleChunk(0, makeBuffer([[1]]) as unknown as AudioBuffer, 1);
+
+    const second = context.bufferSources[1];
+
+    first.emitEnded();
+
+    track.stop();
+
+    expect(second.stopped).toBe(true);
+  });
+
   it('disconnects gain nodes on destroy', () => {
     const track = makeTrack([makeBuffer([[1]]), makeBuffer([[2]])]);
 
