@@ -763,5 +763,19 @@ describe('Transport', () => {
       expect(engine.getSnapshot().state).toBe('playing');
       expect(player.setPlaybackSpeed).toHaveBeenCalledWith(0.5);
     });
+
+    it('applies a deferred count-in speed change when a seek starts playback', async () => {
+      const { engine, player } = await setup({}, { countInEnabled: true });
+
+      engine.playFromTick(0);
+      engine.setPlaybackSpeed(0.5);
+
+      expect(player.setPlaybackSpeed).not.toHaveBeenCalled();
+
+      engine.seekSeconds(3);
+
+      expect(engine.getSnapshot().isPlaying).toBe(true);
+      expect(player.setPlaybackSpeed).toHaveBeenCalledWith(0.5);
+    });
   });
 });

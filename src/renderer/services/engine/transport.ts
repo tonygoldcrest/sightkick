@@ -139,6 +139,15 @@ export class Transport {
     this.speedPlayer?.setPlaybackSpeed(speed);
   }
 
+  private flushPendingSpeed(): void {
+    if (this.pendingSpeed === undefined) {
+      return;
+    }
+
+    this.applyPlaybackSpeed(this.pendingSpeed);
+    this.pendingSpeed = undefined;
+  }
+
   setLoopRegion(region: LoopRegion | undefined): void {
     const previous = this.loopRegion;
 
@@ -352,6 +361,7 @@ export class Transport {
     this.isStarted = true;
     this.state = 'playing';
     this.songStartCtx = this.audioPlayer.context.currentTime;
+    this.flushPendingSpeed();
     this.clickTrack?.cancelGain();
     this.clickTrack?.setGain(this.clickVolume);
     this.startAudio(seconds);
@@ -518,12 +528,7 @@ export class Transport {
       this.countIn = undefined;
       this.isStarted = true;
       this.state = 'playing';
-
-      if (this.pendingSpeed !== undefined) {
-        this.applyPlaybackSpeed(this.pendingSpeed);
-        this.pendingSpeed = undefined;
-      }
-
+      this.flushPendingSpeed();
       this.emit();
 
       return;
