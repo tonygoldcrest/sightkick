@@ -89,6 +89,7 @@ const COMPOUND_DIVISORS: { [slots: number]: NotationInfo } = {
   6: { notatedDivisor: 6, tuplet: null },
   12: { notatedDivisor: 12, tuplet: null },
 };
+
 // Cost-function weights — the "look and feel" knobs. A candidate's cost is
 // `complexity + LAMBDA · meanDistortion`. Complexity sums filler rests wedged
 // between hits, sub-16th note values, distinct durations, and raw symbol count;
@@ -97,7 +98,8 @@ const COMPOUND_DIVISORS: { [slots: number]: NotationInfo } = {
 // falls out for free: an exact chart has zero distortion and minimal complexity,
 // so it always wins; a messy literal reading only loses when a simpler grid is
 // cheap enough to justify the movement.
-const W_FILL = 3.0;
+export const W_FILL = 3.0;
+
 const W_FINE = 2.0;
 const W_VAR = 1.0;
 const W_EVT = 0.5;
@@ -332,25 +334,34 @@ function halvingsPast16th(duration: string): number {
 }
 
 /** How busy/ugly a notated span looks; higher is worse. */
-function complexityOf(events: Note[]): number {
-  let filler = 0;
+export function complexityOf(events: Note[]): number {
   let fine = 0;
   const values = new Set<string>();
+  let firstHit = -1;
+  let lastHit = -1;
 
   events.forEach((event, index) => {
-    // A rest is "filler" if it is wedged between hits (a hit before and after);
-    // leading and trailing rests are real silence, not clutter.
-    if (
-      event.isRest &&
-      events.slice(0, index).some((e) => !e.isRest) &&
-      events.slice(index + 1).some((e) => !e.isRest)
-    ) {
-      filler += 1;
-    }
-
     fine += halvingsPast16th(event.duration);
     values.add(`${event.duration}.${event.dots}`);
+
+    if (!event.isRest) {
+      if (firstHit === -1) {
+        firstHit = index;
+      }
+
+      lastHit = index;
+    }
   });
+
+  // A rest is "filler" if it is wedged between hits (a hit before and after);
+  // leading and trailing rests are real silence, not clutter.
+  let filler = 0;
+
+  for (let i = firstHit + 1; i < lastHit; i += 1) {
+    if (events[i].isRest) {
+      filler += 1;
+    }
+  }
 
   return (
     W_FILL * filler +
@@ -606,11 +617,19 @@ function notateSpan(
     );
   }
 
-  return candidates.reduce((best, candidate) =>
-    candidateCost(candidate, beatTicks) < candidateCost(best, beatTicks)
-      ? candidate
-      : best,
-  );
+  let best = candidates[0];
+  let bestCost = candidateCost(best, beatTicks);
+
+  for (let i = 1; i < candidates.length; i += 1) {
+    const cost = candidateCost(candidates[i], beatTicks);
+
+    if (cost < bestCost) {
+      best = candidates[i];
+      bestCost = cost;
+    }
+  }
+
+  return best;
 }
 
 interface RestValue {
@@ -800,35 +819,32 @@ export class ChartParser {
 
   private assignTempos(tempos: ParsedChart['tempos']) {
     const sorted = [...(tempos ?? [])].sort((a, b) => a.tick - b.tick);
-    const tempoAt = (tick: number) => {
-      let bpm = sorted[0]?.beatsPerMinute ?? DEFAULT_BPM;
-
-      sorted.forEach((tempo) => {
-        if (tempo.tick <= tick) {
-          bpm = tempo.beatsPerMinute;
-        }
-      });
-
-      return bpm;
-    };
+    let cursor = 0;
     let previousBpm: number | undefined;
 
     this.measures.forEach((measure, index) => {
-      const quarterBpm = tempoAt(measure.startTick);
+      while (
+        cursor + 1 < sorted.length &&
+        sorted[cursor + 1].tick <= measure.startTick
+      ) {
+        cursor += 1;
+      }
 
-      if (previousBpm === undefined || !approxEqual(quarterBpm, previousBpm)) {
+      const pulseBpm = sorted[cursor]?.beatsPerMinute ?? DEFAULT_BPM;
+
+      if (previousBpm === undefined || !approxEqual(pulseBpm, previousBpm)) {
         const meter = this.meters[index];
 
         measure.tempo = {
           bpm:
-            Math.round((meter.isCompound ? quarterBpm / 3 : quarterBpm) * 100) /
+            Math.round((meter.isCompound ? pulseBpm / 3 : pulseBpm) * 100) /
             100,
           duration: 'q',
           dots: meter.isCompound ? 1 : 0,
         };
       }
 
-      previousBpm = quarterBpm;
+      previousBpm = pulseBpm;
     });
   }
 

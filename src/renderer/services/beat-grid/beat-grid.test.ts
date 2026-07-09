@@ -61,6 +61,21 @@ describe('beat-grid', () => {
     expect(beats[4].timeSeconds).toBeCloseTo(2);
   });
 
+  it('does not emit duplicate or backwards beats across an overlapping mid-measure time-signature change', () => {
+    const beats = getBeatGrid(
+      [measure(0, 3360, [7, 4]), measure(960, 2160, [5, 8])],
+      CHART,
+    );
+    const times = beats.map((b) => b.timeSeconds);
+
+    for (let i = 1; i < times.length; i += 1) {
+      expect(times[i]).toBeGreaterThan(times[i - 1]);
+    }
+
+    expect(times.filter((t) => Math.abs(t - 1) < 1e-6)).toHaveLength(1);
+    expect(beats.filter((b) => b.isDownbeat)).toHaveLength(2);
+  });
+
   it('derives the count-in from the starting measure', () => {
     const info = getCountInInfo(0, [measure(0, 1920, [4, 4])], CHART);
 

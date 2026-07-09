@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { noteTypes, noteFlags } from 'scan-chart';
-import { ChartParser } from './parser';
+import { ChartParser, complexityOf, W_FILL } from './parser';
 import { ParsedChart, Measure, Note } from './types';
 
 type Ev = { type: number; flags?: number };
@@ -32,6 +32,7 @@ function group(tick: number, ...events: Ev[]): GroupSpec {
 function makeChart(opts: {
   resolution?: number;
   timeSignatures?: { tick: number; numerator: number; denominator: number }[];
+  tempos?: { tick: number; beatsPerMinute: number }[];
   groups?: GroupSpec[];
   tracks?: {
     instrument?: string;
@@ -46,6 +47,7 @@ function makeChart(opts: {
   return {
     resolution: opts.resolution ?? 192,
     timeSignatures: opts.timeSignatures ?? [],
+    tempos: opts.tempos ?? [],
     trackData: tracks.map((t) => ({
       instrument: t.instrument ?? 'drums',
       difficulty: t.difficulty ?? 'expert',
@@ -261,6 +263,97 @@ describe('measure creation', () => {
     expect(measure.isCompound).toBe(true);
     expect(measure.startTick).toBe(0);
     expect(measure.endTick).toBe(576);
+  });
+});
+
+describe('tempo assignment', () => {
+  it('marks the first measure with the opening tempo and no dots in simple meter', () => {
+    const parser = parse({
+      tempos: [{ tick: 0, beatsPerMinute: 90 }],
+      groups: [group(0, SNARE)],
+    });
+
+    expect(parser.measures[0].tempo).toEqual({
+      bpm: 90,
+      duration: 'q',
+      dots: 0,
+    });
+  });
+
+  it('defaults to 120 BPM when the chart has no tempos', () => {
+    const parser = parse({ groups: [group(0, SNARE)] });
+
+    expect(parser.measures[0].tempo?.bpm).toBe(120);
+  });
+
+  it('only re-marks tempo on measures where the BPM changes', () => {
+    const parser = parse({
+      tempos: [
+        { tick: 0, beatsPerMinute: 120 },
+        { tick: 1536, beatsPerMinute: 60 },
+      ],
+      groups: [group(0, SNARE), group(1536, SNARE)],
+    });
+
+    expect(parser.measures).toHaveLength(3);
+    expect(parser.measures[0].tempo?.bpm).toBe(120);
+    expect(parser.measures[1].tempo).toBeUndefined();
+    expect(parser.measures[2].tempo?.bpm).toBe(60);
+  });
+
+  it('carries the first marker back to measures before it', () => {
+    const parser = parse({
+      tempos: [
+        { tick: 768, beatsPerMinute: 100 },
+        { tick: 1536, beatsPerMinute: 140 },
+      ],
+      groups: [group(0, SNARE), group(1536, SNARE)],
+    });
+
+    expect(parser.measures[0].tempo?.bpm).toBe(100);
+    expect(parser.measures[2].tempo?.bpm).toBe(140);
+  });
+
+  it('quotes a compound meter as a dotted-quarter tempo divided by three', () => {
+    const parser = parse({
+      timeSignatures: [{ tick: 0, numerator: 6, denominator: 8 }],
+      tempos: [{ tick: 0, beatsPerMinute: 180 }],
+      groups: [group(0, SNARE)],
+    });
+
+    expect(parser.measures[0].tempo).toEqual({
+      bpm: 60,
+      duration: 'q',
+      dots: 1,
+    });
+  });
+});
+
+describe('complexityOf filler penalty', () => {
+  const note = (isRest: boolean): Note => ({
+    notes: [isRest ? 'b/4' : 'c/5'],
+    duration: 'q',
+    dots: 0,
+    isRest,
+    tick: 0,
+  });
+  const hit = note(false);
+  const rest = note(true);
+
+  it('penalizes a rest wedged between hits but not a leading or trailing one', () => {
+    const wedged = complexityOf([hit, rest, hit]);
+    const leading = complexityOf([rest, hit, hit]);
+    const trailing = complexityOf([hit, hit, rest]);
+
+    expect(leading).toBe(trailing);
+    expect(wedged).toBe(leading + W_FILL);
+  });
+
+  it('counts each interior rest as its own filler unit', () => {
+    const twoWedged = complexityOf([hit, rest, rest, hit]);
+    const twoLeading = complexityOf([rest, rest, hit, hit]);
+
+    expect(twoWedged - twoLeading).toBe(2 * W_FILL);
   });
 });
 

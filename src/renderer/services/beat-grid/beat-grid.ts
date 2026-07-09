@@ -12,12 +12,18 @@ export function beatCountFor(measure: Measure): number {
 export function getBeatGrid(measures: Measure[], chart: TimingChart): Beat[] {
   const beats: Beat[] = [];
 
-  for (const measure of measures) {
+  for (let m = 0; m < measures.length; m += 1) {
+    const measure = measures[m];
     const count = beatCountFor(measure);
     const span = measure.endTick - measure.startTick;
+    const boundary = measures[m + 1]?.startTick ?? measure.endTick;
 
     for (let i = 0; i < count; i += 1) {
       const tick = measure.startTick + (span * i) / count;
+
+      if (tick >= boundary) {
+        break;
+      }
 
       beats.push({
         timeSeconds: ticksToSeconds(tick, chart.resolution, chart.tempos),
