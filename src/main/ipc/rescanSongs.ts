@@ -39,7 +39,15 @@ async function runRescan(event: IpcMainEvent, newDir: boolean) {
 
     appState.store.set('lastOpenedPath', selectedPath);
   } else {
-    selectedPath = appState.store.get('lastOpenedPath') as string;
+    const storedPath = appState.store.get('lastOpenedPath') as
+      | string
+      | undefined;
+
+    if (!storedPath) {
+      throw new Error('No library folder selected');
+    }
+
+    selectedPath = storedPath;
   }
 
   const existingSongs =
