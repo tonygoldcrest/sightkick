@@ -27,7 +27,8 @@ export interface SheetMusicColors {
   stave: string;
 }
 
-const TARGET_ROW_WIDTH = 1210;
+export const TARGET_ROW_WIDTH = 1200;
+
 const MAX_MEASURES_PER_ROW = 2;
 const MIN_MEASURE_WIDTH = 300;
 const MEASURE_TRAILING_PAD = 20;
@@ -113,7 +114,7 @@ export function renderMusic(
   return renderData;
 }
 
-function packRows(widths: number[]): number[][] {
+export function packRows(widths: number[]): number[][] {
   const rows: number[][] = [];
   let current: number[] = [];
   let accumulated = 0;

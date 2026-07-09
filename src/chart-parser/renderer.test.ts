@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, beforeAll } from 'vitest';
 import { Stave } from 'vexflow';
-import { renderMusic } from './renderer';
+import { packRows, renderMusic, TARGET_ROW_WIDTH } from './renderer';
 import { ChartParser } from './parser';
 import { Measure, Note, ParsedChart } from './types';
 
@@ -153,6 +153,33 @@ describe('renderMusic', () => {
     expect(ys[0]).toBe(ys[1]);
     expect(data[0].yOffset).toBe(data[1].yOffset);
     expect(data[2].yOffset).toBeGreaterThan(data[0].yOffset);
+  });
+
+  it('justifies a row to the full width, splitting evenly between identical measures', () => {
+    const div = container();
+    const measures = [
+      measure(quarters),
+      measure(quarters, { hasClef: false, sigChange: false }),
+    ];
+    const data = render(ref(div), song(measures));
+
+    expect(data[0].stave.getWidth()).toBe(data[1].stave.getWidth());
+    expect(data[1].stave.getX() + data[1].stave.getWidth()).toBe(
+      TARGET_ROW_WIDTH,
+    );
+  });
+
+  it('wraps to a new row after two measures', () => {
+    const div = container();
+    const measures = Array.from({ length: 4 }, (_, i) =>
+      measure(quarters, { hasClef: i === 0, sigChange: i === 0 }),
+    );
+    const data = render(ref(div), song(measures));
+
+    expect(data[0].yOffset).toBe(data[1].yOffset);
+    expect(data[2].yOffset).toBeGreaterThan(data[1].yOffset);
+    expect(data[2].yOffset).toBe(data[3].yOffset);
+    expect(data[2].stave.getX()).toBe(0);
   });
 
   it('colours note heads with the per-drum colour when enabled', () => {
@@ -406,5 +433,28 @@ describe('renderMusic', () => {
         parser.measures[index].notes.length,
       );
     });
+  });
+});
+
+describe('packRows', () => {
+  it('packs at most two measures per row', () => {
+    expect(packRows([300, 300, 300, 300])).toEqual([
+      [0, 1],
+      [2, 3],
+    ]);
+  });
+
+  it('starts a new row when the next measure would exceed the target width', () => {
+    expect(packRows([700, 700])).toEqual([[0], [1]]);
+    expect(packRows([800, 500])).toEqual([[0], [1]]);
+  });
+
+  it('keeps a measure wider than the row on its own row', () => {
+    expect(packRows([TARGET_ROW_WIDTH + 400])).toEqual([[0]]);
+    expect(packRows([TARGET_ROW_WIDTH + 400, 300])).toEqual([[0], [1]]);
+  });
+
+  it('breaks on the two-measure cap before the width limit', () => {
+    expect(packRows([100, 100, 100])).toEqual([[0, 1], [2]]);
   });
 });
