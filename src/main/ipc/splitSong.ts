@@ -77,6 +77,11 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
           event.reply('split-song', { id, progress: parseInt(match[1]) });
         }
       });
+      proc.on('error', (err) => {
+        activeProc = null;
+        activeId = null;
+        reject(err);
+      });
       proc.on('close', (code, signal) => {
         activeProc = null;
         activeId = null;
