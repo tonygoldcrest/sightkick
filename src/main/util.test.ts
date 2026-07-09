@@ -170,6 +170,19 @@ describe('buildSongFromDir metadata', () => {
 
     expect(buildSongFromDir(dir)?.albumCover).toBeNull();
   });
+
+  it('does not let song.ini override the app-controlled id and dir', () => {
+    writeSong(
+      CHART_WITH_HARD_AND_EXPERT,
+      '[Song]\nname = Test\nid = evil-id\ndir = /evil/path\n',
+    );
+
+    const song = buildSongFromDir(dir, { id: 'fixed-id' });
+
+    expect(song?.id).toBe('fixed-id');
+    expect(song?.dir).toBe(dir);
+    expect(song?.name).toBe('Test');
+  });
 });
 
 describe('toSong', () => {

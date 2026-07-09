@@ -187,6 +187,25 @@ describe('downloadSong', () => {
     );
   });
 
+  it('rejects an archive entry that escapes the output directory', async () => {
+    storeHolder.current = makeStore({ lastOpenedPath: library });
+    sngHolder.files = [
+      ...VALID_SONG,
+      { name: '../escaped.txt', data: 'pwned' },
+    ];
+    okFetch();
+
+    const event = makeEvent();
+
+    await downloadSong(event as never, baseProps);
+
+    expect(fs.existsSync(path.join(library, 'escaped.txt'))).toBe(false);
+    expect(lastReply(event, 'download-song')!.args[0]).toMatchObject({
+      success: false,
+      md5: 'hash123',
+    });
+  });
+
   it('reports failure when the SNG stream errors', async () => {
     storeHolder.current = makeStore({ lastOpenedPath: library });
     sngHolder.shouldError = true;

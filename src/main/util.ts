@@ -140,10 +140,10 @@ export function buildSongFromDir(
     }));
 
   return {
+    ...meta,
     id: existing?.id ?? randomUUID(),
     dir,
     albumCover: albumCoverPath ? toAssetUrl(albumCoverPath) : null,
-    ...meta,
     format,
     audio,
     drumDifficulties,
