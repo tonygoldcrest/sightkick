@@ -27,8 +27,10 @@ export interface SheetMusicColors {
   stave: string;
 }
 
-const STAVE_WIDTH = 600;
-const STAVE_PER_ROW = 2;
+const TARGET_ROW_WIDTH = 1210;
+const MAX_MEASURES_PER_ROW = 2;
+const MIN_MEASURE_WIDTH = 300;
+const MEASURE_TRAILING_PAD = 20;
 const UNCOLORED_NOTE_CLASS = 'vf-note-uncolored';
 const UNCOLORED_ACCENT_CLASS = 'vf-accent-uncolored';
 const REST_NOTE_CLASS = 'vf-note-rest';
@@ -52,12 +54,17 @@ export function renderMusic(
   container.replaceChildren();
 
   const lineHeight = showBarNumbers ? 180 : 130;
-  const rowWidth = STAVE_WIDTH * STAVE_PER_ROW + 10;
-  const rowCount = Math.ceil(song.measures.length / STAVE_PER_ROW);
   const renderData: RenderData[] = [];
+  const widths = song.measures.map((measure) =>
+    requiredMeasureWidth(measure, showTempo),
+  );
+  const rows = packRows(widths);
 
-  for (let row = 0; row < rowCount; row += 1) {
-    const yOffset = row * lineHeight;
+  rows.forEach((rowIndices, rowNum) => {
+    const yOffset = rowNum * lineHeight;
+    const rowMin = rowIndices.reduce((sum, index) => sum + widths[index], 0);
+    const rowWidth = Math.max(TARGET_ROW_WIDTH, rowMin);
+    const scale = rowMin > 0 ? rowWidth / rowMin : 1;
     const rowEl = document.createElement('div');
 
     rowEl.style.position = 'relative';
@@ -79,20 +86,18 @@ export function renderMusic(
       svgEl.style.display = 'block';
     }
 
-    for (let col = 0; col < STAVE_PER_ROW; col += 1) {
-      const index = row * STAVE_PER_ROW + col;
+    let x = 0;
 
-      if (index >= song.measures.length) {
-        break;
-      }
-
+    rowIndices.forEach((index) => {
       const measure = song.measures[index];
+      const measureWidth = widths[index] * scale;
       const { stave, renderedNotes } = renderMeasure(
         context,
         measure,
         index,
-        col * STAVE_WIDTH,
+        x,
         0,
+        measureWidth,
         index === song.measures.length - 1,
         showBarNumbers,
         enableColors,
@@ -101,10 +106,77 @@ export function renderMusic(
       );
 
       renderData[index] = { measure, stave, renderedNotes, yOffset };
-    }
-  }
+      x += measureWidth;
+    });
+  });
 
   return renderData;
+}
+
+function packRows(widths: number[]): number[][] {
+  const rows: number[][] = [];
+  let current: number[] = [];
+  let accumulated = 0;
+
+  widths.forEach((width, index) => {
+    if (
+      current.length > 0 &&
+      (current.length >= MAX_MEASURES_PER_ROW ||
+        accumulated + width > TARGET_ROW_WIDTH)
+    ) {
+      rows.push(current);
+      current = [];
+      accumulated = 0;
+    }
+
+    current.push(index);
+    accumulated += width;
+  });
+
+  if (current.length > 0) {
+    rows.push(current);
+  }
+
+  return rows;
+}
+
+function staveHeaderOffset(
+  stave: Stave,
+  measure: Measure,
+  showTempo: boolean,
+): number {
+  if (measure.hasClef) {
+    stave.addClef('percussion');
+  }
+
+  if (measure.sigChange) {
+    stave.addTimeSignature(`${measure.timeSig[0]}/${measure.timeSig[1]}`);
+  }
+
+  if (showTempo && measure.tempo) {
+    stave.setTempo(measure.tempo, 0);
+  }
+
+  stave.format();
+
+  return stave.getNoteStartX() - stave.getX();
+}
+
+function requiredMeasureWidth(measure: Measure, showTempo: boolean): number {
+  const headerOffset = staveHeaderOffset(
+    new Stave(0, 0, TARGET_ROW_WIDTH),
+    measure,
+    showTempo,
+  );
+  const { voice } = buildVoice(measure);
+  const formatter = new Formatter().joinVoices([voice]);
+  const minNoteWidth = formatter.preCalculateMinTotalWidth([voice]);
+  const content = Number.isFinite(minNoteWidth) ? minNoteWidth : 0;
+
+  return Math.max(
+    MIN_MEASURE_WIDTH,
+    headerOffset + content + MEASURE_TRAILING_PAD,
+  );
 }
 
 function buildVoice(measure: Measure) {
@@ -341,13 +413,14 @@ function renderMeasure(
   index: number,
   xOffset: number,
   yOffset: number,
+  width: number,
   endMeasure: boolean,
   showBarNumbers: boolean,
   enableColors: boolean,
   showTempo: boolean,
   colors: SheetMusicColors,
 ) {
-  const stave = new Stave(xOffset, yOffset, STAVE_WIDTH);
+  const stave = new Stave(xOffset, yOffset, width);
 
   if (endMeasure) {
     stave.setEndBarType(Barline.type.END);
@@ -380,8 +453,11 @@ function renderMeasure(
     .draw();
 
   const { voice, beams, tuplets, staveNotes } = buildVoice(measure);
+  const headerOffset = stave.getNoteStartX() - stave.getX();
 
-  new Formatter().joinVoices([voice]).format([voice], STAVE_WIDTH - 40);
+  new Formatter()
+    .joinVoices([voice])
+    .format([voice], Math.max(1, width - headerOffset - MEASURE_TRAILING_PAD));
   voice.draw(context, stave);
   beams.forEach((beam) => {
     beam.setContext(context).draw();

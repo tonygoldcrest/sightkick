@@ -146,7 +146,9 @@ describe('renderMusic', () => {
     const ys = data.map((d) => d.stave.getYForLine(0));
 
     expect(data[0].stave.getX()).toBe(0);
-    expect(data[1].stave.getX()).toBe(600);
+    expect(data[1].stave.getX()).toBe(
+      data[0].stave.getX() + data[0].stave.getWidth(),
+    );
     expect(data[2].stave.getX()).toBe(0);
     expect(ys[0]).toBe(ys[1]);
     expect(data[0].yOffset).toBe(data[1].yOffset);
