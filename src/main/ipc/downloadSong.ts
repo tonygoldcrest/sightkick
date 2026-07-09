@@ -2,7 +2,13 @@ import { SngStream } from '@eliwhite/parse-sng';
 import path from 'path';
 import fs from 'fs';
 import { appState } from '../AppState';
-import { buildSongFromDir, isUnderDirectory, toSong } from '../util';
+import { StorageSchema } from '../../types';
+import {
+  buildSongFromDir,
+  isUnderDirectory,
+  toSong,
+  writeSongIdFile,
+} from '../util';
 
 type Props = {
   url: string;
@@ -26,6 +32,23 @@ export async function downloadSong(
         success: false,
         md5,
         error: 'No folder selected',
+      });
+
+      return;
+    }
+
+    const folderName = `${artist} - ${name} (${charter})`.replace(
+      /[\\/:*?"<>|]/g,
+      '',
+    );
+    const outputDir = path.join(lastOpenedPath, folderName);
+    const songs = (appState.store.get('songs') as StorageSchema['songs']) ?? {};
+
+    if (songs[md5] || fs.existsSync(outputDir)) {
+      event.reply('download-song', {
+        success: false,
+        md5,
+        alreadyExists: true,
       });
 
       return;
@@ -87,12 +110,6 @@ export async function downloadSong(
       sngStream.start();
     });
 
-    const folderName = `${artist} - ${name} (${charter})`.replace(
-      /[\\/:*?"<>|]/g,
-      '',
-    );
-    const outputDir = path.join(lastOpenedPath, folderName);
-
     fs.mkdirSync(outputDir, { recursive: true });
 
     for (const file of files) {
@@ -104,6 +121,8 @@ export async function downloadSong(
 
       fs.writeFileSync(dest, new Uint8Array(file.data));
     }
+
+    writeSongIdFile(outputDir, md5);
 
     const songData = buildSongFromDir(outputDir, { id: md5 });
 

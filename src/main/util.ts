@@ -6,6 +6,24 @@ import { Difficulty, parseChartFile } from 'scan-chart';
 import { AudioData, Song, SongData } from '../types';
 import { ALL_DIFFICULTIES } from '../constants';
 
+export const SONG_ID_FILE = '.sightkick';
+
+export function writeSongIdFile(dir: string, id: string): void {
+  fs.writeFileSync(path.join(dir, SONG_ID_FILE), JSON.stringify({ id }));
+}
+
+function readSongIdFile(dir: string): string | undefined {
+  try {
+    const parsed = JSON.parse(
+      fs.readFileSync(path.join(dir, SONG_ID_FILE), 'utf-8'),
+    );
+
+    return typeof parsed.id === 'string' ? parsed.id : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function toSong(stored: SongData): Song {
   const rating = parseInt(stored.diff_drums ?? '', 10);
 
@@ -141,7 +159,7 @@ export function buildSongFromDir(
 
   return {
     ...meta,
-    id: existing?.id ?? randomUUID(),
+    id: existing?.id ?? readSongIdFile(dir) ?? randomUUID(),
     dir,
     albumCover: albumCoverPath ? toAssetUrl(albumCoverPath) : null,
     format,

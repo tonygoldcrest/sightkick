@@ -155,6 +155,10 @@ describe('downloadSong', () => {
     expect(fs.existsSync(path.join(outputDir, 'song.ini'))).toBe(true);
     expect(fs.existsSync(path.join(outputDir, 'notes.chart'))).toBe(true);
 
+    expect(
+      JSON.parse(fs.readFileSync(path.join(outputDir, '.sightkick'), 'utf-8')),
+    ).toEqual({ id: 'hash123' });
+
     const stored = storeHolder.current.get('songs.hash123') as { id: string };
 
     expect(stored.id).toBe('hash123');
@@ -203,6 +207,48 @@ describe('downloadSong', () => {
     expect(lastReply(event, 'download-song')!.args[0]).toMatchObject({
       success: false,
       md5: 'hash123',
+    });
+  });
+
+  it('skips and reports alreadyExists when the md5 is already in the library', async () => {
+    storeHolder.current = makeStore({
+      lastOpenedPath: library,
+      songs: { hash123: { id: 'hash123' } },
+    });
+
+    const fetchSpy = vi.fn();
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const event = makeEvent();
+
+    await downloadSong(event as never, baseProps);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(lastReply(event, 'download-song')!.args[0]).toMatchObject({
+      success: false,
+      md5: 'hash123',
+      alreadyExists: true,
+    });
+  });
+
+  it('skips when the destination folder already exists', async () => {
+    storeHolder.current = makeStore({ lastOpenedPath: library });
+    fs.mkdirSync(path.join(library, 'Artist - Song (Charter)'));
+
+    const fetchSpy = vi.fn();
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const event = makeEvent();
+
+    await downloadSong(event as never, baseProps);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(lastReply(event, 'download-song')!.args[0]).toMatchObject({
+      success: false,
+      md5: 'hash123',
+      alreadyExists: true,
     });
   });
 

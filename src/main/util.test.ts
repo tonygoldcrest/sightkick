@@ -171,6 +171,26 @@ describe('buildSongFromDir metadata', () => {
     expect(buildSongFromDir(dir)?.albumCover).toBeNull();
   });
 
+  it('recovers the id from a .sightkick file when none is passed in', () => {
+    writeSong(CHART_WITH_HARD_AND_EXPERT);
+    fs.writeFileSync(
+      path.join(dir, '.sightkick'),
+      JSON.stringify({ id: 'downloaded-md5' }),
+    );
+
+    expect(buildSongFromDir(dir)?.id).toBe('downloaded-md5');
+  });
+
+  it('prefers an explicit existing id over the .sightkick file', () => {
+    writeSong(CHART_WITH_HARD_AND_EXPERT);
+    fs.writeFileSync(
+      path.join(dir, '.sightkick'),
+      JSON.stringify({ id: 'sidecar-md5' }),
+    );
+
+    expect(buildSongFromDir(dir, { id: 'explicit' })?.id).toBe('explicit');
+  });
+
   it('does not let song.ini override the app-controlled id and dir', () => {
     writeSong(
       CHART_WITH_HARD_AND_EXPERT,

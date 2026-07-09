@@ -7,6 +7,7 @@ interface DownloadReply {
   md5: string;
   song?: Song;
   error?: string;
+  alreadyExists?: boolean;
 }
 
 export function useDownload(
@@ -25,7 +26,7 @@ export function useDownload(
   useEffect(() => {
     return window.electron.ipcRenderer.on<DownloadReply>(
       'download-song',
-      ({ success, md5, song: newSong, error }) => {
+      ({ success, md5, song: newSong, error, alreadyExists }) => {
         if (!downloadingRef.current.has(md5)) {
           return;
         }
@@ -35,6 +36,11 @@ export function useDownload(
 
         if (success && newSong) {
           onSongAddedRef.current(newSong);
+        } else if (alreadyExists) {
+          notification.info({
+            title: 'Already in your library',
+            placement: 'bottomRight',
+          });
         } else {
           notification.error({
             title: 'Download failed',
