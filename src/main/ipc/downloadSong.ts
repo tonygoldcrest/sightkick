@@ -2,7 +2,7 @@ import { SngStream } from '@eliwhite/parse-sng';
 import path from 'path';
 import fs from 'fs';
 import { appState } from '../AppState';
-import { buildSongFromDir, toSong } from '../util';
+import { buildSongFromDir, isUnderDirectory, toSong } from '../util';
 
 type Props = {
   url: string;
@@ -96,10 +96,13 @@ export async function downloadSong(
     fs.mkdirSync(outputDir, { recursive: true });
 
     for (const file of files) {
-      fs.writeFileSync(
-        path.join(outputDir, file.name),
-        new Uint8Array(file.data),
-      );
+      const dest = path.join(outputDir, file.name);
+
+      if (!isUnderDirectory(dest, outputDir)) {
+        throw new Error(`Unsafe file path in archive: ${file.name}`);
+      }
+
+      fs.writeFileSync(dest, new Uint8Array(file.data));
     }
 
     const songData = buildSongFromDir(outputDir, { id: md5 });
