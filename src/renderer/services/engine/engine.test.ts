@@ -392,7 +392,7 @@ describe('Engine', () => {
           0,
           1920,
           [rendered(480, note)],
-          [{ isRest: false, notes: ['c/5'] } as Note],
+          [{ tick: 480, isRest: false, notes: ['c/5'] } as Note],
         ),
       ],
     });
@@ -424,7 +424,7 @@ describe('Engine', () => {
           0,
           1920,
           [rendered(480, note)],
-          [{ isRest: false, notes: ['c/5'] } as Note],
+          [{ tick: 480, isRest: false, notes: ['c/5'] } as Note],
         ),
       ],
     });
@@ -464,7 +464,7 @@ describe('Engine', () => {
           0,
           1920,
           [rendered(480, note)],
-          [{ isRest: false, notes: ['c/5'] } as Note],
+          [{ tick: 480, isRest: false, notes: ['c/5'] } as Note],
         ),
       ],
       countInEnabled: true,

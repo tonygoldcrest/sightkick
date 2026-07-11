@@ -17,6 +17,26 @@ export function formatTime(time: number) {
   return ret;
 }
 
+export function lowerBound(
+  length: number,
+  isAtOrAfter: (index: number) => boolean,
+): number {
+  let lo = 0;
+  let hi = length;
+
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+
+    if (isAtOrAfter(mid)) {
+      hi = mid;
+    } else {
+      lo = mid + 1;
+    }
+  }
+
+  return lo;
+}
+
 export function elementIcon(type: MappingElement['type']) {
   if (type === 'cymbal') {
     return faXmark;

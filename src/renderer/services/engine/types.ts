@@ -1,4 +1,9 @@
-import { Measure, ParsedChart, RenderData } from '../../../chart-parser/types';
+import {
+  Measure,
+  Note,
+  ParsedChart,
+  RenderData,
+} from '../../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../../types';
 import { PlayheadStyle } from '../../types';
 import { InputEvent } from '../../input/types';
@@ -50,6 +55,12 @@ export interface GameRendererRefs {
 export interface NotePos {
   measureIdx: number;
   noteIdx: number;
+}
+
+export interface NoteEntry {
+  tick: number;
+  note: Note;
+  pos: NotePos;
 }
 
 export interface ActiveNote extends NotePos {

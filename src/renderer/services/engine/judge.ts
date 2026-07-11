@@ -2,7 +2,7 @@ import { Measure, Note, ParsedChart } from '../../../chart-parser/types';
 import { InputMapping } from '../../../types';
 import { InputEvent } from '../../input/types';
 import { secondsToTicks, ticksToSeconds } from '../../../chart-parser/timing';
-import { JudgeContext, JudgeHitHandler, NotePos } from './types';
+import { JudgeContext, JudgeHitHandler, NoteEntry, NotePos } from './types';
 import {
   ACCENT_VALUE_THRESHOLD,
   ELEMENT_TO_KEYS,
@@ -10,23 +10,31 @@ import {
   HIT_TOLERANCE_SECONDS,
 } from './constants';
 import { keyPrefix } from './helpers';
+import { lowerBound } from '../../util';
 
 export class Judge {
   private chart: ParsedChart | undefined;
   private measures: Measure[] = [];
+  private noteIndex: NoteEntry[] = [];
   private mapping: InputMapping = {};
   private enabled = false;
   private currentTick: number | undefined;
-  private hitKeys = new Set<string>();
+  private hits = new Map<number, Set<string>>();
+  private hitTotal = 0;
   private falseHitTicks: number[] = [];
   private hitListeners = new Set<JudgeHitHandler>();
 
   setContext(context: JudgeContext): void {
     const chartChanged = this.chart !== context.chart;
+    const measuresChanged = this.measures !== context.measures;
 
     this.chart = context.chart;
     this.mapping = context.mapping;
     this.measures = context.measures;
+
+    if (measuresChanged) {
+      this.buildNoteIndex();
+    }
 
     if (chartChanged) {
       this.reset();
@@ -42,9 +50,10 @@ export class Judge {
   }
 
   rewindTo(tick: number): void {
-    for (const key of this.hitKeys) {
-      if (parseInt(key, 10) >= tick) {
-        this.hitKeys.delete(key);
+    for (const [hitTick, prefixes] of this.hits) {
+      if (hitTick >= tick) {
+        this.hitTotal -= prefixes.size;
+        this.hits.delete(hitTick);
       }
     }
 
@@ -61,11 +70,11 @@ export class Judge {
   }
 
   isHit(tick: number, prefix: string): boolean {
-    return this.hitKeys.has(`${tick}:${prefix}`);
+    return this.hits.get(tick)?.has(prefix) ?? false;
   }
 
   get hitCount(): number {
-    return this.hitKeys.size;
+    return this.hitTotal;
   }
 
   get falseHitCount(): number {
@@ -73,14 +82,63 @@ export class Judge {
   }
 
   reset(): void {
-    this.hitKeys.clear();
+    this.hits.clear();
+    this.hitTotal = 0;
     this.falseHitTicks = [];
   }
 
-  private isInSilentRegion(tick: number): boolean {
-    const containing = this.measures.find(
-      (measure) => tick >= measure.startTick && tick < measure.endTick,
+  private buildNoteIndex(): void {
+    const index: NoteEntry[] = [];
+
+    this.measures.forEach((measure, measureIdx) => {
+      measure.notes.forEach((note, noteIdx) => {
+        if (!note.isRest) {
+          index.push({ tick: note.tick, note, pos: { measureIdx, noteIdx } });
+        }
+      });
+    });
+
+    index.sort((a, b) => a.tick - b.tick);
+    this.noteIndex = index;
+  }
+
+  private firstNoteAtOrAfter(tick: number): number {
+    return lowerBound(
+      this.noteIndex.length,
+      (index) => this.noteIndex[index].tick >= tick,
     );
+  }
+
+  private recordHit(tick: number, prefix: string): void {
+    let prefixes = this.hits.get(tick);
+
+    if (!prefixes) {
+      prefixes = new Set();
+      this.hits.set(tick, prefixes);
+    }
+
+    if (!prefixes.has(prefix)) {
+      prefixes.add(prefix);
+      this.hitTotal += 1;
+    }
+  }
+
+  private containingMeasure(tick: number): Measure | undefined {
+    const firstAfter = lowerBound(
+      this.measures.length,
+      (index) => this.measures[index].startTick > tick,
+    );
+    const candidate = this.measures[firstAfter - 1];
+
+    if (candidate && tick >= candidate.startTick && tick < candidate.endTick) {
+      return candidate;
+    }
+
+    return undefined;
+  }
+
+  private isInSilentRegion(tick: number): boolean {
+    const containing = this.containingMeasure(tick);
 
     if (!containing) {
       return true;
@@ -90,15 +148,19 @@ export class Judge {
   }
 
   private hasScoreableNoteNear(tick: number, toleranceTicks: number): boolean {
-    for (const measure of this.measures) {
-      for (const note of measure.notes) {
-        if (!note.isRest && Math.abs(note.tick - tick) <= toleranceTicks) {
-          return true;
-        }
-      }
-    }
+    const entry =
+      this.noteIndex[this.firstNoteAtOrAfter(tick - toleranceTicks)];
 
-    return false;
+    return entry !== undefined && entry.tick <= tick + toleranceTicks;
+  }
+
+  private maybeRecordFalseHit(tick: number, toleranceTicks: number): void {
+    if (
+      !this.isInSilentRegion(tick) ||
+      this.hasScoreableNoteNear(tick, toleranceTicks)
+    ) {
+      this.falseHitTicks.push(tick);
+    }
   }
 
   handleInput({ controlId, value }: InputEvent): void {
@@ -134,37 +196,36 @@ export class Judge {
     let bestNote: Note | undefined;
     let bestPos: NotePos | undefined;
 
-    this.measures.forEach((measure, measureIdx) => {
-      measure.notes.forEach((note, noteIdx) => {
-        if (note.isRest) {
-          return;
-        }
+    for (
+      let i = this.firstNoteAtOrAfter(tick - toleranceTicks);
+      i < this.noteIndex.length;
+      i += 1
+    ) {
+      const entry = this.noteIndex[i];
 
-        const dist = Math.abs(note.tick - tick);
+      if (entry.tick > tick + toleranceTicks) {
+        break;
+      }
 
-        if (dist > toleranceTicks || dist >= bestDist) {
-          return;
-        }
+      const dist = Math.abs(entry.tick - tick);
 
-        const hasMatchingKey = note.notes.some((k) =>
-          expectedPrefixes.has(keyPrefix(k)),
-        );
+      if (dist >= bestDist) {
+        continue;
+      }
 
-        if (hasMatchingKey) {
-          bestDist = dist;
-          bestNote = note;
-          bestPos = { measureIdx, noteIdx };
-        }
-      });
-    });
+      const hasMatchingKey = entry.note.notes.some((k) =>
+        expectedPrefixes.has(keyPrefix(k)),
+      );
+
+      if (hasMatchingKey) {
+        bestDist = dist;
+        bestNote = entry.note;
+        bestPos = entry.pos;
+      }
+    }
 
     if (!bestNote || !bestPos) {
-      if (
-        !this.isInSilentRegion(tick) ||
-        this.hasScoreableNoteNear(tick, toleranceTicks)
-      ) {
-        this.falseHitTicks.push(tick);
-      }
+      this.maybeRecordFalseHit(tick, toleranceTicks);
 
       return;
     }
@@ -189,22 +250,17 @@ export class Judge {
       .filter(
         (p) =>
           expectedPrefixes.has(p) &&
-          !this.hitKeys.has(`${hit.tick}:${p}`) &&
+          !this.isHit(hit.tick, p) &&
           passesVelocity(p),
       );
 
     if (newPrefixes.length === 0) {
-      if (
-        !this.isInSilentRegion(tick) ||
-        this.hasScoreableNoteNear(tick, toleranceTicks)
-      ) {
-        this.falseHitTicks.push(tick);
-      }
+      this.maybeRecordFalseHit(tick, toleranceTicks);
 
       return;
     }
 
-    newPrefixes.forEach((p) => this.hitKeys.add(`${hit.tick}:${p}`));
+    newPrefixes.forEach((p) => this.recordHit(hit.tick, p));
     this.hitListeners.forEach((listener) => listener(pos, newPrefixes));
   }
 }
