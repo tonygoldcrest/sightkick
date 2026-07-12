@@ -12,6 +12,11 @@ const updater = vi.hoisted(() => {
     on: vi.fn((event: string, cb: Handler) => {
       handlers.set(event, cb);
     }),
+    removeListener: vi.fn((event: string, cb: Handler) => {
+      if (handlers.get(event) === cb) {
+        handlers.delete(event);
+      }
+    }),
     removeAllListeners: vi.fn((event: string) => {
       handlers.delete(event);
     }),
@@ -28,6 +33,11 @@ const ipc = vi.hoisted(() => {
     on: vi.fn((channel: string, cb: Handler) => {
       handlers.set(channel, cb);
     }),
+    removeListener: vi.fn((channel: string, cb: Handler) => {
+      if (handlers.get(channel) === cb) {
+        handlers.delete(channel);
+      }
+    }),
     removeAllListeners: vi.fn((channel: string) => {
       handlers.delete(channel);
     }),
@@ -39,6 +49,7 @@ vi.mock('electron-updater', () => ({
     logger: undefined,
     autoDownload: true,
     on: updater.on,
+    removeListener: updater.removeListener,
     removeAllListeners: updater.removeAllListeners,
     checkForUpdates: updater.checkForUpdates,
     downloadUpdate: updater.downloadUpdate,
@@ -51,7 +62,11 @@ vi.mock('electron-log', () => ({
 }));
 
 vi.mock('electron', () => ({
-  ipcMain: { on: ipc.on, removeAllListeners: ipc.removeAllListeners },
+  ipcMain: {
+    on: ipc.on,
+    removeListener: ipc.removeListener,
+    removeAllListeners: ipc.removeAllListeners,
+  },
 }));
 
 const { AppUpdater } = await import('./AppUpdater');
@@ -60,9 +75,9 @@ const RELEASES_URL =
 
 function build() {
   const send = vi.fn();
-  const window = { webContents: { send } };
+  const window = { isDestroyed: () => false, webContents: { send } };
 
-  new AppUpdater(window as unknown as BrowserWindow);
+  AppUpdater.attach(window as unknown as BrowserWindow);
 
   return { send };
 }
@@ -72,6 +87,7 @@ function emitUpdate(version: string, releaseNotes?: unknown) {
 }
 
 beforeEach(() => {
+  AppUpdater.reset();
   updater.handlers.clear();
   ipc.handlers.clear();
   vi.clearAllMocks();
@@ -88,11 +104,57 @@ describe('AppUpdater', () => {
     expect(autoUpdater.autoDownload).toBe(false);
   });
 
-  it('clears prior listeners so window recreation does not stack them', () => {
+  it('registers listeners once across window recreation and targets the latest window', () => {
+    const first = vi.fn();
+    const second = vi.fn();
+
+    AppUpdater.attach({
+      isDestroyed: () => false,
+      webContents: { send: first },
+    } as unknown as BrowserWindow);
+    AppUpdater.attach({
+      isDestroyed: () => false,
+      webContents: { send: second },
+    } as unknown as BrowserWindow);
+
+    expect(
+      updater.on.mock.calls.filter(([event]) => event === 'update-available'),
+    ).toHaveLength(1);
+
+    emitUpdate('1.2.0');
+
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledWith(
+      'update-status',
+      expect.objectContaining({ version: '1.2.0' }),
+    );
+  });
+
+  it('does not send to a window that has been destroyed', () => {
+    const send = vi.fn();
+    let destroyed = false;
+
+    AppUpdater.attach({
+      isDestroyed: () => destroyed,
+      webContents: { send },
+    } as unknown as BrowserWindow);
+
+    destroyed = true;
+    emitUpdate('1.2.0');
+
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('removes its own listeners on reset', () => {
     build();
 
-    expect(updater.removeAllListeners).toHaveBeenCalledWith('update-available');
-    expect(ipc.removeAllListeners).toHaveBeenCalledWith('check-update');
+    expect(updater.handlers.has('update-available')).toBe(true);
+    expect(ipc.handlers.has('check-update')).toBe(true);
+
+    AppUpdater.reset();
+
+    expect(updater.handlers.has('update-available')).toBe(false);
+    expect(ipc.handlers.has('check-update')).toBe(false);
   });
 
   it('pushes the new version to the renderer when an update is found', () => {

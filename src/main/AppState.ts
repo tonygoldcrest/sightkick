@@ -179,7 +179,7 @@ class AppState {
 
       return { action: 'deny' };
     });
-    new AppUpdater(this.mainWindow);
+    AppUpdater.attach(this.mainWindow);
   }
 
   preventSleep(): void {
