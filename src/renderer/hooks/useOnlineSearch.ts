@@ -80,6 +80,11 @@ async function fetchEnchorePage(
     method: 'POST',
     signal,
   });
+
+  if (!res.ok) {
+    throw new Error(`Enchor search failed: ${res.status} ${res.statusText}`);
+  }
+
   const json = await res.json();
 
   return {
