@@ -132,7 +132,9 @@ export class ChannelStretcher {
         );
         const trueFrequency = this.omega[k] + deviation / this.analysisHop;
 
-        this.synthesisPhase[k] += trueFrequency * this.synthesisHop;
+        this.synthesisPhase[k] = principalArgument(
+          this.synthesisPhase[k] + trueFrequency * this.synthesisHop,
+        );
       }
     }
 

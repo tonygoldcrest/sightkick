@@ -49,7 +49,7 @@ describe('ChannelStretcher', () => {
   });
 
   it('phase-resets at an onset, changing the output', () => {
-    const input = sine(8192, 40);
+    const input = sine(8192, 43);
     const plain = Array.from(new ChannelStretcher(input, 0.5).produce(8));
     const withOnset = Array.from(
       new ChannelStretcher(input, 0.5, [2000]).produce(8),
