@@ -12,7 +12,7 @@ A game for learning drums with sheet music for thousands of songs. Mute the drum
 
 ## Requirements
 
-* **macOS** or **Windows** (x64).
+* **macOS**, **Windows** (x64), or **Linux** (x64).
 * Optional drum-track separation needs the [stem splitter tool](https://github.com/tonygoldcrest/sightkick-tools) (~130 MB, one-time download from within the app; Apple Silicon and Windows only).
 
 ## Features
@@ -40,7 +40,7 @@ yarn build          # compile main, preload, and renderer
 yarn lint           # ESLint with --fix
 yarn test           # Jest
 yarn storybook      # component stories on :6006
-yarn package        # build a macOS app (yarn package:win for Windows)
+yarn package        # build a macOS app (yarn package:win / package:linux)
 ```
 
 ## Acknowledgements
