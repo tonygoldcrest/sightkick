@@ -103,6 +103,19 @@ export function isUnderDirectory(songDir: string, rootDir: string): boolean {
   return !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
+export function resolveAssetFilePath(
+  url: string,
+  rootDir: string | undefined,
+): string | undefined {
+  const filePath = assetUrlToFilePath(url);
+
+  if (!rootDir || !isUnderDirectory(filePath, rootDir)) {
+    return undefined;
+  }
+
+  return filePath;
+}
+
 export function buildSongFromDir(
   dir: string,
   existing?: {

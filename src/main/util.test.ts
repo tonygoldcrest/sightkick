@@ -7,6 +7,7 @@ import {
   buildSongFromDir,
   chartGlobPattern,
   isUnderDirectory,
+  resolveAssetFilePath,
   resolveHtmlPath,
   toAssetUrl,
   toSong,
@@ -326,6 +327,34 @@ describe('isUnderDirectory', () => {
 
   it('rejects a sibling escaping via ..', () => {
     expect(isUnderDirectory('/other/track', '/songs')).toBe(false);
+  });
+});
+
+describe('resolveAssetFilePath', () => {
+  const root = '/library';
+
+  it('resolves an asset inside the library root', () => {
+    const url = toAssetUrl('/library/My Song/drums.ogg');
+
+    expect(resolveAssetFilePath(url, root)).toBe('/library/My Song/drums.ogg');
+  });
+
+  it('rejects a path outside the library root', () => {
+    const url = toAssetUrl('/etc/passwd');
+
+    expect(resolveAssetFilePath(url, root)).toBeUndefined();
+  });
+
+  it('rejects a traversal escape out of the root', () => {
+    const url = toAssetUrl('/library/../etc/passwd');
+
+    expect(resolveAssetFilePath(url, root)).toBeUndefined();
+  });
+
+  it('rejects everything when no library root is set', () => {
+    const url = toAssetUrl('/library/My Song/drums.ogg');
+
+    expect(resolveAssetFilePath(url, undefined)).toBeUndefined();
   });
 });
 

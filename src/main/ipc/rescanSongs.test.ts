@@ -18,6 +18,8 @@ vi.mock('../AppState', () => ({
       set: (key: string, value: unknown) =>
         storeHolder.current!.set(key, value),
     },
+    setLibraryRoot: (root: string) =>
+      storeHolder.current!.set('lastOpenedPath', root),
   },
 }));
 

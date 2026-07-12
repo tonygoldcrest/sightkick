@@ -11,7 +11,7 @@ import {
 } from 'electron';
 import Store from 'electron-store';
 import MenuBuilder from './menu';
-import { ASSET_PROTOCOL, assetUrlToFilePath, resolveHtmlPath } from './util';
+import { ASSET_PROTOCOL, resolveAssetFilePath, resolveHtmlPath } from './util';
 import { AppUpdater } from './AppUpdater';
 import { loadSong } from './ipc/loadSong';
 import { loadSongList } from './ipc/loadSongList';
@@ -30,6 +30,7 @@ class AppState {
   private mainWindow: BrowserWindow | null = null;
   private powerSaveBlockerId: number = -1;
   readonly store = new Store();
+  private libraryRoot = this.store.get('lastOpenedPath') as string | undefined;
 
   static getInstance(): AppState {
     if (!AppState.instance) {
@@ -37,6 +38,11 @@ class AppState {
     }
 
     return AppState.instance;
+  }
+
+  setLibraryRoot(root: string): void {
+    this.libraryRoot = root;
+    this.store.set('lastOpenedPath', root);
   }
 
   start(): void {
@@ -65,9 +71,15 @@ class AppState {
     app
       .whenReady()
       .then(() => {
-        protocol.handle(ASSET_PROTOCOL, (request) =>
-          net.fetch(pathToFileURL(assetUrlToFilePath(request.url)).toString()),
-        );
+        protocol.handle(ASSET_PROTOCOL, (request) => {
+          const filePath = resolveAssetFilePath(request.url, this.libraryRoot);
+
+          if (!filePath) {
+            return new Response('Forbidden', { status: 403 });
+          }
+
+          return net.fetch(pathToFileURL(filePath).toString());
+        });
         this.setupIpc();
         this.createWindow();
         app.on('activate', () => {

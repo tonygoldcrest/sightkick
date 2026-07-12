@@ -37,7 +37,7 @@ async function runRescan(event: IpcMainEvent, newDir: boolean) {
 
     selectedPath = result.filePaths[0];
 
-    appState.store.set('lastOpenedPath', selectedPath);
+    appState.setLibraryRoot(selectedPath);
   } else {
     const storedPath = appState.store.get('lastOpenedPath') as
       | string
