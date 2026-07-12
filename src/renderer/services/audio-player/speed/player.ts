@@ -2,7 +2,11 @@ import { SpeedAudioTrack } from './track';
 import { StretchStream } from './stretch-stream';
 import { VoiceGroup } from './build-units';
 import { BaseAudioPlayer } from '../base-player';
-import { SpeedControllableAudioPlayer, TrackConfig } from '../types';
+import {
+  SampleBlock,
+  SpeedControllableAudioPlayer,
+  TrackConfig,
+} from '../types';
 
 const FRAMES_PER_CHUNK = 64;
 const LOOKAHEAD_SECONDS = 2;
@@ -189,7 +193,7 @@ export class SpeedAudioPlayer
     this.timer = setInterval(this.pump, SCHEDULER_INTERVAL_MS);
   }
 
-  private scheduleBlocks(blocks: Float32Array[], at: number) {
+  private scheduleBlocks(blocks: SampleBlock[], at: number) {
     this.targets.forEach((target) => {
       const length = blocks[target.voiceStart].length;
       const buffer = this.context.createBuffer(
@@ -199,10 +203,7 @@ export class SpeedAudioPlayer
       );
 
       for (let channel = 0; channel < target.channels; channel += 1) {
-        buffer.copyToChannel(
-          blocks[target.voiceStart + channel] as Float32Array<ArrayBuffer>,
-          channel,
-        );
+        buffer.copyToChannel(blocks[target.voiceStart + channel], channel);
       }
 
       target.track.scheduleChunk(target.fileIndex, buffer, at);

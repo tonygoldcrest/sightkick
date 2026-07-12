@@ -31,6 +31,7 @@ export class Engine {
   private timeUnsub: () => void;
   private transportUnsub: () => void;
   private inputUnsub: () => void;
+  private hitUnsub: () => void;
 
   constructor(options: EngineOptions) {
     this.onEndedCb = options.onEnded;
@@ -58,7 +59,9 @@ export class Engine {
     this.inputUnsub = options.subscribeInput((event) =>
       this.judge.handleInput(event),
     );
-    this.judge.onHit((pos, prefixes) => this.renderer.paintHit(pos, prefixes));
+    this.hitUnsub = this.judge.onHit((pos, prefixes) =>
+      this.renderer.paintHit(pos, prefixes),
+    );
   }
 
   get timeStore(): TimeStore {
@@ -178,6 +181,7 @@ export class Engine {
     this.timeUnsub();
     this.transportUnsub();
     this.inputUnsub();
+    this.hitUnsub();
     this.transport.dispose();
   }
 

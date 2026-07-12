@@ -24,7 +24,7 @@ export abstract class BaseAudioPlayer<TTrack extends BaseAudioTrack> {
     this.ready = this.createTracks(trackConfigs);
     this.ready
       .then((tracks) => {
-        this.duration = Math.max(...tracks.map((track) => track.duration));
+        this.duration = Math.max(0, ...tracks.map((track) => track.duration));
 
         return this.duration;
       })

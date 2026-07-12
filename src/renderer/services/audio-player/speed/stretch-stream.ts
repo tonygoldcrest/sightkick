@@ -4,6 +4,7 @@ import {
   StretchUnit,
   VoiceGroup,
 } from './build-units';
+import { SampleBlock } from '../types';
 
 export class StretchStream {
   private worker: Worker | undefined;
@@ -12,7 +13,7 @@ export class StretchStream {
   private groups: VoiceGroup[] = [];
   private sampleRate = 44100;
   private onsetsByGroup: (number[] | undefined)[] = [];
-  private pending = new Map<number, (blocks: Float32Array[]) => void>();
+  private pending = new Map<number, (blocks: SampleBlock[]) => void>();
   private nextId = 0;
 
   constructor() {
@@ -28,7 +29,7 @@ export class StretchStream {
         },
       );
       this.worker.onmessage = (
-        event: MessageEvent<{ id: number; blocks: Float32Array[] }>,
+        event: MessageEvent<{ id: number; blocks: SampleBlock[] }>,
       ) => {
         const resolve = this.pending.get(event.data.id);
 
@@ -100,13 +101,13 @@ export class StretchStream {
     this.units.forEach((unit) => unit.seek(outputSample));
   }
 
-  produce(frames: number): Promise<Float32Array[]> {
+  produce(frames: number): Promise<SampleBlock[]> {
     if (this.worker) {
       const id = this.nextId;
 
       this.nextId += 1;
 
-      return new Promise<Float32Array[]>((resolve) => {
+      return new Promise<SampleBlock[]>((resolve) => {
         this.pending.set(id, resolve);
         this.worker?.postMessage({ type: 'produce', id, frames });
       });

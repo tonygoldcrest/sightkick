@@ -11,14 +11,17 @@ export abstract class BaseAudioTrack {
     public context: AudioContext,
     destination: AudioNode = context.destination,
   ) {
-    this.gainNodes = new Array(buffers.length).fill(undefined).map(() => {
+    this.gainNodes = Array.from({ length: buffers.length }, () => {
       const gainNode = context.createGain();
 
       gainNode.connect(destination);
 
       return gainNode;
     });
-    this.duration = Math.max(...this.buffers.map((buffer) => buffer.duration));
+    this.duration = Math.max(
+      0,
+      ...this.buffers.map((buffer) => buffer.duration),
+    );
   }
 
   get volume() {

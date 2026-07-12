@@ -1,6 +1,7 @@
 import { FFT } from './fft';
 import { makeHann } from './window';
 import { lockPhases, principalArgument } from './phase';
+import { SampleBlock } from '../types';
 
 const FFT_SIZE = 2048;
 const SYNTHESIS_HOP = FFT_SIZE / 4;
@@ -62,7 +63,7 @@ export class ChannelStretcher {
     }
   }
 
-  produce(frames: number): Float32Array {
+  produce(frames: number): SampleBlock {
     const hop = this.synthesisHop;
     const output = new Float32Array(frames * hop);
 

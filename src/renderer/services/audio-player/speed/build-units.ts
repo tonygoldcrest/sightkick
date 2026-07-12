@@ -1,5 +1,6 @@
 import { ChannelStretcher } from './channel-stretcher';
 import { detectOnsets } from './onset-detection';
+import { SampleBlock } from '../types';
 
 export type VoiceKind = 'vocoder' | 'transient';
 
@@ -12,7 +13,7 @@ export interface VoiceGroup {
 export interface StretchUnit {
   channelIndices: number[];
   seek(outputSample: number): void;
-  produce(frames: number): Float32Array[];
+  produce(frames: number): SampleBlock[];
 }
 
 function mixToMono(channels: Float32Array[]): Float32Array {
@@ -90,8 +91,8 @@ export function scatterBlocks(
   units: StretchUnit[],
   channelCount: number,
   frames: number,
-): Float32Array[] {
-  const output = new Array<Float32Array>(channelCount);
+): SampleBlock[] {
+  const output = new Array<SampleBlock>(channelCount);
 
   for (const unit of units) {
     const blocks = unit.produce(frames);
