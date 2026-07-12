@@ -10,7 +10,7 @@ import {
   HIT_TOLERANCE_SECONDS,
 } from './constants';
 import { keyPrefix } from './helpers';
-import { lowerBound } from '../../util';
+import { lowerBound } from '../../helpers';
 
 export class Judge {
   private chart: ParsedChart | undefined;

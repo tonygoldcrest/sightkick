@@ -1,5 +1,5 @@
 import { Progress, Slider } from 'antd';
-import { formatTime } from '../../util';
+import { formatTime } from '../../helpers';
 import { TimeStore } from '../../services/time-store';
 import { useThrottledCurrentTime } from '../../hooks/useCurrentTime';
 

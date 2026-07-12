@@ -3,9 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSort } from '@fortawesome/free-solid-svg-icons';
 import { popoverOpenChange, popoverStyles } from '../../overlayStyles';
 import { SortMenu } from './SortMenu';
-import { SortState } from './sort';
-
-export * from './sort';
+import { SortState } from './types';
 
 interface Props {
   sort: SortState;

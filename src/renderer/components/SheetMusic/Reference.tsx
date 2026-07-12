@@ -2,7 +2,7 @@ import { Divider } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { cn } from '../../cn';
 import { KIT_ELEMENTS } from '../../constants';
-import { elementIcon } from '../../util';
+import { elementIcon } from '../../helpers';
 import { faCircle, faGreaterThan } from '@fortawesome/free-solid-svg-icons';
 import themedark from '../../theme';
 

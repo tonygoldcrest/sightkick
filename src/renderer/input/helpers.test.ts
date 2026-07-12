@@ -4,7 +4,7 @@ import {
   controlSource,
   isTypingTarget,
   makeControlId,
-} from './utils';
+} from './helpers';
 
 describe('makeControlId', () => {
   it('namespaces a numeric raw control under its source', () => {

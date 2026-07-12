@@ -1,36 +1,7 @@
-import { noteTypes, noteFlags } from 'scan-chart';
+import { noteFlags } from 'scan-chart';
 import { ParsedChart, Measure } from '../../../chart-parser/types';
-
-type Lane = 'kick' | 'snare' | 'yellow' | 'blue' | 'green';
-
-interface Cell {
-  lane: Lane;
-  tom: boolean;
-}
-
-interface DslBlock {
-  resolution: number;
-  timeSig?: [number, number];
-  hits: { tick: number; cells: Cell[] }[];
-}
-
-type NoteEvent = { tick: number; type: number; flags: number; length: number };
-
-const TYPE_BY_LANE: Record<Lane, number> = {
-  kick: noteTypes.kick,
-  snare: noteTypes.redDrum,
-  yellow: noteTypes.yellowDrum,
-  blue: noteTypes.blueDrum,
-  green: noteTypes.greenDrum,
-};
-const LANE_BY_TYPE: Record<number, Lane> = {
-  [noteTypes.kick]: 'kick',
-  [noteTypes.redDrum]: 'snare',
-  [noteTypes.yellowDrum]: 'yellow',
-  [noteTypes.blueDrum]: 'blue',
-  [noteTypes.greenDrum]: 'green',
-};
-const CYMBAL_LANES = new Set<Lane>(['yellow', 'blue', 'green']);
+import { Cell, DslBlock, Lane, NoteEvent } from './types';
+import { CYMBAL_LANES, LANE_BY_TYPE, TYPE_BY_LANE } from './constants';
 
 function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b);

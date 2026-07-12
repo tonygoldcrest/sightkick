@@ -2,37 +2,37 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { App, Button, Divider, InputNumber, Layout, Spin, Switch } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Playback } from '../components/Playback';
-import { SettingsButton } from '../components/SettingsButton';
-import { SheetMusic } from '../components/SheetMusic';
+import { Playback } from '../../components/Playback';
+import { SettingsButton } from '../../components/SettingsButton';
+import { SheetMusic } from '../../components/SheetMusic';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
   faPause,
   faPlay,
 } from '@fortawesome/free-solid-svg-icons';
-import { useApp } from '../context/AppContext';
-import { useInput } from '../context/InputContext';
-import { useSongViewSettings } from '../context/SongViewSettingsContext';
-import { ClickControls } from '../components/ClickControls';
-import { usePersisted } from '../hooks/usePersisted';
-import { useSongLoader } from '../hooks/useSongLoader';
-import { useEngine } from '../hooks/useEngine';
-import { useVolumeControls } from '../hooks/useVolumeControls';
-import { useMuteToggle } from '../hooks/useMuteToggle';
-import { ticksToSeconds } from '../../chart-parser/timing';
-import { calculateAccuracy } from '../scoring';
-import { usePracticeSession } from '../hooks/usePracticeSession';
-import { useSheetMusic } from '../hooks/useSheetMusic';
-import { useInputControls } from '../hooks/useInputControls';
-import { ScoreSummary } from '../components/ScoreSummary';
-import { CountIn } from '../components/CountIn';
-import { ScoreData } from '../../types';
-import { buildSheetPdfHtml } from '../services/pdf-export';
-import { serializeMeasureToDsl } from '../components/SheetMusic/drumDsl';
-import { AudioVolume } from '../components/AudioVolume';
-import { GameMode } from '../types';
-import { resolveModePolicy } from '../modes';
+import { useApp } from '../../context/AppContext';
+import { useInput } from '../../context/InputContext';
+import { useSongViewSettings } from '../../context/SongViewSettingsContext';
+import { ClickControls } from '../../components/ClickControls';
+import { usePersisted } from '../../hooks/usePersisted';
+import { useSongLoader } from '../../hooks/useSongLoader';
+import { useEngine } from '../../hooks/useEngine';
+import { useVolumeControls } from '../../hooks/useVolumeControls';
+import { useMuteToggle } from '../../hooks/useMuteToggle';
+import { ticksToSeconds } from '../../../chart-parser/timing';
+import { calculateAccuracy } from '../../scoring';
+import { usePracticeSession } from '../../hooks/usePracticeSession';
+import { useSheetMusic } from '../../hooks/useSheetMusic';
+import { useInputControls } from '../../hooks/useInputControls';
+import { ScoreSummary } from '../../components/ScoreSummary';
+import { CountIn } from '../../components/CountIn';
+import { ScoreData } from '../../../types';
+import { buildSheetPdfHtml } from '../../services/pdf-export';
+import { serializeMeasureToDsl } from '../../components/SheetMusic';
+import { AudioVolume } from '../../components/AudioVolume';
+import { GameMode } from '../../types';
+import { resolveModePolicy } from '../../modes';
 
 export function SongView() {
   const { difficulty } = useApp();

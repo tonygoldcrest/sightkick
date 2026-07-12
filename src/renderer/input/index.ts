@@ -8,4 +8,4 @@ export { InputBus } from './input-bus';
 
 export * from './types';
 
-export * from './utils';
+export * from './helpers';

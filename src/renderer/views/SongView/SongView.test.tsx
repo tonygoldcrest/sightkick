@@ -13,7 +13,7 @@ import {
   SINGLE_NOTE_CHART,
   makeSong,
   setupSongView,
-} from './test-support';
+} from '../test-support';
 
 const MULTI_STEM = {
   audio: [

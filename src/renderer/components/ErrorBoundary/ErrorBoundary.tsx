@@ -5,15 +5,12 @@ import {
   faRotateRight,
   faUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons';
+import { State } from './types';
 
 const DISCORD_URL = 'https://discord.gg/kwBx9VZt3';
 
 interface Props {
   children: ReactNode;
-}
-
-interface State {
-  error?: Error;
 }
 
 export class ErrorBoundary extends Component<Props, State> {

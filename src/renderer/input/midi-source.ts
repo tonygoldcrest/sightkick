@@ -1,6 +1,6 @@
 import { MidiDevice, MidiMessage, MidiMessageType } from '../../types';
 import { InputDevice, InputEvent, InputSource } from './types';
-import { makeControlId } from './utils';
+import { makeControlId } from './helpers';
 
 export class MidiSource implements InputSource {
   readonly id = 'midi' as const;

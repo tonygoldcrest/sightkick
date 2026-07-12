@@ -1,26 +1,29 @@
 import { useState } from 'react';
 import { Spin } from 'antd';
 import { Outlet, useNavigate, useOutlet } from 'react-router-dom';
-import { SongFilter } from '../components/SongFilter';
-import { SongList } from '../components/SongList';
-import { SettingsButton } from '../components/SettingsButton';
+import { SongFilter } from '../../components/SongFilter';
+import { SongList } from '../../components/SongList';
+import { SettingsButton } from '../../components/SettingsButton';
+import { SortButton } from '../../components/SortButton';
+import { SplittingQueue } from '../../components/SplittingQueue';
+import { EmptySongState } from '../../components/EmptySongState';
+import { useApp } from '../../context/AppContext';
+import { useInput } from '../../context/InputContext';
+import { StemToolsProvider } from '../../context/StemToolsContext';
+import { useStemTools } from '../../hooks/useStemTools';
+import { useSongList } from '../../hooks/useSongList';
+import { useDownload } from '../../hooks/useDownload';
+import { useSongFilter } from '../../hooks/useSongFilter';
+import { useInputControls } from '../../hooks/useInputControls';
+import { useGameModeSelector } from '../../hooks/useGameModeSelector';
 import {
-  SortButton,
-  SORT_OPTIONS,
-  DIRECTIONAL_KEYS,
-} from '../components/SortButton';
-import { SplittingQueue } from '../components/SplittingQueue';
-import { EmptySongState } from '../components/EmptySongState';
-import { useApp } from '../context/AppContext';
-import { useInput } from '../context/InputContext';
-import { StemToolsProvider } from '../context/StemToolsContext';
-import { useStemTools } from '../hooks/useStemTools';
-import { useSongList } from '../hooks/useSongList';
-import { useDownload } from '../hooks/useDownload';
-import { useSongFilter } from '../hooks/useSongFilter';
-import { useInputControls } from '../hooks/useInputControls';
-import { ALL_DIFFICULTIES } from '../../constants';
-import { useGameModeSelector } from '../hooks/useGameModeSelector';
+  nextDifficulty,
+  nextSongIndex,
+  sortForFocusedIndex,
+  sortIndexForKey,
+  toggledSortForIndex,
+  wrapSortIndex,
+} from './helpers';
 
 export function SongListView() {
   const { currentPath, difficulty, setDifficulty } = useApp();
@@ -89,49 +92,25 @@ export function SongListView() {
     }
   }
 
-  const applyFocusedSort = (index: number) => {
-    const { key } = SORT_OPTIONS[index];
-
-    if (key === 'favorite') {
-      setSort({ key: 'favorite', direction: 'asc' });
-
-      return;
-    }
-
-    setSort({
-      key,
-      direction: sort.key === key ? sort.direction : 'asc',
-    });
-  };
   const moveSortFocus = (delta: number) => {
-    const next =
-      (focusedSortIndex + delta + SORT_OPTIONS.length) % SORT_OPTIONS.length;
+    const next = wrapSortIndex(focusedSortIndex, delta);
 
     setFocusedSortIndex(next);
-    applyFocusedSort(next);
+    setSort(sortForFocusedIndex(next, sort));
   };
   const toggleFocusedSortDirection = () => {
-    const { key } = SORT_OPTIONS[focusedSortIndex];
+    const next = toggledSortForIndex(focusedSortIndex, sort);
 
-    if (!DIRECTIONAL_KEYS.includes(key)) {
-      return;
+    if (next) {
+      setSort(next);
     }
-
-    setSort({
-      key,
-      direction: sort.direction === 'asc' ? 'desc' : 'asc',
-    });
   };
   const openSort = () => {
     if (!sortAvailable) {
       return;
     }
 
-    const currentIndex = SORT_OPTIONS.findIndex(
-      (option) => option.key === sort.key,
-    );
-
-    setFocusedSortIndex(currentIndex === -1 ? 0 : currentIndex);
+    setFocusedSortIndex(sortIndexForKey(sort.key));
     setIsSortOpen(true);
   };
   const play = async (id: string) => {
@@ -157,31 +136,13 @@ export function SongListView() {
         }
       : {
           up: () =>
-            setFocusedSongIndex((index) => {
-              if (filteredSongList.length === 0) {
-                return 0;
-              }
-
-              if (index === undefined) {
-                return filteredSongList.length - 1;
-              }
-
-              return (
-                (index - 1 + filteredSongList.length) % filteredSongList.length
-              );
-            }),
+            setFocusedSongIndex((index) =>
+              nextSongIndex(index, filteredSongList.length, -1),
+            ),
           down: () =>
-            setFocusedSongIndex((index) => {
-              if (filteredSongList.length === 0) {
-                return 0;
-              }
-
-              if (index === undefined) {
-                return 0;
-              }
-
-              return (index + 1) % filteredSongList.length;
-            }),
+            setFocusedSongIndex((index) =>
+              nextSongIndex(index, filteredSongList.length, 1),
+            ),
           confirm: () => {
             if (focusedSongIndex === undefined) {
               return;
@@ -205,13 +166,7 @@ export function SongListView() {
           sort: openSort,
           library: () =>
             setLibraryMode(libraryMode === 'online' ? 'local' : 'online'),
-          difficulty: () => {
-            const difficultyIndex = ALL_DIFFICULTIES.indexOf(difficulty);
-
-            setDifficulty(
-              ALL_DIFFICULTIES[(difficultyIndex + 1) % ALL_DIFFICULTIES.length],
-            );
-          },
+          difficulty: () => setDifficulty(nextDifficulty(difficulty)),
         },
     !songOpen && !gameModeSelector.isOpen,
   );

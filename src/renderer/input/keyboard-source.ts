@@ -1,5 +1,5 @@
 import { InputDevice, InputEvent, InputSource } from './types';
-import { isTypingTarget, makeControlId } from './utils';
+import { isTypingTarget, makeControlId } from './helpers';
 
 const KEYBOARD_DEVICE: InputDevice = {
   id: 'keyboard',

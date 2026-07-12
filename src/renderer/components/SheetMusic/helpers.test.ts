@@ -4,7 +4,7 @@ import {
   parseDsl,
   buildParsedChartFromDsl,
   serializeMeasureToDsl,
-} from './drumDsl';
+} from './helpers';
 
 function keysOf(parser: ChartParser): string[] {
   return parser.measures.flatMap((m) =>

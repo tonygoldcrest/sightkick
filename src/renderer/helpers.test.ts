@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lowerBound } from './util';
+import { lowerBound } from './helpers';
 
 describe('lowerBound', () => {
   const firstAtOrAfter = (values: number[], target: number) =>

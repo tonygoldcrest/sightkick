@@ -6,7 +6,8 @@ import {
   faHeart,
 } from '@fortawesome/free-solid-svg-icons';
 import { cn } from '../../cn';
-import { DIRECTIONAL_KEYS, SORT_OPTIONS, SortKey, SortState } from './sort';
+import { SortKey, SortState } from './types';
+import { DIRECTIONAL_KEYS, SORT_OPTIONS } from './constants';
 
 interface Props {
   sort: SortState;

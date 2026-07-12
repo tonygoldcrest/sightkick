@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { SheetMusic } from './SheetMusic';
-import { buildParsedChartFromDsl } from './drumDsl';
+import { buildParsedChartFromDsl } from './helpers';
 import { ChartParser } from '../../../chart-parser/parser';
 import { renderMusic } from '../../../chart-parser/renderer';
 import { RenderData } from '../../../chart-parser/types';

@@ -5,10 +5,7 @@ import type {
   SizeProp,
 } from '@fortawesome/fontawesome-svg-core';
 import { cn } from '../../cn';
-
-type IconButtonType = 'default' | 'primary' | 'danger';
-
-type IconButtonSize = 'sm' | 'md' | 'lg';
+import { IconButtonSize, IconButtonType } from './types';
 
 interface Props extends Omit<ComponentProps<'button'>, 'type'> {
   icon: IconDefinition;

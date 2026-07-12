@@ -4,7 +4,7 @@ import {
   makeEnchorChart,
   makeListSong,
   setupSongListView,
-} from './test-support';
+} from '../test-support';
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
