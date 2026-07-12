@@ -101,33 +101,38 @@ export function useOnlineSearch(
   const pageRef = useRef(1);
   const searchRef = useRef(search);
   const difficultyRef = useRef(difficulty);
+  const resultsRef = useRef<Song[]>([]);
   const cache = useRef<Map<string, PageResult>>(new Map());
   const abortRef = useRef<AbortController | null>(null);
+  const applyResults = useCallback(
+    (next: Song[], nextTotal: number | undefined, nextHasMore: boolean) => {
+      resultsRef.current = next;
+      setResults(next);
+      setHasMore(nextHasMore);
+
+      if (nextTotal !== undefined) {
+        setTotal(nextTotal);
+      }
+    },
+    [],
+  );
   const fetchPage = useCallback(
     async (query: string, page: number, diff: Difficulty, append: boolean) => {
       const cacheKey = `${query}:${diff}:${page}`;
 
       if (cache.current.has(cacheKey)) {
         const cached = cache.current.get(cacheKey)!;
+        const next = append
+          ? uniqBy([...resultsRef.current, ...cached.songs], (s) => s.id)
+          : cached.songs;
 
-        setResults((prev) => {
-          const next = append
-            ? uniqBy([...prev, ...cached.songs], (s) => s.id)
-            : cached.songs;
-
-          setHasMore(
-            cached.total !== undefined
-              ? next.length < cached.total
-              : cached.songs.length > 0,
-          );
-
-          return next;
-        });
-
-        if (cached.total !== undefined) {
-          setTotal(cached.total);
-        }
-
+        applyResults(
+          next,
+          cached.total,
+          cached.total !== undefined
+            ? next.length < cached.total
+            : cached.songs.length > 0,
+        );
         setLoading(false);
 
         return;
@@ -148,24 +153,16 @@ export function useOnlineSearch(
         );
 
         cache.current.set(cacheKey, { songs, total: pageTotal });
-        setResults((prev) => {
-          const next = append
-            ? uniqBy([...prev, ...songs], (s) => s.id)
-            : songs;
 
-          setHasMore(
-            pageTotal !== undefined
-              ? next.length < pageTotal
-              : songs.length > 0,
-          );
+        const next = append
+          ? uniqBy([...resultsRef.current, ...songs], (s) => s.id)
+          : songs;
 
-          return next;
-        });
-
-        if (pageTotal !== undefined) {
-          setTotal(pageTotal);
-        }
-
+        applyResults(
+          next,
+          pageTotal,
+          pageTotal !== undefined ? next.length < pageTotal : songs.length > 0,
+        );
         setLoading(false);
       } catch {
         if (controller.signal.aborted) {
@@ -181,7 +178,7 @@ export function useOnlineSearch(
         setLoading(false);
       }
     },
-    [notification],
+    [notification, applyResults],
   );
   const fetchFirstPages = useCallback(
     async (query: string, diff: Difficulty) => {
@@ -217,20 +214,13 @@ export function useOnlineSearch(
         const pageTotal = p1.total ?? p2.total;
 
         pageRef.current = 2;
-        setResults(() => {
-          setHasMore(
-            pageTotal !== undefined
-              ? combined.length < pageTotal
-              : p2.songs.length > 0,
-          );
-
-          return combined;
-        });
-
-        if (pageTotal !== undefined) {
-          setTotal(pageTotal);
-        }
-
+        applyResults(
+          combined,
+          pageTotal,
+          pageTotal !== undefined
+            ? combined.length < pageTotal
+            : p2.songs.length > 0,
+        );
         setLoading(false);
       } catch {
         if (controller.signal.aborted) {
@@ -246,7 +236,7 @@ export function useOnlineSearch(
         setLoading(false);
       }
     },
-    [notification],
+    [notification, applyResults],
   );
   const searchKey = active ? `${search}:${difficulty}` : null;
   const [prevSearchKey, setPrevSearchKey] = useState<string | null>(null);
