@@ -58,15 +58,16 @@ describe('loadSongList', () => {
     });
   });
 
-  it('returns only songs under the library with an updatedAt stamp', async () => {
+  it('returns only songs under the library, passing the stored updatedAt through unchanged', async () => {
     const inside = path.join(root, 'inside');
     const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'other-'));
+    const storedUpdatedAt = '2020-05-01T12:00:00.000Z';
 
     fs.mkdirSync(inside);
     storeHolder.current = makeStore({
       lastOpenedPath: root,
       songs: {
-        a: { id: 'a', dir: inside },
+        a: { id: 'a', dir: inside, updatedAt: storedUpdatedAt },
         b: { id: 'b', dir: outside },
       },
     });
@@ -80,7 +81,7 @@ describe('loadSongList', () => {
     };
 
     expect(payload.songs.map((s) => s.id)).toEqual(['a']);
-    expect(payload.songs[0].updatedAt).toMatch(/^\d{4}-/);
+    expect(payload.songs[0].updatedAt).toBe(storedUpdatedAt);
 
     fs.rmSync(outside, { recursive: true, force: true });
   });

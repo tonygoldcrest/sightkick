@@ -22,12 +22,7 @@ export async function loadSongList(event: Electron.IpcMainEvent) {
       ? Object.values(allSongs)
           .filter((s) => isUnderDirectory(s.dir, lastOpenedPath))
           .filter((s) => fs.existsSync(s.dir))
-          .map((s) =>
-            toSong({
-              ...s,
-              updatedAt: fs.statSync(s.dir).mtime.toISOString(),
-            }),
-          )
+          .map((s) => toSong(s))
       : [];
 
     event.reply('load-song-list', { songs, lastOpenedPath });
