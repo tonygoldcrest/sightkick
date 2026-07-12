@@ -291,6 +291,48 @@ describe('splitSong', () => {
     expect(proc.killed).toBe(true);
   });
 
+  it('removes the partial stems directory on shutdown', async () => {
+    const dir = makeSongDir(library);
+
+    storeHolder.current = makeStore({ songs: { 'song-1': songEntry(dir) } });
+
+    const event = makeEvent();
+
+    splitSong(event as never, 'song-1');
+
+    await waitForProc(0);
+
+    fs.mkdirSync(path.join(dir, 'stems', 'htdemucs', 'mix'), {
+      recursive: true,
+    });
+
+    killActiveSplit();
+
+    expect(fs.existsSync(path.join(dir, 'stems'))).toBe(false);
+  });
+
+  it('removes the partial stems directory when the active split is cancelled', async () => {
+    const dir = makeSongDir(library);
+
+    storeHolder.current = makeStore({ songs: { 'song-1': songEntry(dir) } });
+
+    const event = makeEvent();
+
+    splitSong(event as never, 'song-1');
+
+    await waitForProc(0);
+
+    fs.mkdirSync(path.join(dir, 'stems', 'htdemucs', 'mix'), {
+      recursive: true,
+    });
+
+    cancelSplit(event as never, 'song-1');
+
+    await vi.waitFor(() =>
+      expect(fs.existsSync(path.join(dir, 'stems'))).toBe(false),
+    );
+  });
+
   it('does not throw when killing with no active split', () => {
     expect(() => killActiveSplit()).not.toThrow();
   });

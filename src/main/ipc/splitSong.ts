@@ -12,9 +12,21 @@ const queue: Array<{ event: Electron.IpcMainEvent; id: string }> = [];
 let processing = false;
 let activeProc: ReturnType<typeof spawn> | null = null;
 let activeId: string | null = null;
+let activeStemsDir: string | null = null;
+
+function removeActiveStems() {
+  const stemsDir = activeStemsDir;
+
+  activeStemsDir = null;
+
+  if (stemsDir && path.isAbsolute(stemsDir)) {
+    fs.rmSync(stemsDir, { recursive: true, force: true });
+  }
+}
 
 export function killActiveSplit() {
   activeProc?.kill();
+  removeActiveStems();
 }
 
 export function cancelSplit(_event: Electron.IpcMainEvent, id: string) {
@@ -63,6 +75,7 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
 
       activeProc = proc;
       activeId = id;
+      activeStemsDir = path.join(songData.dir, 'stems');
 
       const stderr: string[] = [];
 
@@ -117,6 +130,7 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
     }
 
     fs.rmSync(path.join(songData.dir, 'stems'), { recursive: true });
+    activeStemsDir = null;
     fs.unlinkSync(audioPath);
 
     const updatedSong = buildSongFromDir(songData.dir, {
@@ -131,6 +145,8 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
     appState.store.set(`songs.${id}`, updatedSong);
     event.reply('split-song', { id, success: true, song: toSong(updatedSong) });
   } catch (err) {
+    removeActiveStems();
+
     if (err instanceof CancelledError) {
       event.reply('split-song', { id, success: false, cancelled: true });
 

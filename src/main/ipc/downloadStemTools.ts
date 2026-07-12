@@ -17,11 +17,30 @@ class CancelledError extends Error {}
 let activeProc: ReturnType<typeof spawn> | undefined;
 let abortController: AbortController | undefined;
 let cancelled = false;
+let activeStagingDir: string | undefined;
+let activeArchivePath: string | undefined;
+
+function cleanupActiveDownload() {
+  const staging = activeStagingDir;
+  const archive = activeArchivePath;
+
+  activeStagingDir = undefined;
+  activeArchivePath = undefined;
+
+  if (staging && path.isAbsolute(staging)) {
+    fs.rmSync(staging, { recursive: true, force: true });
+  }
+
+  if (archive && path.isAbsolute(archive)) {
+    fs.rmSync(archive, { force: true });
+  }
+}
 
 export function cancelStemTools() {
   cancelled = true;
   abortController?.abort();
   activeProc?.kill();
+  cleanupActiveDownload();
 }
 
 function countFiles(dir: string): number {
@@ -198,15 +217,9 @@ export async function downloadStemTools(event: Electron.IpcMainEvent) {
   const archivePath = path.join(os.tmpdir(), getArchiveName(slug));
   const stagingDir = path.join(stemToolsDir, `.staging-${Date.now()}`);
   const stagingBundleDir = path.join(stagingDir, 'demucs-split');
-  const cleanup = () => {
-    fs.rmSync(stagingDir, { recursive: true, force: true });
 
-    try {
-      fs.unlinkSync(archivePath);
-    } catch {
-      // archive may not exist
-    }
-  };
+  activeArchivePath = archivePath;
+  activeStagingDir = stagingDir;
 
   try {
     const manifest = await fetchManifest(slug);
@@ -229,13 +242,13 @@ export async function downloadStemTools(event: Electron.IpcMainEvent) {
 
     fs.rmSync(bundleDir, { recursive: true, force: true });
     fs.renameSync(stagingBundleDir, bundleDir);
-    cleanup();
+    cleanupActiveDownload();
 
     event.reply('download-stem-tools', {
       success: true,
     } satisfies IpcDownloadStemToolsResponse);
   } catch (err) {
-    cleanup();
+    cleanupActiveDownload();
 
     if (err instanceof CancelledError) {
       event.reply('download-stem-tools', {

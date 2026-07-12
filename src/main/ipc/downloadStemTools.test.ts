@@ -292,6 +292,26 @@ describe('downloadStemTools', () => {
     expect(reply.error).toContain('Extraction failed with code 2');
   });
 
+  it('removes the staging directory synchronously on cancel, before the download settles', async () => {
+    stubFetch(
+      { version: '2.0.0', fileCount: 1 },
+      archiveResponse([new Uint8Array(10)]),
+    );
+
+    const event = makeEvent();
+    const done = downloadStemTools(event as never);
+
+    await waitForProc();
+
+    expect(fs.existsSync(findStagingSafe())).toBe(true);
+
+    cancelStemTools();
+
+    expect(fs.existsSync(findStagingSafe())).toBe(false);
+
+    await done;
+  });
+
   it('cancels mid-extraction, cleans up and keeps any prior install', async () => {
     const previous = path.join(bundleDir());
 
