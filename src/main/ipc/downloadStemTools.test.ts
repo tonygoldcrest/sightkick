@@ -219,6 +219,32 @@ describe('downloadStemTools', () => {
     expect(fs.existsSync(findStagingSafe())).toBe(false);
   });
 
+  it('does not repeat identical download progress values', async () => {
+    const manifest = { version: '2.0.0', fileCount: 2 };
+
+    stubFetch(
+      manifest,
+      archiveResponse(
+        [new Uint8Array(1), new Uint8Array(1), new Uint8Array(98)],
+        100,
+      ),
+    );
+
+    const event = makeEvent();
+    const done = downloadStemTools(event as never);
+    const proc = await waitForProc();
+
+    populateStaging(['demucs-split', '_internal/torch/_C.so']);
+    proc.emit('close', 0, null);
+    await done;
+
+    const progresses = replies(event)
+      .filter((r) => r.phase === 'downloading')
+      .map((r) => r.progress);
+
+    expect(progresses).toEqual([1, 50]);
+  });
+
   it('fails when the extraction is incomplete versus the manifest', async () => {
     const manifest = { version: '2.0.0', fileCount: 2 };
 

@@ -71,6 +71,7 @@ async function downloadArchive(
   const reader = response.body!.getReader();
   const fileStream = fs.createWriteStream(destPath);
   let downloaded = 0;
+  let lastProgress = -1;
 
   try {
     let result = await reader.read();
@@ -87,10 +88,15 @@ async function downloadArchive(
       }
 
       if (contentLength > 0) {
-        event.reply('download-stem-tools', {
-          phase: 'downloading',
-          progress: Math.round((downloaded / contentLength) * 50),
-        } satisfies IpcDownloadStemToolsResponse);
+        const progress = Math.round((downloaded / contentLength) * 50);
+
+        if (progress !== lastProgress) {
+          lastProgress = progress;
+          event.reply('download-stem-tools', {
+            phase: 'downloading',
+            progress,
+          } satisfies IpcDownloadStemToolsResponse);
+        }
       }
 
       result = await reader.read();
