@@ -35,7 +35,7 @@ import { GameMode } from '../../types';
 import { resolveModePolicy } from '../../modes';
 
 export function SongView() {
-  const { difficulty } = useApp();
+  const { difficulty, isDev } = useApp();
   const { inputMapping, controlMapping, kitControlIds } = useInput();
   const {
     playheadStyle,
@@ -49,7 +49,6 @@ export function SongView() {
   const { notification, message } = App.useApp();
   const [scoreData, setScoreData] = useState<ScoreData>();
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
-  const [isDev, setIsDev] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const exportPdfOffRef = useRef<(() => void) | undefined>(undefined);
   const { id } = useParams();
@@ -285,14 +284,6 @@ export function SongView() {
   }, []);
 
   useEffect(() => () => exportPdfOffRef.current?.(), []);
-
-  useEffect(() => {
-    window.electron.ipcRenderer.sendMessage('check-dev');
-
-    return window.electron.ipcRenderer.once('check-dev', (dev: boolean) => {
-      setIsDev(dev);
-    });
-  }, []);
 
   useEffect(() => {
     engine?.setClickSettings(clickVolume / 100, clickTone / 100);

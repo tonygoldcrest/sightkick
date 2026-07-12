@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode } from 'react';
 import { Button, Collapse, Divider, InputNumber, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilePdf, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
@@ -7,6 +7,7 @@ import { useSongViewSettings } from '../../context/SongViewSettingsContext';
 import { SettingLabel } from './SettingLabel';
 import { Tooltip } from '../Tooltip';
 import { SupportButton } from '../SupportButton/SupportButton';
+import { useApp } from '../../context/AppContext';
 import themedark from '../../theme';
 
 interface Props {
@@ -42,15 +43,7 @@ export function SongViewSettings({
     zoom,
     setZoom,
   } = useSongViewSettings();
-  const [isDev, setIsDev] = useState(false);
-
-  useEffect(() => {
-    window.electron.ipcRenderer.sendMessage('check-dev');
-
-    return window.electron.ipcRenderer.once('check-dev', (dev: boolean) => {
-      setIsDev(dev);
-    });
-  }, []);
+  const { isDev } = useApp();
 
   return (
     <>
