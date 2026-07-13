@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
 import { Song } from '../../types';
+import { OnlineSong } from '../types';
 
 interface DownloadReply {
   success: boolean;
@@ -11,7 +12,7 @@ interface DownloadReply {
 }
 
 export function useDownload(
-  onlineResults: Song[],
+  onlineResults: OnlineSong[],
   onSongAdded: (song: Song) => void,
 ) {
   const { notification } = App.useApp();
@@ -63,7 +64,7 @@ export function useDownload(
       downloadingRef.current.add(id);
       setDownloadingIds(new Set(downloadingRef.current));
       window.electron.ipcRenderer.sendMessage('download-song', {
-        url: song.dir,
+        url: song.downloadUrl,
         md5: song.id,
         name: song.name,
         artist: song.artist,

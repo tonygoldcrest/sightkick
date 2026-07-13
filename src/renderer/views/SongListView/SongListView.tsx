@@ -220,7 +220,6 @@ export function SongListView() {
                 scrollKey={nameFilter}
                 downloadingIds={downloadingIds}
                 downloadingDisabled={currentPath === null}
-                libraryMode={libraryMode}
                 difficulty={difficulty}
                 onClickSong={(id) => {
                   if (libraryMode === 'local') {

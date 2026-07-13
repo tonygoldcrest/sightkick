@@ -25,6 +25,17 @@ export type MappingElement = {
 
 export type LibraryMode = 'local' | 'online';
 
+export interface OnlineSong {
+  source: 'online';
+  id: string;
+  downloadUrl: string;
+  albumCover?: string;
+  name: string;
+  artist: string;
+  charter: string;
+  drumDifficulty: number;
+}
+
 export type GameMode = 'perform' | 'practice';
 
 export type PracticeRange = { start: number; end: number };

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Song } from '../../../types';
+import { OnlineSong } from '../../types';
 import { SongListItem } from './SongListItem';
 
 const songData = {
@@ -15,13 +16,21 @@ const songData = {
     expert: { hitNotes: 92, totalNotes: 100, falseHits: 3 },
   },
 } as unknown as Song;
+const onlineSongData: OnlineSong = {
+  source: 'online',
+  id: 'song-1',
+  downloadUrl: 'https://files.enchor.us/song-1.sng',
+  name: 'Master of Puppets',
+  artist: 'Metallica',
+  charter: 'DrumCharter',
+  drumDifficulty: 5,
+};
 const meta: Meta<typeof SongListItem> = {
   title: 'Song List/Song List Item',
   component: SongListItem,
   args: {
     songData,
     difficulty: 'expert',
-    libraryMode: 'local',
     splitting: false,
     downloadingDisabled: false,
     onLikeChange: () => {},
@@ -49,16 +58,16 @@ export const Liked: Story = {
 
 export const Focused: Story = { args: { focused: true } };
 
-export const Online: Story = { args: { libraryMode: 'online' } };
+export const Online: Story = { args: { songData: onlineSongData } };
 
 export const Downloading: Story = {
-  args: { libraryMode: 'online', downloading: true },
+  args: { songData: onlineSongData, downloading: true },
 };
 
 export const Downloaded: Story = {
-  args: { libraryMode: 'online', downloaded: true },
+  args: { songData: onlineSongData, downloaded: true },
 };
 
 export const DownloadDisabled: Story = {
-  args: { libraryMode: 'online', downloadingDisabled: true },
+  args: { songData: onlineSongData, downloadingDisabled: true },
 };

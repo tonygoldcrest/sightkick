@@ -17,10 +17,10 @@ import { IconButton } from '../IconButton';
 import { Difficulty } from 'scan-chart';
 import { calculateAccuracy, getStarRating } from '../../scoring';
 import { DifficultyRing } from './DifficultyRing';
-import { LibraryMode } from '../../types';
+import { OnlineSong } from '../../types';
 
 export interface SongListItemProps {
-  songData: Song;
+  songData: Song | OnlineSong;
   onLikeChange: (id: string, liked: boolean) => void;
   onDownload: (id: string) => void;
   onClick: () => void;
@@ -29,24 +29,12 @@ export interface SongListItemProps {
   difficulty: Difficulty;
   splitting: boolean;
   downloaded?: boolean;
-  libraryMode: LibraryMode;
   downloadingDisabled: boolean;
   focused?: boolean;
 }
 
 export function SongListItem({
-  songData: {
-    albumCover,
-    id,
-    dir,
-    name,
-    artist,
-    charter,
-    drumDifficulty,
-    liked,
-    audio,
-    scoreData,
-  },
+  songData,
   onLikeChange,
   onDownload,
   onClick,
@@ -55,12 +43,13 @@ export function SongListItem({
   difficulty,
   splitting,
   onSplit,
-  libraryMode,
   downloadingDisabled,
   focused,
 }: SongListItemProps) {
+  const local = 'source' in songData ? undefined : songData;
+  const { albumCover, id, name, artist, charter, drumDifficulty } = songData;
   const score = useMemo(() => {
-    const result = scoreData?.[difficulty];
+    const result = local?.scoreData?.[difficulty];
 
     return result
       ? {
@@ -68,27 +57,27 @@ export function SongListItem({
           accuracy: calculateAccuracy(result),
         }
       : null;
-  }, [scoreData, difficulty]);
+  }, [local, difficulty]);
   const indicator = useMemo(() => {
-    if (libraryMode === 'local') {
+    if (local) {
       return (
         <div className="flex flex-col gap-2 items-center h-full">
           <SongMenu
-            dir={dir}
-            canSplit={(audio?.length ?? 0) === 1}
+            dir={local.dir}
+            canSplit={(local.audio?.length ?? 0) === 1}
             splitting={splitting}
             onSplit={() => onSplit(id)}
           />
 
           <IconButton
             data-testid="like-toggle"
-            type={liked ? 'primary' : 'default'}
+            type={local.liked ? 'primary' : 'default'}
             className="mt-auto"
-            icon={liked ? faHeartSolid : faHeart}
+            icon={local.liked ? faHeartSolid : faHeart}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onLikeChange(id, !liked);
+              onLikeChange(id, !local.liked);
             }}
           />
         </div>
@@ -137,12 +126,9 @@ export function SongListItem({
     downloaded,
     onDownload,
     id,
-    liked,
+    local,
     onLikeChange,
-    libraryMode,
     downloadingDisabled,
-    audio?.length,
-    dir,
     onSplit,
     splitting,
   ]);
@@ -156,7 +142,7 @@ export function SongListItem({
           'flex border border-border-soft grow no-underline bg-surface rounded-[11px] transition-all duration-100 ease-in-out cursor-default p-2',
           {
             'hover:bg-accent-soft-bg hover:border-accent-soft-border cursor-pointer':
-              libraryMode === 'local',
+              Boolean(local),
             'bg-accent-soft-bg border-accent-soft-border outline-2 outline-accent':
               focused,
           },
@@ -189,7 +175,7 @@ export function SongListItem({
             </div>
           )}
 
-          {libraryMode === 'local' && (
+          {local && (
             <div className="flex flex-col gap-1 items-center">
               <div className="text-xs text-text-dim">{difficulty}</div>
 

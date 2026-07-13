@@ -4,10 +4,10 @@ import { Song } from '../../../types';
 import { cn } from '../../cn';
 import { SongListItem } from '../SongListItem';
 import { Difficulty } from 'scan-chart';
-import { LibraryMode } from '../../types';
+import { OnlineSong } from '../../types';
 
 export interface SongListProps {
-  songList: Song[];
+  songList: (Song | OnlineSong)[];
   className?: string;
   onLikeChange: (id: string, liked: boolean) => void;
   onDownload: (id: string) => void;
@@ -19,7 +19,6 @@ export interface SongListProps {
   difficulty: Difficulty;
   downloadedIds?: Set<string>;
   scrollKey?: string;
-  libraryMode: LibraryMode;
   downloadingDisabled: boolean;
   focusedIndex?: number;
 }
@@ -36,7 +35,6 @@ export function SongList({
   downloadedIds,
   difficulty,
   scrollKey,
-  libraryMode,
   downloadingDisabled,
   splittingIds,
   onSplit,
@@ -110,7 +108,6 @@ export function SongList({
                 downloading={downloadingIds?.has(songData.id)}
                 downloaded={downloadedIds?.has(songData.id)}
                 splitting={splittingIds.has(songData.id)}
-                libraryMode={libraryMode}
                 downloadingDisabled={downloadingDisabled}
                 focused={virtualItem.index === focusedIndex}
               />
