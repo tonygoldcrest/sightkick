@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SightKick - Drum Learning Game</title>
-  <meta name="description" content="A game for learning drums. Sheet music for thousands of songs — mute the drum track, play along with your e-kit, and beat your best score. Free for macOS and Windows.">
+  <title>SightKick – Learn drums by playing real songs | Free electronic drum kit game</title>
+  <meta name="description" content="Free drum practice game: sheet music for thousands of songs, mute the drum track, play along on your electronic drum kit, and get scored in real time. macOS, Windows, and Linux.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sightkick.dev/">
-  <meta property="og:title" content="SightKick - The Fun Way to Learn Drums">
-  <meta property="og:description" content="A game for learning drums. Sheet music for thousands of songs. Play along with your e-kit and beat your best score.">
-  <meta property="og:image" content="https://cdn.sightkick.dev/images/sightkick-logo.png">
+  <meta property="og:title" content="SightKick – Learn drums by playing real songs">
+  <meta property="og:description" content="Free drum practice game: sheet music for thousands of songs, mute the drum track, and play along on your electronic drum kit.">
+  <meta property="og:image" content="https://cdn.sightkick.dev/images/hero.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="SightKick - The Fun Way to Learn Drums">
-  <meta name="twitter:description" content="A game for learning drums. Sheet music for thousands of songs. Play along with your e-kit and beat your best score.">
-  <meta name="twitter:image" content="https://cdn.sightkick.dev/images/sightkick-logo.png">
+  <meta name="twitter:title" content="SightKick – Learn drums by playing real songs">
+  <meta name="twitter:description" content="Free drum practice game: sheet music for thousands of songs, mute the drum track, and play along on your electronic drum kit.">
+  <meta name="twitter:image" content="https://cdn.sightkick.dev/images/hero.png">
   <link rel="canonical" href="https://sightkick.dev/">
   <link rel="icon" href="https://cdn.sightkick.dev/images/sightkick-logo.png">
   <script type="application/ld+json">
@@ -22,14 +22,15 @@
     "@type": "SoftwareApplication",
     "name": "SightKick",
     "alternateName": ["Sidekick Drums", "SightKick Drums"],
-    "description": "A game for learning drums. Renders drum charts from thousands of community songs as standard sheet music — mute the recorded drums, plug in your electronic drum kit, and get scored on accuracy in real time. Makes learning drums fun.",
+    "description": "A free drum practice game. Renders thousands of community songs as standard sheet music: mute the recorded drums, plug in your electronic drum kit, and get scored on accuracy in real time.",
     "applicationCategory": "MusicApplication",
-    "operatingSystem": "macOS, Windows",
+    "operatingSystem": "macOS, Windows, Linux",
     "featureList": [
       "Drum sheet music rendered from community song charts",
       "Multi-stem audio mixer with per-track volume control",
       "AI-powered drum track separation from mixed audio",
       "MIDI electronic drum kit support with real-time hit detection and scoring",
+      "Practice mode with section looping and playback speed control (0.3x to 2x)",
       "Multiple playhead modes: cursor, measure, or off",
       "In-app song search and download from Enchor library",
       "Color-coded notation by drum piece"
@@ -47,6 +48,49 @@
       "@type": "Person",
       "name": "Anton Korolkov"
     }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Does it work with my drum kit?",
+        "acceptedAnswer": { "@type": "Answer", "text": "If your kit can send MIDI, it works. Most electronic kits from Roland, Alesis, Yamaha, Donner and the like have a USB port on the module that does exactly that. Plug it into your computer, map each pad in settings by hitting it, and you're set. Acoustic kits work too if they have triggers and a module." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is it actually free?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. SightKick is open source under the MIT license. No account, no subscription, no locked songs. There's a Ko-fi if you want to support the project, but that's optional." }
+      },
+      {
+        "@type": "Question",
+        "name": "Where do the songs come from?",
+        "acceptedAnswer": { "@type": "Answer", "text": "From Enchor, a community library of songs charted for rhythm games. You search and download right inside the app. The charts are made by fans, so quality varies, but for well-known songs they're usually solid." }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need to know how to read sheet music?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. The notes are color-coded by drum, a cheat sheet stays on screen, and the cursor shows you where you are. You end up learning to read drum notation as a side effect of playing." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I try it without a drum kit?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Map the keyboard instead of pads and give it a go. It won't do much for your drumming, but it shows you how everything works before you commit to dragging your kit next to the computer." }
+      },
+      {
+        "@type": "Question",
+        "name": "How is it different from Melodics or Drumeo?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Those are lesson platforms with subscriptions, and they're good at teaching technique. SightKick doesn't teach; it's a practice game. You pick songs you actually like and play them until the score stops being embarrassing." }
+      },
+      {
+        "@type": "Question",
+        "name": "What do I need to run it?",
+        "acceptedAnswer": { "@type": "Answer", "text": "A Mac (Apple Silicon or Intel), a Windows PC (x64), or a Linux machine (AppImage). The optional drum-track separation runs on Apple Silicon and Windows only." }
+      }
+    ]
   }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -91,6 +135,7 @@
   <div class="nav-links">
     <a href="#features" class="nav-link">Features</a>
     <a href="#workflow" class="nav-link">How it works</a>
+    <a href="#faq" class="nav-link">FAQ</a>
     <a href="https://ko-fi.com/tonygoldcrest" target="_blank" rel="noopener" class="nav-link">
       <svg class="icon" width="14" height="14"><use href="#i-kofi"/></svg>Support
     </a>
@@ -106,9 +151,9 @@
 <section class="hero">
   <div class="hero-inner">
     <div class="hero-content">
-      <h1 class="hero-title">The <em>fun</em> way to learn drums</h1>
+      <h1 class="hero-title">Learn drums by playing <em>real songs</em></h1>
       <p class="hero-sub">
-        Sheet music for thousands of songs. Mute the drum track, play along with your kit, and beat your best score.
+        Sheet music for thousands of songs. Mute the drum track, play along on your electronic drum kit, and beat your best score.
       </p>
     </div>
 
@@ -174,7 +219,7 @@
           </div>
           <div class="feat-title">Thousands of songs</div>
         </div>
-        <div class="feat-body">Search and download straight from the <a href="https://www.enchor.us/" target="_blank" rel="noopener">Enchor</a> community library, all with drum charts. The charts aren't always perfect, but they're usually close enough.</div>
+        <div class="feat-body">Search and download straight from the <a href="https://www.enchor.us/" target="_blank" rel="noopener">Enchor</a> community library, all with drum charts. The charts aren't always perfect, but they're usually close enough. Most come in several difficulties, from Easy to Expert.</div>
       </div>
 
       <div class="feat">
@@ -210,11 +255,11 @@
       <div class="feat">
         <div class="feat-header">
           <div class="feat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
           </div>
-          <div class="feat-title">Multiple difficulties</div>
+          <div class="feat-title">Practice mode</div>
         </div>
-        <div class="feat-body">Many charts come in several versions - Easy, Medium, Hard, Expert. Lower difficulties cut notes so they're simpler to play. Pick your level in settings.</div>
+        <div class="feat-body">Select the measures that are giving you trouble, loop them, and slow playback down as far as 0.3x. Scoring is off in practice, so you can flail until it clicks.</div>
       </div>
 
     </div>
@@ -341,6 +386,52 @@
   </div>
 </section>
 
+<section class="faq" id="faq">
+  <div class="faq-inner">
+    <div class="faq-header">
+      <h2 class="section-title">FAQ</h2>
+    </div>
+    <div class="faq-list">
+
+      <details class="faq-item">
+        <summary>Does it work with my drum kit?</summary>
+        <p class="faq-body">If your kit can send MIDI, it works. Most electronic kits from Roland, Alesis, Yamaha, Donner and the like have a USB port on the module that does exactly that. Plug it into your computer, map each pad in settings by hitting it, and you're set. Acoustic kits work too if they have triggers and a module.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Is it actually free?</summary>
+        <p class="faq-body">Yes. SightKick is open source under the MIT license. No account, no subscription, no locked songs. There's a <a href="https://ko-fi.com/tonygoldcrest" target="_blank" rel="noopener">Ko-fi</a> if you want to support the project, but that's optional.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Where do the songs come from?</summary>
+        <p class="faq-body">From <a href="https://www.enchor.us/" target="_blank" rel="noopener">Enchor</a>, a community library of songs charted for rhythm games. You search and download right inside the app. The charts are made by fans, so quality varies, but for well-known songs they're usually solid.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Do I need to know how to read sheet music?</summary>
+        <p class="faq-body">No. The notes are color-coded by drum, a cheat sheet stays on screen, and the cursor shows you where you are. You end up learning to read drum notation as a side effect of playing.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Can I try it without a drum kit?</summary>
+        <p class="faq-body">Yes. Map the keyboard instead of pads and give it a go. It won't do much for your drumming, but it shows you how everything works before you commit to dragging your kit next to the computer.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>How is it different from Melodics or Drumeo?</summary>
+        <p class="faq-body">Those are lesson platforms with subscriptions, and they're good at teaching technique. SightKick doesn't teach; it's a practice game. You pick songs you actually like and play them until the score stops being embarrassing. There's a <a href="alternatives.html">longer comparison here</a>.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>What do I need to run it?</summary>
+        <p class="faq-body">A Mac (Apple Silicon or Intel), a Windows PC (x64), or a Linux machine (AppImage). The optional drum-track separation runs on Apple Silicon and Windows only.</p>
+      </details>
+
+    </div>
+  </div>
+</section>
+
 <section class="download" id="download">
   <div class="download-inner">
     <h2 class="download-title">Download SightKick</h2>
@@ -393,6 +484,7 @@
     <span class="footer-copy">MIT License, Anton Korolkov</span>
   </div>
   <div class="footer-links">
+    <a href="alternatives.html" class="footer-link">vs Melodics &amp; Drumeo</a>
     <a href="https://github.com/tonygoldcrest/sightkick" class="footer-link" target="_blank" rel="noopener">GitHub</a>
     <a href="https://github.com/tonygoldcrest/sightkick/releases" class="footer-link" target="_blank" rel="noopener">Releases</a>
     <a href="https://www.enchor.us/" class="footer-link" target="_blank" rel="noopener">Enchor</a>

@@ -20,6 +20,7 @@ A game for learning drums with sheet music for thousands of songs. Mute the drum
 * **Sheet music rendering**: drum charts from Clone Hero `.mid`/`.chart` files are rendered as standard notation in real time
 * **Thousands of songs**: browse and download from the Enchor community library directly inside the app
 * **MIDI e-kit support**: connect your electronic drum kit and get real-time hit detection scored against the chart, with a star rating at the end of each song
+* **Practice mode**: select a section, loop it, and slow playback down (0.3x to 2x) with scoring off
 * **Stem mixer**: mute the recorded drums and hear your own playing; adjust levels per stem
 * **Stem splitting**: separate a mixed recording into individual tracks automatically (macOS Apple Silicon and Windows; ~130 MB one-time download)
 * **Scrolling playhead**: three modes: Cursor (follows note by note), Measure (highlights the current bar), or None
