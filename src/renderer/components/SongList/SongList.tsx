@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Song } from '../../../types';
 import { cn } from '../../cn';
 import { SongListItem } from '../SongListItem';
@@ -62,7 +62,6 @@ export function SongList({
 
   const virtualItems = rowVirtualizer.getVirtualItems();
   const lastVirtualIndex = virtualItems[virtualItems.length - 1]?.index;
-  const stableLoadMore = useCallback(() => onLoadMore?.(), [onLoadMore]);
 
   useEffect(() => {
     if (lastVirtualIndex === undefined || !onLoadMore) {
@@ -70,9 +69,9 @@ export function SongList({
     }
 
     if (lastVirtualIndex >= songList.length - LOAD_MORE_THRESHOLD) {
-      stableLoadMore();
+      onLoadMore();
     }
-  }, [lastVirtualIndex, songList.length, stableLoadMore, onLoadMore]);
+  }, [lastVirtualIndex, songList.length, onLoadMore]);
 
   return (
     <div ref={parentRef} className={cn('h-full overflow-y-auto', className)}>

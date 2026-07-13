@@ -26,7 +26,6 @@ export function Playback({
       {allowScrubbing ? (
         <Slider
           className="grow"
-          defaultValue={0}
           disabled={disabled}
           tooltip={{ open: false }}
           value={(currentTime / duration) * 100}

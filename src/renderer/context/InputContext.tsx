@@ -197,6 +197,8 @@ export function InputProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     inputBus.start();
+
+    return () => inputBus.stop();
   }, []);
 
   useEffect(() => {
