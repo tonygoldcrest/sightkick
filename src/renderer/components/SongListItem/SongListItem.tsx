@@ -138,6 +138,7 @@ export function SongListItem({
       <div
         onClick={onClick}
         data-testid={`song-item-${id}`}
+        data-focused={focused ? 'true' : undefined}
         className={cn(
           'flex border border-border-soft grow no-underline bg-surface rounded-[11px] transition-all duration-100 ease-in-out cursor-default p-2',
           {

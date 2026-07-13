@@ -1,33 +1,26 @@
 import { ReactNode } from 'react';
-import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, renderHook, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { App as AntdApp, ConfigProvider } from 'antd';
 import {
-  getNotification,
   installIpcMock,
   installLocalStorage,
   IpcMock,
-  NotificationMock,
-  resetNotification,
 } from '../hooks/test-support';
+import { antdTheme } from '../antdTheme';
 import { InputDevice } from '../input';
 import { InputProvider, useInput } from './InputContext';
 
-vi.mock('antd', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('antd')>();
-
-  return {
-    ...actual,
-    App: Object.assign({}, actual.App, {
-      useApp: () => ({ notification: getNotification() }),
-    }),
-  };
-});
-
 let ipc: IpcMock;
-let notification: NotificationMock;
 
 function wrapper({ children }: { children: ReactNode }) {
-  return <InputProvider>{children}</InputProvider>;
+  return (
+    <ConfigProvider theme={antdTheme}>
+      <AntdApp>
+        <InputProvider>{children}</InputProvider>
+      </AntdApp>
+    </ConfigProvider>
+  );
 }
 
 function listenPorts() {
@@ -43,7 +36,6 @@ function stopCount() {
 beforeEach(() => {
   installLocalStorage();
   ipc = installIpcMock();
-  notification = resetNotification();
 });
 
 const DEVICE_A: InputDevice = {
@@ -102,16 +94,15 @@ describe('InputContext midi stream ownership', () => {
     expect(stopCount()).toBe(1);
   });
 
-  it('notifies when the selected device fails to connect', () => {
+  it('notifies when the selected device fails to connect', async () => {
     const { result } = renderHook(() => useInput(), { wrapper });
 
     act(() => result.current.setSelectedDevice(DEVICE_A));
     act(() => ipc.emit('midi-error', { error: 'device unavailable' }));
 
-    expect(notification.error).toHaveBeenCalledTimes(1);
-    expect(notification.error.mock.calls[0][0]).toMatchObject({
-      title: "Couldn't connect to your MIDI device",
-    });
+    expect(
+      await screen.findByText("Couldn't connect to your MIDI device"),
+    ).toBeInTheDocument();
   });
 
   it('stops listening for connect errors once the device is cleared', () => {

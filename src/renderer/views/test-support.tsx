@@ -148,6 +148,7 @@ export interface SongViewHarness {
   mutedGainCount(): number;
   currentTimeText(): string | undefined;
   seekToEnd(): void;
+  unmount(): void;
 }
 
 function shimSvgBBox() {
@@ -215,11 +216,12 @@ export function setupSongView({
     );
   }
 
-  render(<SongView />, { wrapper });
+  const { unmount } = render(<SongView />, { wrapper });
 
   return {
     ipc,
     audio,
+    unmount,
 
     async loadSong(song = makeSong(), chartText = DRUM_CHART) {
       const response: IpcLoadSongResponse = {
@@ -630,13 +632,11 @@ export function setupSongListView({
     filledStars(id: string) {
       return screen
         .getByTestId(`song-item-${id}`)
-        .querySelectorAll('svg[data-prefix="fas"][data-icon="star"]').length;
+        .querySelectorAll('[data-filled]').length;
     },
 
     isFocused(id: string) {
-      return screen
-        .getByTestId(`song-item-${id}`)
-        .className.includes('outline');
+      return screen.getByTestId(`song-item-${id}`).hasAttribute('data-focused');
     },
 
     sentChannels() {

@@ -34,6 +34,7 @@ export function AudioVolume({
       />
       <Button
         data-testid={`mute-${name}`}
+        aria-pressed={isMuted}
         type={isMuted ? 'primary' : 'default'}
         size="small"
         icon={<FontAwesomeIcon size="xs" icon={faVolumeMute} />}
@@ -42,6 +43,7 @@ export function AudioVolume({
       {canSolo && (
         <Button
           data-testid={`solo-${name}`}
+          aria-pressed={Boolean(isSoloed)}
           type={isSoloed ? 'primary' : 'default'}
           size="small"
           icon={<FontAwesomeIcon size="xs" icon={faS} />}

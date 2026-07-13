@@ -406,6 +406,7 @@ export function SongView() {
 
                 <Switch
                   size="medium"
+                  data-testid="loop-toggle"
                   checked={isLooping}
                   onChange={(checked) => {
                     setIsLooping(checked);

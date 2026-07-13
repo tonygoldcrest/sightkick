@@ -218,6 +218,7 @@ export function SheetMusic({
           </div>
           <IconButton
             icon={faXmark}
+            data-testid="clear-loop"
             onClick={() => onPracticeRangeChange?.(undefined)}
           />
         </div>

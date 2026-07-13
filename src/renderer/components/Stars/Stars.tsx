@@ -43,6 +43,7 @@ export function Stars({
         return (
           <FontAwesomeIcon
             key={num}
+            data-filled={isFilled ? 'true' : undefined}
             icon={isFilled ? faStarSolid : faStarRegular}
             size={size}
             style={{ color, filter }}

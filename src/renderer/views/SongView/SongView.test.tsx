@@ -43,6 +43,10 @@ describe('opening a song', () => {
     const view = setupSongView();
 
     expect(view.sentChannels()).toContain('prevent-sleep');
+
+    view.unmount();
+
+    expect(view.sentChannels()).toContain('resume-sleep');
   });
 
   it('reports a load failure and returns to the library', async () => {
@@ -466,6 +470,185 @@ describe('practice mode', () => {
       view.measureHighlights().some((el) => el.hasAttribute('data-focused')),
     ).toBe(true);
   });
+
+  it('advances the measure focus with repeated navigation', async () => {
+    const view = setupSongView({
+      route: '/song-1?gameMode=practice',
+      keyboard: { controls: { right: ['keyboard:ArrowRight'] } },
+    });
+
+    await view.loadSong();
+
+    await view.pressKey('ArrowRight');
+    await view.pressKey('ArrowRight');
+
+    const focused = view
+      .measureHighlights()
+      .find((el) => el.hasAttribute('data-focused'));
+
+    expect(focused).toHaveAttribute('data-measure-index', '1');
+  });
+
+  it('locks a loop from the focused measure, extends it, and clears it', async () => {
+    const view = setupSongView({
+      route: '/song-1?gameMode=practice',
+      keyboard: {
+        controls: {
+          right: ['keyboard:ArrowRight'],
+          confirm: ['keyboard:Enter'],
+          back: ['keyboard:Escape'],
+        },
+      },
+    });
+
+    await view.loadSong();
+
+    await view.pressKey('ArrowRight');
+    await view.pressKey('Enter');
+
+    expect(screen.getByText('Looping Section')).toBeInTheDocument();
+    expect(screen.getByText('Measure 1')).toBeInTheDocument();
+
+    await view.pressKey('ArrowRight');
+
+    expect(screen.getByText('Measure 1 - 2')).toBeInTheDocument();
+
+    await view.pressKey('Escape');
+
+    expect(screen.queryByText('Looping Section')).not.toBeInTheDocument();
+  });
+
+  it('adjusts and clamps the practice speed', async () => {
+    const view = setupSongView({
+      route: '/song-1?gameMode=practice',
+      keyboard: {
+        controls: {
+          faster: ['keyboard:Equal'],
+          slower: ['keyboard:Minus'],
+        },
+      },
+    });
+
+    await view.loadSong();
+
+    const speed = () =>
+      (screen.getByRole('spinbutton') as HTMLInputElement).value;
+
+    expect(speed()).toBe('1.0');
+
+    await view.pressKey('Equal');
+    expect(speed()).toBe('1.1');
+
+    for (let i = 0; i < 20; i += 1) {
+      await view.pressKey('Equal');
+    }
+
+    expect(speed()).toBe('2.0');
+
+    for (let i = 0; i < 30; i += 1) {
+      await view.pressKey('Minus');
+    }
+
+    expect(speed()).toBe('0.3');
+  });
+
+  it('starts playback on confirm when no measure is selected', async () => {
+    const view = setupSongView({
+      route: '/song-1?gameMode=practice',
+      settings: { countIn: false },
+      keyboard: { controls: { confirm: ['keyboard:Enter'] } },
+    });
+
+    await view.loadSong();
+
+    await view.pressKey('Enter');
+
+    expect(view.startedSources().length).toBeGreaterThan(0);
+  });
+});
+
+describe('practice loop selection', () => {
+  it('selects a loop range by dragging across measures', async () => {
+    const view = setupSongView({ route: '/song-1?gameMode=practice' });
+
+    await view.loadSong();
+
+    const [a, b] = view.measureHighlights();
+
+    fireEvent.mouseDown(a);
+    fireEvent.mouseEnter(b);
+
+    expect(screen.getByText('Measure 1 - 2')).toBeInTheDocument();
+    expect(a).toHaveAttribute('data-selected', 'true');
+    expect(b).toHaveAttribute('data-selected', 'true');
+  });
+
+  it('normalizes a backward drag', async () => {
+    const view = setupSongView({ route: '/song-1?gameMode=practice' });
+
+    await view.loadSong();
+
+    const [a, b] = view.measureHighlights();
+
+    fireEvent.mouseDown(b);
+    fireEvent.mouseEnter(a);
+
+    expect(screen.getByText('Measure 1 - 2')).toBeInTheDocument();
+  });
+
+  it('stops extending the range once the drag ends', async () => {
+    const view = setupSongView({ route: '/song-1?gameMode=practice' });
+
+    await view.loadSong();
+
+    const [a, b] = view.measureHighlights();
+
+    fireEvent.mouseDown(a);
+    fireEvent.mouseUp(document.body);
+    fireEvent.mouseEnter(b);
+
+    expect(screen.getByText('Measure 1')).toBeInTheDocument();
+  });
+
+  it('does not select while looping is off', async () => {
+    const view = setupSongView({ route: '/song-1?gameMode=practice' });
+
+    await view.loadSong();
+    view.clickTestId('loop-toggle');
+
+    fireEvent.mouseDown(view.measureHighlights()[0]);
+
+    expect(screen.queryByText('Looping Section')).not.toBeInTheDocument();
+  });
+
+  it('clears the selected range from the loop control', async () => {
+    const view = setupSongView({ route: '/song-1?gameMode=practice' });
+
+    await view.loadSong();
+
+    fireEvent.mouseDown(view.measureHighlights()[0]);
+    expect(screen.getByText('Looping Section')).toBeInTheDocument();
+
+    view.clickTestId('clear-loop');
+
+    expect(screen.queryByText('Looping Section')).not.toBeInTheDocument();
+  });
+
+  it('plays from a clicked measure once looping is off', async () => {
+    const view = setupSongView({
+      route: '/song-1?gameMode=practice',
+      settings: { countIn: false },
+    });
+
+    await view.loadSong();
+    view.clickTestId('loop-toggle');
+
+    fireEvent.click(view.measureHighlights()[1]);
+
+    await waitFor(() => {
+      expect(view.startedSources().length).toBeGreaterThan(0);
+    });
+  });
 });
 
 describe('the stem mixer', () => {
@@ -496,8 +679,9 @@ describe('the stem mixer', () => {
     fireEvent.click(view.mixerControls('drums').solo);
 
     expect(view.mutedGainCount()).toBeGreaterThan(silentBefore);
-    expect(view.mixerControls('guitar').mute.className).toContain(
-      'ant-btn-primary',
+    expect(view.mixerControls('guitar').mute).toHaveAttribute(
+      'aria-pressed',
+      'true',
     );
   });
 
@@ -514,14 +698,16 @@ describe('the stem mixer', () => {
     const silentBefore = view.mutedGainCount();
 
     fireEvent.click(view.mixerControls('drums').mute);
-    expect(view.mixerControls('drums').mute.className).toContain(
-      'ant-btn-primary',
+    expect(view.mixerControls('drums').mute).toHaveAttribute(
+      'aria-pressed',
+      'true',
     );
     expect(view.mutedGainCount()).toBeGreaterThan(silentBefore);
 
     fireEvent.click(view.mixerControls('drums').mute);
-    expect(view.mixerControls('drums').mute.className).not.toContain(
-      'ant-btn-primary',
+    expect(view.mixerControls('drums').mute).toHaveAttribute(
+      'aria-pressed',
+      'false',
     );
     expect(view.mutedGainCount()).toBe(silentBefore);
   });
@@ -539,11 +725,11 @@ describe('the stem mixer', () => {
     const silentBefore = view.mutedGainCount();
 
     fireEvent.click(view.masterMuteButton());
-    expect(view.masterMuteButton().className).toContain('ant-btn-primary');
+    expect(view.masterMuteButton()).toHaveAttribute('aria-pressed', 'true');
     expect(view.mutedGainCount()).toBeGreaterThan(silentBefore);
 
     fireEvent.click(view.masterMuteButton());
-    expect(view.masterMuteButton().className).not.toContain('ant-btn-primary');
+    expect(view.masterMuteButton()).toHaveAttribute('aria-pressed', 'false');
     expect(view.mutedGainCount()).toBe(silentBefore);
   });
 });
@@ -583,9 +769,7 @@ describe('the score summary', () => {
     const modal = screen.getByTestId('score-modal');
 
     expect(within(modal).getByText('Perfect')).toBeInTheDocument();
-    expect(
-      modal.querySelectorAll('svg[data-prefix="fas"][data-icon="star"]'),
-    ).toHaveLength(5);
+    expect(modal.querySelectorAll('[data-filled]')).toHaveLength(5);
   });
 });
 
