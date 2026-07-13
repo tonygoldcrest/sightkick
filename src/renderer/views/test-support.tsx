@@ -396,6 +396,9 @@ function installOnlineFetch(getResults: () => EnchorChart[]) {
       const charts = getResults();
 
       return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
         json: () =>
           Promise.resolve({
             data: charts.map(({ noteCounts, ...chart }) => ({

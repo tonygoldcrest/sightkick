@@ -7,6 +7,43 @@ import { ALL_DIFFICULTIES } from '../../constants';
 
 type PageResult = { songs: Song[]; total: number | undefined };
 
+const PAGE_CACHE_LIMIT = 50;
+
+function cacheGet(
+  cache: Map<string, PageResult>,
+  key: string,
+): PageResult | undefined {
+  const value = cache.get(key);
+
+  if (value === undefined) {
+    return undefined;
+  }
+
+  cache.delete(key);
+  cache.set(key, value);
+
+  return value;
+}
+
+function cacheSet(
+  cache: Map<string, PageResult>,
+  key: string,
+  value: PageResult,
+) {
+  cache.delete(key);
+  cache.set(key, value);
+
+  while (cache.size > PAGE_CACHE_LIMIT) {
+    const oldest = cache.keys().next().value;
+
+    if (oldest === undefined) {
+      break;
+    }
+
+    cache.delete(oldest);
+  }
+}
+
 interface NoteCount {
   instrument: string;
   difficulty: Difficulty;
@@ -124,9 +161,9 @@ export function useOnlineSearch(
   const fetchPage = useCallback(
     async (query: string, page: number, diff: Difficulty, append: boolean) => {
       const cacheKey = `${query}:${diff}:${page}`;
+      const cached = cacheGet(cache.current, cacheKey);
 
-      if (cache.current.has(cacheKey)) {
-        const cached = cache.current.get(cacheKey)!;
+      if (cached) {
         const next = append
           ? uniqBy([...resultsRef.current, ...cached.songs], (s) => s.id)
           : cached.songs;
@@ -157,7 +194,7 @@ export function useOnlineSearch(
           controller.signal,
         );
 
-        cache.current.set(cacheKey, { songs, total: pageTotal });
+        cacheSet(cache.current, cacheKey, { songs, total: pageTotal });
 
         const next = append
           ? uniqBy([...resultsRef.current, ...songs], (s) => s.id)
@@ -195,7 +232,7 @@ export function useOnlineSearch(
 
       const getOrFetch = async (page: number): Promise<PageResult> => {
         const cacheKey = `${query}:${diff}:${page}`;
-        const cached = cache.current.get(cacheKey);
+        const cached = cacheGet(cache.current, cacheKey);
 
         if (cached) {
           return cached;
@@ -203,7 +240,7 @@ export function useOnlineSearch(
 
         const r = await fetchEnchorePage(query, page, diff, controller.signal);
 
-        cache.current.set(cacheKey, r);
+        cacheSet(cache.current, cacheKey, r);
 
         return r;
       };
