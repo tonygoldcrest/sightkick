@@ -14,6 +14,9 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
 
+    env:
+      electron_config_cache: ${{ github.workspace }}/.electron-cache
+
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
@@ -29,6 +32,25 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --mode=skip-build
+
+      - name: Cache Electron binary
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.electron-cache
+          key: electron-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+
+      - name: Install Electron binary
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if node node_modules/electron/install.js; then
+              exit 0
+            fi
+            echo "Electron install failed (attempt $attempt); retrying in $((attempt * 15))s..."
+            sleep $((attempt * 15))
+          done
+          echo "Electron binary install failed after 5 attempts"
+          exit 1
 
       - name: Run Playwright e2e
         if: runner.os != 'Linux'
