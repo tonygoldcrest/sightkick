@@ -5,7 +5,7 @@ A game for learning drums with sheet music for thousands of songs. Mute the drum
 <h1 align="center">
   <a href="https://sightkick.dev">Guide</a> |
   <a href="https://github.com/tonygoldcrest/sightkick/releases">Download</a> |
-  <a href="https://discord.gg/kwBx9VZt3">Discord</a>
+  <a href="https://discord.gg/mqVSKx5N6K">Discord</a>
 </h1>
 
 <img width="1478" height="880" alt="image" src="https://cdn.sightkick.dev/images/hero.png" />
