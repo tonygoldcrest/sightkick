@@ -115,6 +115,27 @@ describe('SongListView — filtering and sorting', () => {
     expect(screen.queryByText('Two')).not.toBeInTheDocument();
   });
 
+  it('searches local album, charter and folded diacritics', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([
+      makeListSong('raging', {
+        name: 'Raging',
+        artist: 'Kygo feat. Kodaliné',
+        album: 'Cloud Nine',
+        charter: 'Community Charter',
+      }),
+      makeListSong('other', { name: 'Other' }),
+    ]);
+
+    for (const query of ['kodaline', 'cloud nine', 'community charter']) {
+      view.search(query);
+
+      expect(screen.getByText('Raging')).toBeInTheDocument();
+      expect(screen.queryByText('Other')).not.toBeInTheDocument();
+    }
+  });
+
   it('reorders the list when a sort option is chosen', () => {
     const view = setupSongListView();
 

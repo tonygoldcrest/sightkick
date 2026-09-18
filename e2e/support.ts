@@ -29,6 +29,7 @@ function writeFixtureLibrary(): string {
       '[song]',
       'name = Master of Puppets',
       'artist = Metallica',
+      'album = Métal Masters',
       'charter = Test Charter',
       'pro_drums = True',
       'five_lane_drums = False',

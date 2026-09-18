@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import Fuse from 'fuse.js';
 import { Difficulty } from 'scan-chart';
 import { Song } from '../../types';
 import { type SortState } from '../components/SortButton';
 import { useOnlineSearch } from './useOnlineSearch';
 import { usePersisted } from './usePersisted';
 import { LibraryMode } from '../types';
+import { searchLocalSongs } from '../songSearch';
 
 export function useSongFilter(songList: Song[], difficulty: Difficulty) {
   const [nameFilter, setNameFilter] = useState('');
@@ -30,11 +30,7 @@ export function useSongFilter(songList: Song[], difficulty: Difficulty) {
     );
 
     if (nameFilter) {
-      const fuse = new Fuse(byDifficulty, {
-        keys: ['name', 'artist', 'charter'],
-      });
-
-      return fuse.search(nameFilter).map((result) => result.item);
+      return searchLocalSongs(byDifficulty, nameFilter);
     }
 
     return [...byDifficulty].sort((a, b) => {

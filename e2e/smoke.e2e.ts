@@ -29,6 +29,23 @@ test.describe('first run', () => {
 });
 
 test.describe('seeded library', () => {
+  test('finds a song by normalized album and charter metadata', async () => {
+    harness = await launchApp({ seedLibrary: true });
+    page = await harness.app.firstWindow();
+
+    await page.getByTestId('settings-trigger').click();
+    await page.getByTestId('rescan-folder').click();
+
+    const song = page.getByText('Master of Puppets').first();
+
+    await expect(song).toBeVisible({ timeout: 30_000 });
+
+    for (const query of ['metal masters', 'test charter']) {
+      await page.getByTestId('song-search').fill(query);
+      await expect(song).toBeVisible();
+    }
+  });
+
   test('scans the folder, lists the song, and renders real sheet music', async () => {
     harness = await launchApp({ seedLibrary: true });
     page = await harness.app.firstWindow();
