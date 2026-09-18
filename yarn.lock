@@ -7410,8 +7410,8 @@ __metadata:
   linkType: hard
 
 "exifreader@npm:^4.23.2":
-  version: 4.41.0
-  resolution: "exifreader@npm:4.41.0"
+  version: 4.45.0
+  resolution: "exifreader@npm:4.45.0"
   dependencies:
     "@xmldom/xmldom": "npm:^0.9.10"
   dependenciesMeta:
@@ -7419,7 +7419,7 @@ __metadata:
       optional: true
   bin:
     exifreader: bin/cli.js
-  checksum: 10c0/02ec107ca60632a5614ad8d3ff0fa572fc1663295d7f0ad9694f96a94d84ddb8ea762cbe08877c60bfff1afea0ff8b18e87dd6a468feb68905ec23ecf9013e4e
+  checksum: 10c0/abed397265428dfd6d0665e291451067ef748532f31039f357947c94f32cc06ab406807191bab13bd87740d8c5d04b2f3ef1356c281b2dcc36aae5e6e0fd8e6d
   languageName: node
   linkType: hard
 
