@@ -10,14 +10,13 @@ import { StemToolsPanel } from '../../context/StemToolsContext';
 import { useApp } from '../../context/AppContext';
 import { Tooltip } from '../Tooltip';
 import { SupportButton } from '../SupportButton/SupportButton';
+import { DISCORD_URL } from './constants';
 
 interface Props {
   scanPercent?: number;
   onSetupInput: () => void;
   currentInputName?: string;
 }
-
-const DISCORD_URL = 'https://discord.gg/mqVSKx5N6K';
 
 export function SongListSettings({
   scanPercent,
@@ -90,7 +89,6 @@ export function SongListSettings({
 
       <Tooltip title="Join the community" placement="bottom">
         <Button
-          data-testid="setup-input"
           icon={<FontAwesomeIcon icon={faDiscord} />}
           onClick={() => window.open(DISCORD_URL)}
         >

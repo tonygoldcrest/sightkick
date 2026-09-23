@@ -9,6 +9,8 @@ import { Tooltip } from '../Tooltip';
 import { SupportButton } from '../SupportButton/SupportButton';
 import { useApp } from '../../context/AppContext';
 import themedark from '../../theme';
+import { DISCORD_URL } from './constants';
+import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 
 interface Props {
   onExportPdf?: () => void;
@@ -246,6 +248,17 @@ export function SongViewSettings({
       ) : null}
 
       {clickControls}
+
+      <Divider />
+
+      <Tooltip title="Join the community" placement="bottom">
+        <Button
+          icon={<FontAwesomeIcon icon={faDiscord} />}
+          onClick={() => window.open(DISCORD_URL)}
+        >
+          Discord
+        </Button>
+      </Tooltip>
 
       <SupportButton />
     </>
