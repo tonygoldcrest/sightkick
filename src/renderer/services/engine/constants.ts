@@ -16,7 +16,7 @@ export const HIT_TOLERANCE_SECONDS = 0.1;
 
 export const ACCENT_VALUE_THRESHOLD = 90;
 
-export const GHOST_VALUE_THRESHOLD = 50;
+export const GHOST_VALUE_THRESHOLD = 70;
 
 export const ACTIVE_CLASS = 'vf-note-active';
 
