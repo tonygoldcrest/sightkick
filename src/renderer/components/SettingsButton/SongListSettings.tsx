@@ -5,6 +5,7 @@ import {
   faDrum,
   faFolder,
 } from '@fortawesome/free-solid-svg-icons';
+import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { StemToolsPanel } from '../../context/StemToolsContext';
 import { useApp } from '../../context/AppContext';
 import { Tooltip } from '../Tooltip';
@@ -15,6 +16,8 @@ interface Props {
   onSetupInput: () => void;
   currentInputName?: string;
 }
+
+const DISCORD_URL = 'https://discord.gg/mqVSKx5N6K';
 
 export function SongListSettings({
   scanPercent,
@@ -67,7 +70,7 @@ export function SongListSettings({
       )}
 
       <Tooltip
-        title="Hook up your e-kit (or keyboard if you fancy) so we can score your hits"
+        title="Hook up your e-kit (or keyboard) so we can score your hits"
         placement="bottom"
       >
         <Button
@@ -82,6 +85,18 @@ export function SongListSettings({
       <Divider />
 
       <StemToolsPanel />
+
+      <Divider />
+
+      <Tooltip title="Join the community" placement="bottom">
+        <Button
+          data-testid="setup-input"
+          icon={<FontAwesomeIcon icon={faDiscord} />}
+          onClick={() => window.open(DISCORD_URL)}
+        >
+          Discord
+        </Button>
+      </Tooltip>
 
       <SupportButton />
     </>
