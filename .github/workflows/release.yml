@@ -135,14 +135,6 @@ jobs:
           name: linux-artifacts
           path: artifacts
 
-      - name: Generate changelog
-        id: changelog
-        uses: orhun/git-cliff-action@v4
-        with:
-          args: --latest --strip header
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
