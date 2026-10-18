@@ -578,6 +578,15 @@ describe('coincidence resolution', () => {
 
     expect(hitKeys(parser.measures)).toEqual(['c/5', 'c/5', 'f/4', 'f/4']);
   });
+
+  it('keeps two hits in neighbouring 64th slots that no short span can hold', () => {
+    const parser = parse({
+      resolution: 960,
+      groups: [group(2006, KICK), group(2026, HIHAT)],
+    });
+
+    expect(hitKeys(parser.measures)).toEqual(['f/4', 'g/5/x2']);
+  });
 });
 
 describe('dynamics', () => {
