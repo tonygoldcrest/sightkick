@@ -2,7 +2,13 @@ import { Measure, Note, ParsedChart } from '../../../chart-parser/types';
 import { InputMapping } from '../../../types';
 import { InputEvent } from '../../input/types';
 import { secondsToTicks, ticksToSeconds } from '../../../chart-parser/timing';
-import { JudgeContext, JudgeHitHandler, NoteEntry, NotePos } from './types';
+import {
+  JudgeContext,
+  JudgeHitHandler,
+  LoopRegion,
+  NoteEntry,
+  NotePos,
+} from './types';
 import {
   ACCENT_VALUE_THRESHOLD,
   ELEMENT_TO_KEYS,
@@ -17,6 +23,7 @@ export class Judge {
   private measures: Measure[] = [];
   private noteIndex: NoteEntry[] = [];
   private mapping: InputMapping = {};
+  private loopRegion: LoopRegion | undefined;
   private enabled = false;
   private currentTick: number | undefined;
   private hits = new Map<number, Set<string>>();
@@ -45,8 +52,31 @@ export class Judge {
     this.enabled = enabled;
   }
 
+  setLoopRegion(region: LoopRegion | undefined): void {
+    this.loopRegion = region;
+    this.buildNoteIndex();
+  }
+
   setTick(tick: number | undefined): void {
-    this.currentTick = tick;
+    if (tick === undefined) {
+      this.currentTick = undefined;
+
+      return;
+    }
+
+    const effectiveTick = this.wrapLoopTick(tick);
+
+    if (
+      this.loopRegion &&
+      this.currentTick !== undefined &&
+      effectiveTick < this.currentTick
+    ) {
+      this.rewindTo(effectiveTick);
+
+      return;
+    }
+
+    this.currentTick = effectiveTick;
   }
 
   rewindTo(tick: number): void {
@@ -89,10 +119,16 @@ export class Judge {
 
   private buildNoteIndex(): void {
     const index: NoteEntry[] = [];
+    const loop = this.loopRegion;
+    const hasLoop = loop !== undefined && loop.endTick > loop.startTick;
 
     this.measures.forEach((measure, measureIdx) => {
       measure.notes.forEach((note, noteIdx) => {
-        if (!note.isRest) {
+        if (
+          !note.isRest &&
+          (!hasLoop ||
+            (note.tick >= loop.startTick && note.tick < loop.endTick))
+        ) {
           index.push({ tick: note.tick, note, pos: { measureIdx, noteIdx } });
         }
       });
@@ -100,6 +136,39 @@ export class Judge {
 
     index.sort((a, b) => a.tick - b.tick);
     this.noteIndex = index;
+  }
+
+  private wrapLoopTick(tick: number): number {
+    const loop = this.loopRegion;
+    const chart = this.chart;
+
+    if (
+      !loop ||
+      !chart ||
+      loop.endTick <= loop.startTick ||
+      this.noteIndex.length === 0 ||
+      tick < loop.startTick ||
+      tick >= loop.endTick
+    ) {
+      return tick;
+    }
+
+    const currentTimeS = ticksToSeconds(tick, chart.resolution, chart.tempos);
+    const toleranceTicks =
+      secondsToTicks(
+        currentTimeS + HIT_TOLERANCE_SECONDS,
+        chart.resolution,
+        chart.tempos,
+      ) - tick;
+    const nextFirstTick =
+      loop.endTick + (this.noteIndex[0].tick - loop.startTick);
+    const lastTick = this.noteIndex[this.noteIndex.length - 1].tick;
+    const seamTick = Math.max(
+      nextFirstTick - toleranceTicks,
+      (lastTick + nextFirstTick) / 2,
+    );
+
+    return tick >= seamTick ? tick - (loop.endTick - loop.startTick) : tick;
   }
 
   private firstNoteAtOrAfter(tick: number): number {

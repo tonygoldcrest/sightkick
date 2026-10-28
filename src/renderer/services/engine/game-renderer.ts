@@ -264,6 +264,17 @@ export class GameRenderer {
           colorNote(el, tick, key, note.isRest()),
         );
       }
+
+      const activeRendered = curNotes[noteIdx];
+
+      if (activeRendered) {
+        forEachNoteHead(activeRendered.note, (el, key) => {
+          if (this.isHit(activeRendered.tick, key)) {
+            el.classList.add(HIT_CLASS);
+            this.filledEls.add(el);
+          }
+        });
+      }
     } else {
       const fromMeasure = prev?.measureIdx ?? 0;
       const fromNote = prev?.noteIdx ?? 0;

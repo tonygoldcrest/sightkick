@@ -535,4 +535,43 @@ describe('Judge', () => {
     expect(onHit).not.toHaveBeenCalled();
     expect(engine.isHit(480, 'c/5')).toBe(true);
   });
+
+  describe('loop region', () => {
+    it('ignores notes outside the active loop region and scores early seam hits against the loop start across wrap', () => {
+      const onHit = vi.fn<JudgeHitHandler>();
+      const { engine } = setup(
+        {
+          measures: [
+            measure([note(['c/5'], 0)], { startTick: 0, endTick: 1920 }),
+            measure([note(['c/5'], 1920), note(['f/4'], 3360)], {
+              startTick: 1920,
+              endTick: 3840,
+            }),
+            measure([note(['c/5'], 3840)], { startTick: 3840, endTick: 5760 }),
+          ],
+        },
+        { tick: 1920 },
+      );
+
+      engine.onHit(onHit);
+      engine.setLoopRegion({ startTick: 1920, endTick: 3840 });
+
+      engine.handleInput(hit('midi:38'));
+      expect(engine.isHit(1920, 'c/5')).toBe(true);
+      expect(onHit).toHaveBeenLastCalledWith({ measureIdx: 1, noteIdx: 0 }, [
+        'c/5',
+      ]);
+
+      engine.setTick(3800);
+      expect(engine.isHit(1920, 'c/5')).toBe(false);
+
+      engine.handleInput(hit('midi:38'));
+      expect(engine.isHit(3840, 'c/5')).toBe(false);
+      expect(engine.isHit(0, 'c/5')).toBe(false);
+      expect(engine.isHit(1920, 'c/5')).toBe(true);
+
+      engine.setTick(1920);
+      expect(engine.isHit(1920, 'c/5')).toBe(true);
+    });
+  });
 });

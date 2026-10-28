@@ -256,6 +256,23 @@ describe('GameRenderer', () => {
     expect(uncolored(n1)).toBe(true);
   });
 
+  it('preserves hit colouring on the active note when seeked backward', () => {
+    const n0 = staveNote(['c/5']);
+    const n1 = staveNote(['d/5']);
+    const isHit = (tick: number, prefix: string) =>
+      tick === 0 && prefix === 'c/5';
+    const view = setup(
+      [measureData(0, 1920, [rendered(0, n0), rendered(480, n1)])],
+      { isHit },
+    );
+
+    view.render(0, 480);
+    view.render(0, 0);
+
+    expect(hasClass(n0, 'vf-note-hit')).toBe(true);
+    expect(uncolored(n1)).toBe(true);
+  });
+
   it('uses the isHit predicate to colour passed notes hit or missed', () => {
     const n0 = staveNote(['c/5']);
     const n1 = staveNote(['d/5']);

@@ -56,7 +56,6 @@ export class Transport {
   private raf: number | undefined;
   private loopRegion: LoopRegion | undefined;
   private loopBeatOffset = 0;
-  private lastLoopPass = 0;
   private playGeneration = 0;
   private pendingSpeed: number | undefined;
   private disposed = false;
@@ -426,7 +425,6 @@ export class Transport {
     this.countIn = undefined;
     this.songStartCtx = undefined;
     this.loopBeatOffset = 0;
-    this.lastLoopPass = 0;
   }
 
   setStemVolume(name: string, gain: number): void {
@@ -531,33 +529,13 @@ export class Transport {
     const endTime = this.tickToTime(this.loopRegion.endTick);
     const span = endTime - startTime;
 
-    if (span <= 0) {
+    if (span <= 0 || rawTime < endTime) {
       this.setPosition(rawTime);
 
       return;
     }
 
-    if (rawTime >= endTime) {
-      const pass = Math.floor((rawTime - startTime) / span);
-      const wrappedTime = startTime + ((rawTime - startTime) % span);
-
-      if (pass > this.lastLoopPass) {
-        this.lastLoopPass = pass;
-        this.onSeekCb(this.loopRegion.startTick);
-      }
-
-      this.setPosition(wrappedTime);
-
-      return;
-    }
-
-    this.lastLoopPass = 0;
-
-    if (rawTime < this.position) {
-      this.onSeekCb(this.loopRegion.startTick);
-    }
-
-    this.setPosition(rawTime);
+    this.setPosition(startTime + ((rawTime - startTime) % span));
   }
 
   private scheduleClicks(): void {

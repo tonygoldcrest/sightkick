@@ -734,14 +734,12 @@ describe('Transport', () => {
     });
 
     it('keeps playing without stopping or restarting when the loop wraps', async () => {
-      const onSeek = vi.fn();
-      const { engine, onEnded, player } = await setup({ onSeek });
+      const { engine, onEnded, player } = await setup();
 
       engine.setLoopRegion({ startTick: 0, endTick: 1920 });
       engine.playFromTick(0);
       player.start.mockClear();
       player.stop.mockClear();
-      onSeek.mockClear();
 
       player.currentTime = 2.5;
       flushFrame();
@@ -751,34 +749,7 @@ describe('Transport', () => {
       expect(player.stop).not.toHaveBeenCalled();
       expect(engine.getSnapshot().isPlaying).toBe(true);
       expect(engine.timeStore.get()).toBeCloseTo(0.5);
-      expect(onSeek).toHaveBeenCalledTimes(1);
-      expect(onSeek).toHaveBeenCalledWith(0);
       expect(onEnded).not.toHaveBeenCalled();
-    });
-
-    it('rewinds the judge on each successive pass past the loop end without restarting', async () => {
-      const onSeek = vi.fn();
-      const { engine, player } = await setup({ onSeek });
-
-      engine.setLoopRegion({ startTick: 0, endTick: 1920 });
-      engine.playFromTick(0);
-      player.start.mockClear();
-      onSeek.mockClear();
-
-      player.currentTime = 1.8;
-      flushFrame();
-      player.currentTime = 0.2;
-      flushFrame();
-      expect(onSeek).toHaveBeenCalledTimes(1);
-      expect(onSeek).toHaveBeenLastCalledWith(0);
-
-      player.currentTime = 1.9;
-      flushFrame();
-      player.currentTime = 0.1;
-      flushFrame();
-
-      expect(onSeek).toHaveBeenCalledTimes(2);
-      expect(player.start).not.toHaveBeenCalled();
     });
 
     it('counts in only before the first loop iteration and not on loop wrap', async () => {

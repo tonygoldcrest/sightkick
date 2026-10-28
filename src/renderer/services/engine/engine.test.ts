@@ -507,4 +507,66 @@ describe('Engine', () => {
 
     expect(player.destroy).toHaveBeenCalledTimes(1);
   });
+
+  it('scores an early hit near the loop seam on the first bar of the loop instead of the post-loop bar and preserves it across wrap', async () => {
+    const preLoopNote = staveNote(['c/5']);
+    const loopStartNote = staveNote(['c/5']);
+    const loopEndBeatNote = staveNote(['f/4']);
+    const postLoopNote = staveNote(['c/5']);
+    const { engine, player } = await setup({
+      renderData: [
+        measureData(
+          0,
+          1920,
+          [rendered(0, preLoopNote)],
+          [{ tick: 0, isRest: false, notes: ['c/5'] } as Note],
+        ),
+        measureData(
+          1920,
+          3840,
+          [rendered(1920, loopStartNote), rendered(3360, loopEndBeatNote)],
+          [
+            { tick: 1920, isRest: false, notes: ['c/5'] } as Note,
+            { tick: 3360, isRest: false, notes: ['f/4'] } as Note,
+          ],
+        ),
+        measureData(
+          3840,
+          5760,
+          [rendered(3840, postLoopNote)],
+          [{ tick: 3840, isRest: false, notes: ['c/5'] } as Note],
+        ),
+      ],
+    });
+
+    engine.setRendererRefs({
+      cursorEl: document.createElement('div'),
+      highlightEls: [],
+    });
+    engine.setMapping({ snare: ['midi:38'] });
+    engine.setLoopRegion({ startTick: 1920, endTick: 3840 });
+    engine.play();
+    await flush();
+
+    player.currentTime = 2.0;
+    advanceClockTo(player, 0.1);
+    emitInput('midi:38');
+    expect(hasClass(loopStartNote, 'vf-note-hit')).toBe(true);
+
+    player.currentTime = 3.96;
+    advanceClockTo(player, 1.96);
+
+    emitInput('midi:38');
+
+    expect(hasClass(postLoopNote, 'vf-note-hit')).toBe(false);
+    expect(hasClass(preLoopNote, 'vf-note-hit')).toBe(false);
+    expect(hasClass(loopStartNote, 'vf-note-hit')).toBe(true);
+
+    player.currentTime = 2.0;
+    advanceClockTo(player, 2.05);
+
+    expect(hasClass(loopStartNote, 'vf-note-hit')).toBe(true);
+    expect(hasClass(preLoopNote, 'vf-note-hit')).toBe(false);
+    expect(hasClass(postLoopNote, 'vf-note-hit')).toBe(false);
+  });
 });

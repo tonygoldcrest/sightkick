@@ -126,6 +126,7 @@ export class Engine {
   }
 
   setLoopRegion(region: LoopRegion | undefined): void {
+    this.judge.setLoopRegion(region);
     this.transport.setLoopRegion(region);
   }
 
