@@ -16,7 +16,7 @@ interface Props extends Omit<ComponentProps<'button'>, 'type'> {
 const TYPE_CLASSES: Record<IconButtonType, string> = {
   default: 'text-text-dim',
   primary: 'text-accent',
-  danger: 'text-red',
+  danger: 'text-(--color-red)',
 };
 const SIZE_CLASSES: Record<IconButtonSize, string> = {
   sm: 'w-3 h-3',

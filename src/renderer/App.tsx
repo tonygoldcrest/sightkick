@@ -9,6 +9,7 @@ import { InputProvider } from './context/InputContext';
 import { SongViewSettingsProvider } from './context/SongViewSettingsContext';
 import { useAppUpdate } from './hooks/useAppUpdate';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { NoteColorsProvider } from './context/NoteColorsContext';
 
 function UpdateNotifier() {
   useAppUpdate();
@@ -25,13 +26,15 @@ export default function App() {
           <AppProvider>
             <InputProvider>
               <SongViewSettingsProvider>
-                <Router>
-                  <Routes>
-                    <Route path="/" element={<SongListView />}>
-                      <Route path=":id" element={<SongView />} />
-                    </Route>
-                  </Routes>
-                </Router>
+                <NoteColorsProvider>
+                  <Router>
+                    <Routes>
+                      <Route path="/" element={<SongListView />}>
+                        <Route path=":id" element={<SongView />} />
+                      </Route>
+                    </Routes>
+                  </Router>
+                </NoteColorsProvider>
               </SongViewSettingsProvider>
             </InputProvider>
           </AppProvider>
