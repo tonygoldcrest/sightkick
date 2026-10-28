@@ -211,4 +211,20 @@ describe('AudioPlayer', () => {
     expect(player.onEnded).toBeNull();
     expect(onEnded).not.toHaveBeenCalled();
   });
+
+  it('applies loop bounds to buffer sources and wraps currentTime across loop passes', async () => {
+    const { player } = await makePlayer();
+
+    player.setLoop({ start: 2, end: 4 });
+    player.start(2);
+
+    context.bufferSources.forEach((source) => {
+      expect(source.loop).toBe(true);
+      expect(source.loopStart).toBe(2);
+      expect(source.loopEnd).toBe(4);
+    });
+
+    context.currentTime = 3.3;
+    expect(player.currentTime).toBeCloseTo(3.3, 5);
+  });
 });

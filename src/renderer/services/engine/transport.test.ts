@@ -23,12 +23,14 @@ type FakeGain = {
 
 const fakeContext = () => {
   const gainNodes: FakeGain[] = [];
+  const bufferSources: { buffer: unknown; starts: number[] }[] = [];
 
   return {
     state: 'running',
     currentTime: 0,
     destination: {},
     gainNodes,
+    bufferSources,
     resume: () => Promise.resolve(),
     createGain: () => {
       const gain = {
@@ -51,13 +53,22 @@ const fakeContext = () => {
 
       return node;
     },
-    createBufferSource: () => ({
-      buffer: undefined,
-      connect: () => {},
-      start: () => {},
-      stop: () => {},
-      addEventListener: () => {},
-    }),
+    createBufferSource: () => {
+      const source = {
+        buffer: undefined,
+        starts: [] as number[],
+        connect: () => {},
+        start: (at = 0) => {
+          source.starts.push(at);
+        },
+        stop: () => {},
+        addEventListener: () => {},
+      };
+
+      bufferSources.push(source);
+
+      return source;
+    },
   };
 };
 
@@ -88,6 +99,8 @@ class MockAudioPlayer {
   });
 
   setMasterVolume = vi.fn();
+
+  setLoop = vi.fn();
 
   playbackSpeed = 1;
 
@@ -123,6 +136,7 @@ type MockPlayer = {
   pause: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
   setMasterVolume: ReturnType<typeof vi.fn>;
+  setLoop: ReturnType<typeof vi.fn>;
   setPlaybackSpeed: ReturnType<typeof vi.fn>;
   playbackSpeed: number;
   destroy: ReturnType<typeof vi.fn>;
@@ -166,7 +180,11 @@ async function flush() {
 }
 
 async function setup(
-  options: Partial<{ trackData: TrackConfig[]; isDev: boolean }> = {},
+  options: Partial<{
+    trackData: TrackConfig[];
+    isDev: boolean;
+    onSeek: (tick: number) => void;
+  }> = {},
   context: Partial<TransportContext> = {},
 ) {
   const onEnded = vi.fn();
@@ -700,38 +718,112 @@ describe('Transport', () => {
       expect(player.start).not.toHaveBeenCalled();
     });
 
-    it('restarts once when a stale ended arrives after the loop already wrapped', async () => {
-      const { engine, player } = await setup();
+    it('forwards the loop window to the audio player and clears it when removed', async () => {
+      const { engine, player } = await setup({}, { delaySeconds: 0.5 });
+
+      engine.setLoopRegion({ startTick: 0, endTick: 1920 });
+
+      expect(player.setLoop).toHaveBeenLastCalledWith({
+        start: expect.closeTo(0.5),
+        end: expect.closeTo(2.5),
+      });
+
+      engine.setLoopRegion(undefined);
+
+      expect(player.setLoop).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it('keeps playing without stopping or restarting when the loop wraps', async () => {
+      const onSeek = vi.fn();
+      const { engine, onEnded, player } = await setup({ onSeek });
 
       engine.setLoopRegion({ startTick: 0, endTick: 1920 });
       engine.playFromTick(0);
       player.start.mockClear();
+      player.stop.mockClear();
+      onSeek.mockClear();
 
-      player.currentTime = 3;
+      player.currentTime = 2.5;
       flushFrame();
       player.onEnded();
 
-      expect(player.start).toHaveBeenCalledTimes(1);
-      expect(player.start).toHaveBeenCalledWith(0);
+      expect(player.start).not.toHaveBeenCalled();
+      expect(player.stop).not.toHaveBeenCalled();
+      expect(engine.getSnapshot().isPlaying).toBe(true);
+      expect(engine.timeStore.get()).toBeCloseTo(0.5);
+      expect(onSeek).toHaveBeenCalledTimes(1);
+      expect(onSeek).toHaveBeenCalledWith(0);
+      expect(onEnded).not.toHaveBeenCalled();
     });
 
-    it('wraps again on each successive pass past the loop end', async () => {
-      const { engine, player } = await setup();
+    it('rewinds the judge on each successive pass past the loop end without restarting', async () => {
+      const onSeek = vi.fn();
+      const { engine, player } = await setup({ onSeek });
 
       engine.setLoopRegion({ startTick: 0, endTick: 1920 });
       engine.playFromTick(0);
       player.start.mockClear();
+      onSeek.mockClear();
 
-      player.currentTime = 3;
+      player.currentTime = 1.8;
       flushFrame();
+      player.currentTime = 0.2;
+      flushFrame();
+      expect(onSeek).toHaveBeenCalledTimes(1);
+      expect(onSeek).toHaveBeenLastCalledWith(0);
+
+      player.currentTime = 1.9;
+      flushFrame();
+      player.currentTime = 0.1;
+      flushFrame();
+
+      expect(onSeek).toHaveBeenCalledTimes(2);
+      expect(player.start).not.toHaveBeenCalled();
+    });
+
+    it('counts in only before the first loop iteration and not on loop wrap', async () => {
+      const { engine, player } = await setup({}, { countInEnabled: true });
+
+      engine.setLoopRegion({ startTick: 0, endTick: 1920 });
+      engine.play();
+
+      expect(engine.getSnapshot().state).toBe('counting-in');
       expect(player.start).toHaveBeenCalledTimes(1);
 
-      player.currentTime = 1;
+      advanceClockTo(player, 2.5);
+      expect(engine.getSnapshot().state).toBe('playing');
+
+      player.start.mockClear();
+      player.currentTime = 1.9;
       flushFrame();
-      player.currentTime = 3;
+      player.currentTime = 0.1;
       flushFrame();
 
-      expect(player.start).toHaveBeenCalledTimes(2);
+      expect(engine.getSnapshot().state).toBe('playing');
+      expect(engine.getSnapshot().isCounting).toBe(false);
+      expect(player.start).not.toHaveBeenCalled();
+    });
+
+    it('schedules click track beats seamlessly across the loop wrap', async () => {
+      const { engine, player } = await setup();
+      const ctx = player.context as unknown as {
+        currentTime: number;
+        bufferSources: { starts: number[] }[];
+      };
+
+      engine.setLoopRegion({ startTick: 0, endTick: 1920 });
+      engine.playFromTick(0);
+
+      for (const t of [0, 0.5, 1.0, 1.5, 1.9, 2.4]) {
+        advanceClockTo(player, t);
+      }
+
+      const clickTimes = ctx.bufferSources.flatMap((s) => s.starts);
+
+      expect(clickTimes).toHaveLength(6);
+      [0, 0.5, 1, 1.5, 2, 2.5].forEach((expected, i) => {
+        expect(clickTimes[i]).toBeCloseTo(expected, 6);
+      });
     });
   });
 

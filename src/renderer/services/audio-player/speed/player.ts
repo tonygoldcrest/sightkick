@@ -1,8 +1,10 @@
 import { SpeedAudioTrack } from './track';
 import { StretchStream } from './stretch-stream';
 import { VoiceGroup } from './build-units';
+import { SYNTHESIS_HOP } from './channel-stretcher';
 import { BaseAudioPlayer } from '../base-player';
 import {
+  LoopWindow,
   SampleBlock,
   SpeedControllableAudioPlayer,
   TrackConfig,
@@ -22,6 +24,11 @@ interface ChunkTarget {
   sampleRate: number;
 }
 
+interface ProducedChunk {
+  blocks: SampleBlock[];
+  sampleCount: number;
+}
+
 export class SpeedAudioPlayer
   extends BaseAudioPlayer<SpeedAudioTrack>
   implements SpeedControllableAudioPlayer
@@ -38,6 +45,8 @@ export class SpeedAudioPlayer
   private scheduledUntil: number = 0;
   private outputProducedSeconds: number = 0;
   private totalOutputSeconds: number = 0;
+  private totalScheduledSamples: number = 0;
+  private loopPass: number = 0;
   private pumping: boolean = false;
   private epoch: number = 0;
 
@@ -83,6 +92,42 @@ export class SpeedAudioPlayer
     this.prepare();
 
     if (resumeAt !== undefined) {
+      void this.start(resumeAt, deferredStart);
+    }
+  }
+
+  setLoop(loop: LoopWindow | undefined) {
+    if (this.loop?.start === loop?.start && this.loop?.end === loop?.end) {
+      return;
+    }
+
+    const running = this.isInitialised && this.context.state === 'running';
+
+    if (!running) {
+      this.loop = loop;
+
+      return;
+    }
+
+    const resumeAt = this.currentTime;
+    const deferredStart =
+      this.startedAt > this.context.currentTime ? this.startedAt : undefined;
+    const scheduledSongEnd =
+      this.offset +
+      (this.totalScheduledSamples / this.context.sampleRate) *
+        this._playbackSpeed;
+    const needsRestart =
+      this.loopPass > 0 ||
+      (loop !== undefined &&
+        loop.end > loop.start &&
+        scheduledSongEnd > loop.end);
+
+    this.loop = loop;
+
+    if (
+      needsRestart &&
+      (!loop || (resumeAt >= loop.start && resumeAt < loop.end))
+    ) {
       void this.start(resumeAt, deferredStart);
     }
   }
@@ -162,13 +207,15 @@ export class SpeedAudioPlayer
     const { sampleRate } = this.context;
 
     this.totalOutputSeconds = this.duration / speed;
+    this.totalScheduledSamples = 0;
+    this.loopPass = 0;
 
     const outputStartSeconds = offset / speed;
 
     this.stream.seek(Math.round(outputStartSeconds * sampleRate));
     this.outputProducedSeconds = outputStartSeconds;
 
-    const firstBlocks = await this.stream.produce(FRAMES_PER_CHUNK);
+    const firstChunk = await this.produceNextChunk(epoch);
 
     if (epoch !== this.epoch) {
       return;
@@ -181,21 +228,109 @@ export class SpeedAudioPlayer
     this.scheduledUntil = startAt;
     this.isInitialised = true;
 
-    if (firstBlocks.length > 0) {
-      this.scheduleBlocks(firstBlocks, this.scheduledUntil);
-
-      const chunkDuration = firstBlocks[0].length / sampleRate;
-
-      this.scheduledUntil += chunkDuration;
-      this.outputProducedSeconds += chunkDuration;
+    if (firstChunk) {
+      this.commitChunk(firstChunk);
     }
 
     this.timer = setInterval(this.pump, SCHEDULER_INTERVAL_MS);
   }
 
-  private scheduleBlocks(blocks: SampleBlock[], at: number) {
+  private async produceNextChunk(
+    epoch: number,
+  ): Promise<ProducedChunk | undefined> {
+    if (!this.hasActiveLoop()) {
+      const blocks = await this.stream.produce(FRAMES_PER_CHUNK);
+
+      if (epoch !== this.epoch || blocks.length === 0) {
+        return undefined;
+      }
+
+      return { blocks, sampleCount: blocks[0].length };
+    }
+
+    const speed = this._playbackSpeed;
+    const { sampleRate } = this.context;
+    const { start, end } = this.loop;
+    const span = end - start;
+    let remainingInPass = this.remainingSamplesInLoopPass(
+      start,
+      end,
+      span,
+      speed,
+      sampleRate,
+    );
+
+    if (remainingInPass <= 0) {
+      this.loopPass += 1;
+      this.stream.seek(Math.round((start / speed) * sampleRate));
+      remainingInPass = this.remainingSamplesInLoopPass(
+        start,
+        end,
+        span,
+        speed,
+        sampleRate,
+      );
+    }
+
+    const maxChunkSamples = FRAMES_PER_CHUNK * SYNTHESIS_HOP;
+    const sampleCount = Math.min(maxChunkSamples, remainingInPass);
+    const frames = Math.max(1, Math.ceil(sampleCount / SYNTHESIS_HOP));
+    const wrapsAtEnd = sampleCount === remainingInPass;
+    const blocks = await this.stream.produce(frames);
+
+    if (epoch !== this.epoch || blocks.length === 0) {
+      return undefined;
+    }
+
+    if (wrapsAtEnd && this.hasActiveLoop()) {
+      this.loopPass += 1;
+      this.stream.seek(
+        Math.round((this.loop.start / this._playbackSpeed) * sampleRate),
+      );
+    }
+
+    return {
+      blocks,
+      sampleCount: Math.min(sampleCount, blocks[0].length),
+    };
+  }
+
+  private remainingSamplesInLoopPass(
+    start: number,
+    end: number,
+    span: number,
+    speed: number,
+    sampleRate: number,
+  ): number {
+    const unwrappedLoopEnd = end + this.loopPass * span;
+    const targetEndSamples = Math.round(
+      ((unwrappedLoopEnd - this.offset) / speed) * sampleRate,
+    );
+
+    return targetEndSamples - this.totalScheduledSamples;
+  }
+
+  private commitChunk({ blocks, sampleCount }: ProducedChunk) {
+    if (sampleCount <= 0) {
+      return;
+    }
+
+    this.scheduleBlocks(blocks, this.scheduledUntil, sampleCount);
+
+    const chunkDuration = sampleCount / this.context.sampleRate;
+
+    this.scheduledUntil += chunkDuration;
+    this.totalScheduledSamples += sampleCount;
+    this.outputProducedSeconds += chunkDuration;
+  }
+
+  private scheduleBlocks(
+    blocks: SampleBlock[],
+    at: number,
+    sampleCount: number,
+  ) {
     this.targets.forEach((target) => {
-      const length = blocks[target.voiceStart].length;
+      const length = Math.min(sampleCount, blocks[target.voiceStart].length);
       const buffer = this.context.createBuffer(
         target.channels,
         length,
@@ -203,7 +338,10 @@ export class SpeedAudioPlayer
       );
 
       for (let channel = 0; channel < target.channels; channel += 1) {
-        buffer.copyToChannel(blocks[target.voiceStart + channel], channel);
+        buffer.copyToChannel(
+          blocks[target.voiceStart + channel].subarray(0, length),
+          channel,
+        );
       }
 
       target.track.scheduleChunk(target.fileIndex, buffer, at);
@@ -224,24 +362,16 @@ export class SpeedAudioPlayer
         epoch === this.epoch &&
         this.isInitialised &&
         this.scheduledUntil < this.context.currentTime + LOOKAHEAD_SECONDS &&
-        this.outputProducedSeconds < this.totalOutputSeconds
+        (this.hasActiveLoop() ||
+          this.outputProducedSeconds < this.totalOutputSeconds)
       ) {
-        const blocks = await this.stream.produce(FRAMES_PER_CHUNK);
+        const chunk = await this.produceNextChunk(epoch);
 
-        if (
-          epoch !== this.epoch ||
-          !this.isInitialised ||
-          blocks.length === 0
-        ) {
+        if (epoch !== this.epoch || !this.isInitialised || !chunk) {
           break;
         }
 
-        this.scheduleBlocks(blocks, this.scheduledUntil);
-
-        const chunkDuration = blocks[0].length / this.context.sampleRate;
-
-        this.scheduledUntil += chunkDuration;
-        this.outputProducedSeconds += chunkDuration;
+        this.commitChunk(chunk);
       }
     } finally {
       this.pumping = false;
@@ -250,6 +380,7 @@ export class SpeedAudioPlayer
     if (
       epoch === this.epoch &&
       this.isInitialised &&
+      !this.hasActiveLoop() &&
       this.outputProducedSeconds >= this.totalOutputSeconds &&
       this.context.currentTime >= this.scheduledUntil
     ) {
@@ -276,16 +407,18 @@ export class SpeedAudioPlayer
     }
 
     const latency = this.context.state === 'running' ? this.outputLatency : 0;
-
-    return Math.min(
-      this.duration,
-      Math.max(
-        this.offset,
-        (this.context.currentTime - this.startedAt) * this._playbackSpeed +
-          this.offset -
-          latency * this._playbackSpeed,
-      ),
+    const unwrapped = Math.max(
+      this.offset,
+      (this.context.currentTime - this.startedAt) * this._playbackSpeed +
+        this.offset -
+        latency * this._playbackSpeed,
     );
+
+    if (this.hasActiveLoop()) {
+      return this.wrapLoopTime(unwrapped);
+    }
+
+    return Math.min(this.duration, unwrapped);
   }
 
   destroy() {

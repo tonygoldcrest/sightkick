@@ -80,6 +80,12 @@ export class FakeGainNode {
 export class FakeBufferSource {
   buffer: unknown = undefined;
 
+  loop = false;
+
+  loopStart = 0;
+
+  loopEnd = 0;
+
   starts: { at: number; offset: number }[] = [];
 
   stopped = false;

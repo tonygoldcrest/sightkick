@@ -1,6 +1,6 @@
 import { DefaultAudioTrack } from './track';
 import { BaseAudioPlayer } from '../base-player';
-import { AudioPlayer, TrackConfig } from '../types';
+import { AudioPlayer, LoopWindow, TrackConfig } from '../types';
 
 export class DefaultAudioPlayer
   extends BaseAudioPlayer<DefaultAudioTrack>
@@ -28,9 +28,35 @@ export class DefaultAudioPlayer
       this.masterGain,
     );
 
+    track.setLoop(this.loop);
     track.endedListener = this.trackEndedListener;
 
     return track;
+  }
+
+  setLoop(loop: LoopWindow | undefined) {
+    if (this.loop?.start === loop?.start && this.loop?.end === loop?.end) {
+      return;
+    }
+
+    const running = this.isInitialised && this.context.state === 'running';
+    const resumeAt = running ? this.currentTime : undefined;
+    const unwrapped =
+      running && this.startedAt >= 0
+        ? this.context.currentTime - this.startedAt + this.offset
+        : 0;
+    const hadWrapped = this.hasActiveLoop() && unwrapped >= this.loop.end;
+
+    this.loop = loop;
+    this.audioTracks.forEach((track) => track.setLoop(loop));
+
+    if (
+      hadWrapped &&
+      resumeAt !== undefined &&
+      (!loop || (resumeAt >= loop.start && resumeAt < loop.end))
+    ) {
+      void this.start(resumeAt);
+    }
   }
 
   async start(offset: number = 0, startAt?: number) {
@@ -66,11 +92,12 @@ export class DefaultAudioPlayer
     }
 
     const latency = this.context.state === 'running' ? this.outputLatency : 0;
-
-    return Math.max(
+    const unwrapped = Math.max(
       this.offset,
       this.context.currentTime - this.startedAt + this.offset - latency,
     );
+
+    return this.wrapLoopTime(unwrapped);
   }
 
   destroy() {

@@ -55,7 +55,8 @@ export class Transport {
   private songStartCtx: number | undefined;
   private raf: number | undefined;
   private loopRegion: LoopRegion | undefined;
-  private loopRestarting = false;
+  private loopBeatOffset = 0;
+  private lastLoopPass = 0;
   private playGeneration = 0;
   private pendingSpeed: number | undefined;
   private disposed = false;
@@ -86,6 +87,7 @@ export class Transport {
     this.beatGrid = context.chart
       ? getBeatGrid(context.measures, context.chart)
       : [];
+    this.syncPlayerLoop();
   }
 
   setClickSettings(volume: number, tone: number): void {
@@ -136,7 +138,15 @@ export class Transport {
   }
 
   private applyPlaybackSpeed(speed: number): void {
+    const changed =
+      this.speedPlayer !== undefined &&
+      speed !== this.speedPlayer.playbackSpeed;
+
     this.speedPlayer?.setPlaybackSpeed(speed);
+
+    if (changed && this.state === 'playing') {
+      this.resyncClickScheduling(this.position);
+    }
   }
 
   private flushPendingSpeed(): void {
@@ -150,15 +160,22 @@ export class Transport {
 
   setLoopRegion(region: LoopRegion | undefined): void {
     const previous = this.loopRegion;
+    const unchanged =
+      previous?.startTick === region?.startTick &&
+      previous?.endTick === region?.endTick;
 
     this.loopRegion = region;
+    this.syncPlayerLoop();
 
-    if (
-      !region ||
-      (previous &&
-        previous.startTick === region.startTick &&
-        previous.endTick === region.endTick)
-    ) {
+    if (unchanged) {
+      return;
+    }
+
+    if (!region) {
+      if (this.state === 'playing') {
+        this.resyncClickScheduling(this.position);
+      }
+
       return;
     }
 
@@ -172,10 +189,37 @@ export class Transport {
     const endTime = this.tickToTime(region.endTick);
 
     if (this.position >= startTime && this.position < endTime) {
+      if (this.state === 'playing') {
+        this.resyncClickScheduling(this.position);
+      }
+
       return;
     }
 
     this.playFromTick(region.startTick);
+  }
+
+  private syncPlayerLoop(): void {
+    if (!this.audioPlayer) {
+      return;
+    }
+
+    if (!this.loopRegion || !this.chart) {
+      this.audioPlayer.setLoop?.(undefined);
+
+      return;
+    }
+
+    this.audioPlayer.setLoop?.({
+      start: this.tickToTime(this.loopRegion.startTick),
+      end: this.tickToTime(this.loopRegion.endTick),
+    });
+  }
+
+  private resyncClickScheduling(songTime: number): void {
+    this.clickTrack?.clearPending();
+    this.nextBeatIndex = this.firstBeatIndexAtOrAfter(songTime);
+    this.loopBeatOffset = 0;
   }
 
   subscribe = (listener: () => void): (() => void) => {
@@ -381,6 +425,8 @@ export class Transport {
     this.clickTrack?.cancelGain();
     this.countIn = undefined;
     this.songStartCtx = undefined;
+    this.loopBeatOffset = 0;
+    this.lastLoopPass = 0;
   }
 
   setStemVolume(name: string, gain: number): void {
@@ -433,6 +479,7 @@ export class Transport {
         this.speedPlayer = isSpeedControllable(player) ? player : undefined;
         this.clickTrack = new ClickTrack(player.context);
         this.clickTrack.setTone(this.clickTone);
+        this.syncPlayerLoop();
         this.emit();
       })
       .catch(() => {
@@ -455,8 +502,7 @@ export class Transport {
       }
 
       if (this.state === 'playing' && this.audioPlayer?.isInitialised) {
-        this.setPosition(this.audioPlayer.currentTime);
-        this.checkLoop();
+        this.updatePlaybackPosition();
       }
 
       this.scheduleClicks();
@@ -468,27 +514,50 @@ export class Transport {
     this.raf = requestAnimationFrame(poll);
   }
 
-  private checkLoop(): void {
-    if (!this.loopRegion || !this.audioPlayer) {
+  private updatePlaybackPosition(): void {
+    if (!this.audioPlayer) {
       return;
     }
 
+    const rawTime = this.audioPlayer.currentTime;
+
+    if (!this.loopRegion) {
+      this.setPosition(rawTime);
+
+      return;
+    }
+
+    const startTime = this.tickToTime(this.loopRegion.startTick);
     const endTime = this.tickToTime(this.loopRegion.endTick);
+    const span = endTime - startTime;
 
-    if (this.audioPlayer.currentTime >= endTime) {
-      this.restartLoop();
-    } else {
-      this.loopRestarting = false;
-    }
-  }
+    if (span <= 0) {
+      this.setPosition(rawTime);
 
-  private restartLoop(): void {
-    if (this.loopRestarting || !this.loopRegion) {
       return;
     }
 
-    this.loopRestarting = true;
-    this.playFromTick(this.loopRegion.startTick);
+    if (rawTime >= endTime) {
+      const pass = Math.floor((rawTime - startTime) / span);
+      const wrappedTime = startTime + ((rawTime - startTime) % span);
+
+      if (pass > this.lastLoopPass) {
+        this.lastLoopPass = pass;
+        this.onSeekCb(this.loopRegion.startTick);
+      }
+
+      this.setPosition(wrappedTime);
+
+      return;
+    }
+
+    this.lastLoopPass = 0;
+
+    if (rawTime < this.position) {
+      this.onSeekCb(this.loopRegion.startTick);
+    }
+
+    this.setPosition(rawTime);
   }
 
   private scheduleClicks(): void {
@@ -502,10 +571,38 @@ export class Transport {
 
     const ctx = this.audioPlayer.context;
     const horizon = ctx.currentTime + LOOKAHEAD_SECONDS;
+    const loopStartTime = this.loopRegion
+      ? this.tickToTime(this.loopRegion.startTick)
+      : undefined;
+    const loopEndTime = this.loopRegion
+      ? this.tickToTime(this.loopRegion.endTick)
+      : undefined;
+    const loopSpan =
+      loopStartTime !== undefined && loopEndTime !== undefined
+        ? loopEndTime - loopStartTime
+        : 0;
+    const loopStartBeatIndex =
+      loopStartTime !== undefined && loopSpan > 0
+        ? this.firstBeatIndexAtOrAfter(loopStartTime)
+        : 0;
+    const loopEndBeatIndex =
+      loopEndTime !== undefined && loopSpan > 0
+        ? this.firstBeatIndexAtOrAfter(loopEndTime)
+        : this.beatGrid.length;
+    const canWrapBeats =
+      this.loopRegion !== undefined &&
+      loopSpan > 0 &&
+      loopEndBeatIndex > loopStartBeatIndex;
 
-    while (this.nextBeatIndex < this.beatGrid.length) {
+    while (this.nextBeatIndex < loopEndBeatIndex || canWrapBeats) {
+      if (this.nextBeatIndex >= loopEndBeatIndex) {
+        this.nextBeatIndex = loopStartBeatIndex;
+        this.loopBeatOffset += loopSpan;
+      }
+
       const beat = this.beatGrid[this.nextBeatIndex];
-      const songTime = beat.timeSeconds + this.delaySeconds;
+      const songTime =
+        beat.timeSeconds + this.delaySeconds + this.loopBeatOffset;
       const contextTime = this.audioPlayer.contextTimeForSongTime(songTime);
 
       if (contextTime > horizon) {
@@ -541,8 +638,6 @@ export class Transport {
 
   private handleEnded(): void {
     if (this.loopRegion) {
-      this.restartLoop();
-
       return;
     }
 

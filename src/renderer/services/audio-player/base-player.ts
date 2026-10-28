@@ -1,5 +1,5 @@
 import { BaseAudioTrack } from './base-track';
-import { TrackConfig } from './types';
+import { LoopWindow, TrackConfig } from './types';
 import { trimTrailingSilence } from './helpers';
 
 export abstract class BaseAudioPlayer<TTrack extends BaseAudioTrack> {
@@ -11,6 +11,7 @@ export abstract class BaseAudioPlayer<TTrack extends BaseAudioTrack> {
   isInitialised: boolean = false;
   protected startedAt: number = -1;
   protected offset: number = 0;
+  protected loop: LoopWindow | undefined;
   protected getMinDurationSeconds: () => number;
 
   constructor(
@@ -78,6 +79,20 @@ export abstract class BaseAudioPlayer<TTrack extends BaseAudioTrack> {
     }
 
     return this.startedAt + (songTime - this.offset);
+  }
+
+  protected hasActiveLoop(): this is { loop: LoopWindow } {
+    return this.loop !== undefined && this.loop.end > this.loop.start;
+  }
+
+  protected wrapLoopTime(unwrapped: number): number {
+    if (!this.hasActiveLoop() || unwrapped < this.loop.end) {
+      return unwrapped;
+    }
+
+    const span = this.loop.end - this.loop.start;
+
+    return this.loop.start + ((unwrapped - this.loop.start) % span);
   }
 
   abstract get currentTime(): number;

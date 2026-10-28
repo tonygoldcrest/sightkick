@@ -10,6 +10,11 @@ export interface AudioTrackHandle {
   setVolume(gain: number): void;
 }
 
+export interface LoopWindow {
+  start: number;
+  end: number;
+}
+
 export interface AudioPlayer {
   ready: Promise<unknown>;
   context: AudioContext;
@@ -21,6 +26,7 @@ export interface AudioPlayer {
   stop(): void;
   pause(): void;
   setMasterVolume(volume: number): void;
+  setLoop?(loop: LoopWindow | undefined): void;
   contextTimeForSongTime(songTime: number): number;
   destroy(): void;
 }

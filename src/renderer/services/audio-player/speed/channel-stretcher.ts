@@ -4,7 +4,9 @@ import { lockPhases, principalArgument } from './phase';
 import { SampleBlock } from '../types';
 
 const FFT_SIZE = 2048;
-const SYNTHESIS_HOP = FFT_SIZE / 4;
+
+export const SYNTHESIS_HOP = FFT_SIZE / 4;
+
 const PHASE_LOCKING = true;
 const TWO_PI = 2 * Math.PI;
 

@@ -198,4 +198,63 @@ describe('SpeedAudioPlayer', () => {
     expect(onEnded).toHaveBeenCalledTimes(1);
     expect(player.isInitialised).toBe(false);
   });
+
+  it('schedules loop iterations back-to-back with zero gap and wraps currentTime', async () => {
+    const onEnded = vi.fn();
+    const { player, stream } = await makePlayer(onEnded);
+
+    player.setLoop({ start: 1, end: 2 });
+    await player.start(1);
+
+    await vi.advanceTimersByTimeAsync(150);
+
+    expect(stream.seek).toHaveBeenCalledWith(
+      Math.round(1 * context.sampleRate),
+    );
+    expect(stream.seek.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    const chunks = context.bufferSources.map((source) => {
+      const buf = source.buffer as { length: number };
+
+      return {
+        at: source.starts[0].at,
+        duration: buf.length / context.sampleRate,
+      };
+    });
+
+    expect(chunks.length).toBeGreaterThanOrEqual(3);
+
+    for (let i = 1; i < chunks.length; i += 1) {
+      expect(chunks[i].at).toBeCloseTo(
+        chunks[i - 1].at + chunks[i - 1].duration,
+        6,
+      );
+    }
+
+    context.currentTime = 0.1 + 1.3;
+    expect(player.currentTime).toBeCloseTo(1.3, 5);
+
+    context.currentTime = 0.1 + 2.7;
+    expect(player.currentTime).toBeCloseTo(1.7, 5);
+    expect(onEnded).not.toHaveBeenCalled();
+  });
+
+  it('rebases playback from the wrapped position when loop is cleared after wrapping', async () => {
+    const { player, stream } = await makePlayer();
+
+    player.setLoop({ start: 1, end: 2 });
+    await player.start(1);
+    await vi.advanceTimersByTimeAsync(150);
+
+    context.currentTime = 0.1 + 1.4;
+    stream.seek.mockClear();
+
+    player.setLoop(undefined);
+    await flush();
+
+    expect(stream.seek).toHaveBeenCalledWith(
+      Math.round(1.4 * context.sampleRate),
+    );
+    expect(player.currentTime).toBeCloseTo(1.4, 5);
+  });
 });
