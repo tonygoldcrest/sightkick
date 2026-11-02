@@ -2,7 +2,7 @@ import { RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { App } from 'antd';
 import { Difficulty, parseChartFile } from 'scan-chart';
 import { ChartParser } from '../../chart-parser/parser';
-import { renderMusic } from '../../chart-parser/renderer';
+import { renderMusic, TARGET_ROW_WIDTH } from '../../chart-parser/renderer';
 import { ParsedChart, RenderData } from '../../chart-parser/types';
 import { SHEET_MUSIC_COLORS } from '../constants';
 import { StemDirection } from '../types';
@@ -18,6 +18,7 @@ interface UseSheetMusicParams {
   enableColors: boolean;
   showTempo: boolean;
   stemDirection: StemDirection;
+  rowWidth?: number;
 }
 
 interface UseSheetMusicResult {
@@ -38,6 +39,7 @@ export function useSheetMusic({
   enableColors,
   showTempo,
   stemDirection,
+  rowWidth = TARGET_ROW_WIDTH,
 }: UseSheetMusicParams): UseSheetMusicResult {
   const { notification } = App.useApp();
   const vexflowContainerRef = useRef<HTMLDivElement>(null);
@@ -89,9 +91,17 @@ export function useSheetMusic({
         enableColors,
         showTempo,
         stemDirection,
+        rowWidth,
       ),
     );
-  }, [parsedMidi, showBarNumbers, enableColors, showTempo, stemDirection]);
+  }, [
+    parsedMidi,
+    showBarNumbers,
+    enableColors,
+    showTempo,
+    stemDirection,
+    rowWidth,
+  ]);
 
   return {
     chart,

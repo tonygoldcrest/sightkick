@@ -1,4 +1,7 @@
 @import 'tailwindcss';
+
+@custom-variant short (@media (max-height: 860px));
+@custom-variant narrow (@media (max-width: 1100px));
 @import './styles/fonts.css';
 @import './styles/theme.css';
 @import './styles/sheet-music.css';

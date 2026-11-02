@@ -21,20 +21,28 @@ export function Playback({
   const currentTime = useThrottledCurrentTime(timeStore);
 
   return (
-    <div className="flex items-center grow gap-5">
-      <div className="text-xs text-text-muted">{formatTime(currentTime)}</div>
+    <div className="flex items-center grow gap-5 min-w-0">
+      <div className="shrink-0 text-xs text-text-muted">
+        {formatTime(currentTime)}
+      </div>
       {allowScrubbing ? (
         <Slider
-          className="grow"
+          className="grow min-w-0"
           disabled={disabled}
           tooltip={{ open: false }}
           value={(currentTime / duration) * 100}
           onChange={onChange}
         />
       ) : (
-        <Progress percent={(currentTime / duration) * 100} showInfo={false} />
+        <Progress
+          className="grow min-w-0"
+          percent={(currentTime / duration) * 100}
+          showInfo={false}
+        />
       )}
-      <div className="text-xs text-text-muted">{formatTime(duration)}</div>
+      <div className="shrink-0 text-xs text-text-muted">
+        {formatTime(duration)}
+      </div>
     </div>
   );
 }

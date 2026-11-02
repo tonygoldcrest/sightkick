@@ -454,6 +454,11 @@ describe('packRows', () => {
     expect(packRows([TARGET_ROW_WIDTH + 400, 300])).toEqual([[0], [1]]);
   });
 
+  it('packs to a narrower target when the page is smaller than the design width', () => {
+    expect(packRows([400, 400, 400], 700)).toEqual([[0], [1], [2]]);
+    expect(packRows([400, 300], 700)).toEqual([[0, 1]]);
+  });
+
   it('breaks on the two-measure cap before the width limit', () => {
     expect(packRows([100, 100, 100])).toEqual([[0, 1], [2]]);
   });
