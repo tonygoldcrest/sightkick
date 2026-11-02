@@ -16,6 +16,7 @@ import { AppUpdater } from './AppUpdater';
 import { loadSong } from './ipc/loadSong';
 import { loadSongList } from './ipc/loadSongList';
 import { downloadSong } from './ipc/downloadSong';
+import { deleteSong } from './ipc/deleteSong';
 import { checkStemTools, checkStemToolsUpdate } from './ipc/checkStemTools';
 import { downloadStemTools, cancelStemTools } from './ipc/downloadStemTools';
 import { deleteStemTools } from './ipc/deleteStemTools';
@@ -78,7 +79,19 @@ class AppState {
             return new Response('Forbidden', { status: 403 });
           }
 
-          return net.fetch(pathToFileURL(filePath).toString());
+          // Forward Range so <audio> can seek. Without it, a mid-song preview
+          // request is answered from byte 0 and playback starts at the beginning.
+          const headers = new Headers();
+          const range = request.headers.get('range');
+
+          if (range) {
+            headers.set('range', range);
+          }
+
+          return net.fetch(pathToFileURL(filePath).toString(), {
+            method: request.method,
+            headers,
+          });
         });
         this.setupIpc();
         this.createWindow();
@@ -100,6 +113,7 @@ class AppState {
     ipcMain.on('load-song-list', loadSongList);
     ipcMain.on('rescan-songs', rescanSongs);
     ipcMain.on('download-song', downloadSong);
+    ipcMain.on('delete-song', deleteSong);
 
     ipcMain.on('check-stem-tools', checkStemTools);
     ipcMain.on('check-stem-tools-update', checkStemToolsUpdate);

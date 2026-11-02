@@ -21,6 +21,11 @@ export interface SongListProps {
   scrollKey?: string;
   downloadingDisabled: boolean;
   focusedIndex?: number;
+  previewableIds?: Set<string>;
+  previewingId?: string | null;
+  onPreview?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onCharterClick?: (charter: string) => void;
 }
 
 const LOAD_MORE_THRESHOLD = 2;
@@ -40,6 +45,11 @@ export function SongList({
   onSplit,
   onLoadMore,
   focusedIndex,
+  previewableIds,
+  previewingId,
+  onPreview,
+  onDelete,
+  onCharterClick,
 }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -109,6 +119,11 @@ export function SongList({
                 splitting={splittingIds.has(songData.id)}
                 downloadingDisabled={downloadingDisabled}
                 focused={virtualItem.index === focusedIndex}
+                canPreview={previewableIds?.has(songData.id)}
+                previewing={previewingId === songData.id}
+                onPreview={onPreview}
+                onDelete={onDelete}
+                onCharterClick={onCharterClick}
               />
             </div>
           );

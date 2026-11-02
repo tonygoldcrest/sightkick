@@ -1,4 +1,4 @@
-import { Button, Divider, Input } from 'antd';
+import { Button, Input } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faGlobe, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { cn } from '../../cn';
@@ -42,8 +42,14 @@ export function SongFilter({
   ] as const;
 
   return (
-    <div className={cn('grow', className)}>
+    <div
+      className={cn(
+        'flex min-w-0 grow flex-wrap items-center gap-2',
+        className,
+      )}
+    >
       <Input
+        className="min-w-40 grow basis-52"
         prefix={
           <FontAwesomeIcon icon={faSearch} color="var(--color-text-dim)" />
         }
@@ -53,66 +59,60 @@ export function SongFilter({
         onChange={(event) => {
           onChangeFilter(event.target.value);
         }}
-        suffix={
-          <div className="flex gap-1 items-center">
-            <div className="text-text-faint text-[13.5px]">
-              {filteredSongsCount} results
-            </div>
-
-            <Divider vertical />
-
-            <Tooltip
-              title={
-                <div>
-                  <p>
-                    Each song comes with several versions of its drum part, from
-                    Easy (simplified) to Expert (the real thing).
-                  </p>
-                  <br />
-                  <p>
-                    Pick the one you want to play. If a song disappears, it just
-                    doesn&apos;t include that version.
-                  </p>
-                </div>
-              }
-            >
-              <div className="flex gap-2">
-                {ALL_DIFFICULTIES.map((d) => (
-                  <Button
-                    key={d}
-                    className="grow capitalize"
-                    type={difficulty === d ? 'primary' : 'default'}
-                    data-testid={`difficulty-${d}`}
-                    onClick={() => setDifficulty(d)}
-                  >
-                    {d}
-                  </Button>
-                ))}
-              </div>
-            </Tooltip>
-
-            <Divider vertical />
-
-            <div className="flex gap-2 items-center">
-              {options.map((option) => (
-                <Tooltip
-                  key={option.value}
-                  title={option.tooltipText}
-                  placement="bottomLeft"
-                >
-                  <Button
-                    className="grow"
-                    type={libraryMode === option.value ? 'primary' : 'default'}
-                    icon={option.icon}
-                    data-testid={`mode-${option.value}`}
-                    onClick={() => onChangeLibraryMode(option.value)}
-                  ></Button>
-                </Tooltip>
-              ))}
-            </div>
-          </div>
-        }
       />
+
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="text-text-faint text-[13.5px] whitespace-nowrap">
+          {filteredSongsCount} results
+        </div>
+
+        <Tooltip
+          title={
+            <div>
+              <p>
+                Each song comes with several versions of its drum part, from
+                Easy (simplified) to Expert (the real thing).
+              </p>
+              <br />
+              <p>
+                Pick the one you want to play. If a song disappears, it just
+                doesn&apos;t include that version.
+              </p>
+            </div>
+          }
+        >
+          <div className="flex gap-2">
+            {ALL_DIFFICULTIES.map((d) => (
+              <Button
+                key={d}
+                className="capitalize"
+                type={difficulty === d ? 'primary' : 'default'}
+                data-testid={`difficulty-${d}`}
+                onClick={() => setDifficulty(d)}
+              >
+                {d}
+              </Button>
+            ))}
+          </div>
+        </Tooltip>
+
+        <div className="flex gap-2 items-center">
+          {options.map((option) => (
+            <Tooltip
+              key={option.value}
+              title={option.tooltipText}
+              placement="bottomLeft"
+            >
+              <Button
+                type={libraryMode === option.value ? 'primary' : 'default'}
+                icon={option.icon}
+                data-testid={`mode-${option.value}`}
+                onClick={() => onChangeLibraryMode(option.value)}
+              />
+            </Tooltip>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -165,8 +165,37 @@ export function useSongList() {
     [songList],
   );
   const addSong = useCallback((song: Song) => {
-    setSongList((prev) => [...prev, song]);
+    setSongList((prev) =>
+      prev.some((item) => item.id === song.id) ? prev : [...prev, song],
+    );
   }, []);
+  const deleteSong = useCallback((id: string) => {
+    window.electron.ipcRenderer.sendMessage('delete-song', id);
+  }, []);
+
+  useEffect(() => {
+    return window.electron.ipcRenderer.on<{
+      success: boolean;
+      id: string;
+      error?: string;
+    }>('delete-song', ({ success, id, error }) => {
+      if (success) {
+        setSongList((prev) => prev.filter((song) => song.id !== id));
+        notification.success({
+          title: 'Removed from your library',
+          placement: 'bottomRight',
+        });
+
+        return;
+      }
+
+      notification.error({
+        title: "Couldn't remove that song",
+        description: error,
+        placement: 'bottomRight',
+      });
+    });
+  }, [notification]);
 
   return {
     songList,
@@ -176,5 +205,6 @@ export function useSongList() {
     handleSplit,
     handleLikeChange,
     addSong,
+    deleteSong,
   };
 }

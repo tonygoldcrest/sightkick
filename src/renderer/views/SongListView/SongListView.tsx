@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Spin } from 'antd';
 import { Outlet, useNavigate, useOutlet } from 'react-router-dom';
 import { SongFilter } from '../../components/SongFilter';
@@ -13,12 +13,16 @@ import { StemToolsProvider } from '../../context/StemToolsContext';
 import { useStemTools } from '../../hooks/useStemTools';
 import { useSongList } from '../../hooks/useSongList';
 import { useDownload } from '../../hooks/useDownload';
+import { useSongPreview } from '../../hooks/useSongPreview';
+import { SongPlaylistProvider } from '../../context/SongPlaylistContext';
+import { isTypingTarget } from '../../input';
 import { useSongFilter } from '../../hooks/useSongFilter';
 import { useInputControls } from '../../hooks/useInputControls';
 import { useGameModeSelector } from '../../hooks/useGameModeSelector';
 import {
   nextDifficulty,
   nextSongIndex,
+  neighborSongId,
   sortForFocusedIndex,
   sortIndexForKey,
   toggledSortForIndex,
@@ -39,6 +43,7 @@ export function SongListView() {
     handleSplit,
     handleLikeChange,
     addSong,
+    deleteSong,
   } = useSongList();
   const scanPercent =
     scanProgress && scanProgress.total > 0
@@ -60,6 +65,39 @@ export function SongListView() {
   const { downloadingIds, handleDownload } = useDownload(
     onlineResults,
     addSong,
+  );
+  const { previewingId, togglePreview, stopPreview } = useSongPreview();
+  const previewableIds = useMemo(
+    () =>
+      new Set(
+        songList.filter((song) => song.audio.length > 0).map((song) => song.id),
+      ),
+    [songList],
+  );
+  const handlePreview = useCallback(
+    (id: string) => {
+      const song = songList.find((item) => item.id === id);
+
+      if (!song || song.audio.length === 0) {
+        return;
+      }
+
+      const mix = song.audio.find((track) => track.name === 'song');
+      const sources = mix ? [mix.src] : song.audio.map((track) => track.src);
+
+      togglePreview(id, sources);
+    },
+    [songList, togglePreview],
+  );
+  const handleDelete = useCallback(
+    (id: string) => {
+      if (previewingId === id) {
+        stopPreview();
+      }
+
+      deleteSong(id);
+    },
+    [previewingId, stopPreview, deleteSong],
   );
   const [focusedSongIndex, setFocusedSongIndex] = useState<number | undefined>(
     undefined,
@@ -103,6 +141,13 @@ export function SongListView() {
 
     if (next) {
       setSort(next);
+    }
+  };
+  const searchCharter = (charter: string) => {
+    setNameFilter(charter);
+
+    if (libraryMode !== 'online') {
+      setLibraryMode('online');
     }
   };
   const openSort = () => {
@@ -171,94 +216,211 @@ export function SongListView() {
     !songOpen && !gameModeSelector.isOpen,
   );
 
+  const playlistIds = useMemo(
+    () =>
+      (libraryMode === 'local' ? filteredSongList : songList).map(
+        (song) => song.id,
+      ),
+    [libraryMode, filteredSongList, songList],
+  );
+  const previewNeighbor = useCallback(
+    (delta: 1 | -1) => {
+      if (!previewingId) {
+        return false;
+      }
+
+      const nextId = neighborSongId(playlistIds, previewingId, delta);
+
+      if (!nextId) {
+        return false;
+      }
+
+      const nextIndex = playlistIds.indexOf(nextId);
+
+      setFocusedSongIndex(nextIndex === -1 ? undefined : nextIndex);
+      handlePreview(nextId);
+
+      return true;
+    },
+    [previewingId, playlistIds, handlePreview],
+  );
+  const wheelLockRef = useRef(0);
+
+  useEffect(() => {
+    if (
+      songOpen ||
+      libraryMode !== 'local' ||
+      !previewingId ||
+      isSortOpen ||
+      gameModeSelector.isOpen
+    ) {
+      return undefined;
+    }
+
+    const onKey = (event: KeyboardEvent) => {
+      if (
+        event.repeat ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        isTypingTarget(event.target) ||
+        (event.code !== 'ArrowUp' && event.code !== 'ArrowDown')
+      ) {
+        return;
+      }
+
+      const moved = previewNeighbor(event.code === 'ArrowDown' ? 1 : -1);
+
+      if (!moved) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    const onWheel = (event: WheelEvent) => {
+      if (
+        isTypingTarget(event.target) ||
+        (event.deltaMode === 0 && Math.abs(event.deltaY) < 10) ||
+        Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      ) {
+        return;
+      }
+
+      const now = Date.now();
+
+      if (now - wheelLockRef.current < 280) {
+        event.preventDefault();
+
+        return;
+      }
+
+      const moved = previewNeighbor(event.deltaY > 0 ? 1 : -1);
+
+      if (!moved) {
+        return;
+      }
+
+      wheelLockRef.current = now;
+      event.preventDefault();
+    };
+
+    window.addEventListener('keydown', onKey, true);
+    window.addEventListener('wheel', onWheel, {
+      capture: true,
+      passive: false,
+    });
+
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('wheel', onWheel, true);
+    };
+  }, [
+    songOpen,
+    libraryMode,
+    previewingId,
+    isSortOpen,
+    gameModeSelector.isOpen,
+    previewNeighbor,
+  ]);
+
   return (
-    <StemToolsProvider value={stemTools}>
-      {gameModeSelector.element}
+    <SongPlaylistProvider ids={playlistIds}>
+      <StemToolsProvider value={stemTools}>
+        {gameModeSelector.element}
 
-      <div className="h-screen flex flex-col bg-bg">
-        <div
-          className="border-b border-divider p-4 z-10 flex flex-col gap-4"
-          style={{ background: 'var(--gradient-header)' }}
-        >
-          <div className="flex gap-2 items-center narrow:flex-wrap">
-            <SongFilter
-              className="narrow:min-w-full"
-              nameFilter={nameFilter}
-              onChangeFilter={setNameFilter}
-              difficulty={difficulty}
-              setDifficulty={setDifficulty}
-              filteredSongsCount={
-                libraryMode === 'online' && onlineTotal !== undefined
-                  ? onlineTotal
-                  : filteredSongList.length
-              }
-              libraryMode={libraryMode}
-              onChangeLibraryMode={setLibraryMode}
-            />
-            <SortButton
-              sort={sort}
-              disabled={!sortAvailable}
-              onSortChange={setSort}
-              isOpen={isSortOpen}
-              onOpenChange={setIsSortOpen}
-              focusedIndex={isSortOpen ? focusedSortIndex : undefined}
-            />
-            <SettingsButton page="song-list" scanPercent={scanPercent} />
-          </div>
-          <SplittingQueue
-            splittingIds={splittingIds}
-            splitProgress={splitProgress}
-            songList={songList}
-          />
-        </div>
-
-        <div className="relative grow overflow-hidden w-full flex">
-          <div className="relative w-full max-w-250 grow overflow-hidden mx-auto bg-bg flex flex-col">
-            {filteredSongList.length > 0 ||
-            (libraryMode === 'online' && onlineLoading) ? (
-              <SongList
-                songList={filteredSongList}
-                scrollKey={nameFilter}
-                downloadingIds={downloadingIds}
-                downloadingDisabled={currentPath === null}
+        <div className="h-screen flex flex-col bg-bg">
+          <div
+            className="border-b border-divider p-4 z-10 flex flex-col gap-4"
+            style={{ background: 'var(--gradient-header)' }}
+          >
+            <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
+              <SongFilter
+                className="min-w-0"
+                nameFilter={nameFilter}
+                onChangeFilter={setNameFilter}
                 difficulty={difficulty}
-                onClickSong={(id) => {
-                  if (libraryMode === 'local') {
-                    play(id);
-                  }
-                }}
-                downloadedIds={
-                  libraryMode === 'online'
-                    ? new Set(songList.map((s) => s.id))
-                    : undefined
+                setDifficulty={setDifficulty}
+                filteredSongsCount={
+                  libraryMode === 'online' && onlineTotal !== undefined
+                    ? onlineTotal
+                    : filteredSongList.length
                 }
-                splittingIds={splittingIds}
-                onSplit={handleSplit}
-                onDownload={handleDownload}
-                onLikeChange={handleLikeChange}
-                onLoadMore={libraryMode === 'online' ? loadMore : undefined}
-                focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
-              />
-            ) : (
-              <EmptySongState
                 libraryMode={libraryMode}
-                hasFolder={currentPath !== null}
-                hasSongs={songList.length > 0}
+                onChangeLibraryMode={setLibraryMode}
               />
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <SortButton
+                  sort={sort}
+                  disabled={!sortAvailable}
+                  onSortChange={setSort}
+                  isOpen={isSortOpen}
+                  onOpenChange={setIsSortOpen}
+                  focusedIndex={isSortOpen ? focusedSortIndex : undefined}
+                />
+                <SettingsButton page="song-list" scanPercent={scanPercent} />
+              </div>
+            </div>
+            <SplittingQueue
+              splittingIds={splittingIds}
+              splitProgress={splitProgress}
+              songList={songList}
+            />
+          </div>
+
+          <div className="relative grow overflow-hidden w-full flex">
+            <div className="relative w-full max-w-250 grow overflow-hidden mx-auto bg-bg flex flex-col">
+              {filteredSongList.length > 0 ||
+              (libraryMode === 'online' && onlineLoading) ? (
+                <SongList
+                  songList={filteredSongList}
+                  scrollKey={nameFilter}
+                  downloadingIds={downloadingIds}
+                  downloadingDisabled={currentPath === null}
+                  difficulty={difficulty}
+                  onClickSong={(id) => {
+                    if (libraryMode === 'local') {
+                      play(id);
+                    }
+                  }}
+                  downloadedIds={
+                    libraryMode === 'online'
+                      ? new Set(songList.map((s) => s.id))
+                      : undefined
+                  }
+                  splittingIds={splittingIds}
+                  onSplit={handleSplit}
+                  onDownload={handleDownload}
+                  onLikeChange={handleLikeChange}
+                  onLoadMore={libraryMode === 'online' ? loadMore : undefined}
+                  previewableIds={previewableIds}
+                  previewingId={previewingId}
+                  onPreview={handlePreview}
+                  onDelete={handleDelete}
+                  onCharterClick={searchCharter}
+                  focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
+                />
+              ) : (
+                <EmptySongState
+                  libraryMode={libraryMode}
+                  hasFolder={currentPath !== null}
+                  hasSongs={songList.length > 0}
+                />
+              )}
+            </div>
+
+            {libraryMode === 'online' && onlineLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none z-10">
+                <Spin size="large" />
+              </div>
             )}
           </div>
 
-          {libraryMode === 'online' && onlineLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none z-10">
-              <Spin size="large" />
-            </div>
-          )}
+          <div className="fixed inset-0 pointer-events-none z-100">
+            <Outlet />
+          </div>
         </div>
-
-        <div className="fixed inset-0 pointer-events-none z-100">
-          <Outlet />
-        </div>
-      </div>
-    </StemToolsProvider>
+      </StemToolsProvider>
+    </SongPlaylistProvider>
   );
 }

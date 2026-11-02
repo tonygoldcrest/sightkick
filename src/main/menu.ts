@@ -12,7 +12,7 @@ export default class MenuBuilder {
     this.mainWindow = mainWindow;
   }
 
-  buildMenu(): Menu {
+  buildMenu(): Menu | null {
     if (
       process.env.NODE_ENV === 'development' ||
       process.env.DEBUG_PROD === 'true'
@@ -20,11 +20,13 @@ export default class MenuBuilder {
       this.setupDevelopmentEnvironment();
     }
 
-    const template =
-      process.platform === 'darwin'
-        ? this.buildDarwinTemplate()
-        : this.buildDefaultTemplate();
-    const menu = Menu.buildFromTemplate(template);
+    if (process.platform !== 'darwin') {
+      Menu.setApplicationMenu(null);
+
+      return null;
+    }
+
+    const menu = Menu.buildFromTemplate(this.buildDarwinTemplate());
 
     Menu.setApplicationMenu(menu);
 
@@ -95,28 +97,5 @@ export default class MenuBuilder {
     };
 
     return [subMenuAbout, subMenuEdit, subMenuWindow];
-  }
-
-  buildDefaultTemplate() {
-    const templateDefault = [
-      {
-        label: '&File',
-        submenu: [
-          {
-            label: '&Open',
-            accelerator: 'Ctrl+O',
-          },
-          {
-            label: '&Close',
-            accelerator: 'Ctrl+W',
-            click: () => {
-              this.mainWindow.close();
-            },
-          },
-        ],
-      },
-    ];
-
-    return templateDefault;
   }
 }

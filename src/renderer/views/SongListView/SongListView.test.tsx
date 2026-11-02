@@ -42,6 +42,7 @@ describe('SongListView — loading the library', () => {
     expect(screen.getByText('Name a')).toBeInTheDocument();
     expect(screen.getByText('Name b')).toBeInTheDocument();
     expect(screen.getByText('2 results')).toBeInTheDocument();
+    expect(screen.getAllByTestId('preview-button')).toHaveLength(2);
   });
 
   it('guides to select a folder when none is chosen', () => {
@@ -227,6 +228,28 @@ describe('SongListView — opening a song', () => {
   });
 });
 
+describe('SongListView — local library', () => {
+  it('removes a song without opening its folder', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a'), makeListSong('b')]);
+    view.openSongMenu('a');
+    fireEvent.click(screen.getByText('Remove from library'));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    expect(view.ipc.sent).toContainEqual({
+      channel: 'delete-song',
+      args: ['a'],
+    });
+    expect(view.sentChannels()).not.toContain('open-song-directory');
+
+    view.emit('delete-song', { success: true, id: 'a' });
+
+    expect(screen.queryByTestId('song-item-a')).not.toBeInTheDocument();
+    expect(screen.getByTestId('song-item-b')).toBeInTheDocument();
+  });
+});
+
 describe('SongListView — stem splitting', () => {
   it('queues a split, shows progress, then reports success', () => {
     const view = setupSongListView();
@@ -324,9 +347,35 @@ describe('SongListView — online mode', () => {
     });
 
     expect(
-      within(screen.getByTestId('song-item-x')).getByTestId(
+      within(screen.getByTestId('song-item-x')).getByTestId('preview-button'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('song-item-x')).queryByTestId(
         'downloaded-indicator',
       ),
+    ).not.toBeInTheDocument();
+  });
+
+  it('removes a downloaded song from the library', async () => {
+    const view = setupSongListView({ online: [makeEnchorChart('x')] });
+
+    view.loadSongs([makeListSong('x')], '/music');
+    view.selectMode('online');
+
+    await screen.findByText('Name x');
+    fireEvent.click(
+      within(screen.getByTestId('song-item-x')).getByTestId('delete-song'),
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+
+    expect(
+      view.ipc.sent.some((message) => message.channel === 'delete-song'),
+    ).toBe(true);
+
+    view.emit('delete-song', { success: true, id: 'x' });
+
+    expect(
+      within(screen.getByTestId('song-item-x')).getByTestId('download-button'),
     ).toBeInTheDocument();
   });
 
@@ -431,6 +480,113 @@ describe('SongListView — settings', () => {
     fireEvent.click(screen.getByTestId('cancel-stem-tools'));
 
     expect(view.sentChannels()).toContain('cancel-stem-tools');
+  });
+});
+
+describe('SongListView — preview arrows', () => {
+  it('previews the song above or below while a preview is playing', async () => {
+    class PreviewAudio {
+      src: string;
+      duration = 20;
+      paused = true;
+      readyState = 1;
+      preload = 'none';
+      currentTime = 0;
+
+      constructor(src?: string) {
+        this.src = src ?? '';
+      }
+
+      addEventListener() {}
+
+      removeEventListener() {}
+
+      play() {
+        this.paused = false;
+
+        return Promise.resolve();
+      }
+
+      pause() {
+        this.paused = true;
+      }
+
+      removeAttribute() {}
+
+      load() {}
+    }
+
+    vi.stubGlobal('Audio', PreviewAudio);
+
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a'), makeListSong('b'), makeListSong('c')]);
+    fireEvent.click(
+      within(screen.getByTestId('song-item-a')).getByTestId('preview-button'),
+    );
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('song-item-a')).getByTestId('preview-button'),
+      ).toHaveAttribute('aria-label', 'Stop preview');
+    });
+
+    view.typeKey('ArrowDown');
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('song-item-b')).getByTestId('preview-button'),
+      ).toHaveAttribute('aria-label', 'Stop preview');
+    });
+
+    view.typeKey('ArrowUp');
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('song-item-a')).getByTestId('preview-button'),
+      ).toHaveAttribute('aria-label', 'Stop preview');
+    });
+
+    fireEvent.wheel(window, { deltaY: 120 });
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('song-item-b')).getByTestId('preview-button'),
+      ).toHaveAttribute('aria-label', 'Stop preview');
+    });
+  });
+});
+
+describe('SongListView — charter search', () => {
+  it('opens the global search for that charter', async () => {
+    const view = setupSongListView({ online: [makeEnchorChart('x')] });
+
+    view.loadSongs([makeListSong('a', { charter: 'MrDrummerboy97' })]);
+    fireEvent.click(screen.getByTestId('charter-link'));
+
+    expect(screen.getByTestId('song-search')).toHaveValue('MrDrummerboy97');
+    expect(screen.getByTestId('mode-online').className).toContain(
+      'ant-btn-primary',
+    );
+
+    expect(await screen.findByText('Name x')).toBeInTheDocument();
+  });
+
+  it('stays on the global search when a charter there is clicked', async () => {
+    const view = setupSongListView({
+      online: [makeEnchorChart('x', { charter: 'Harmonix' })],
+    });
+
+    view.loadSongs([], '/music');
+    view.selectMode('online');
+
+    await screen.findByText('Name x');
+    fireEvent.click(screen.getByTestId('charter-link'));
+
+    expect(screen.getByTestId('song-search')).toHaveValue('Harmonix');
+    expect(screen.getByTestId('mode-online').className).toContain(
+      'ant-btn-primary',
+    );
   });
 });
 

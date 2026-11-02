@@ -33,6 +33,7 @@ export interface SheetMusicProps {
   onSelectMeasure: (measure: Measure, event: MouseEvent) => void;
   enableColors: boolean;
   showReference: boolean;
+  onShowReferenceChange?: (show: boolean) => void;
   zoom: number;
   onRowWidth?: (width: number) => void;
 }
@@ -50,6 +51,7 @@ export function SheetMusic({
   onPracticeRangeChange,
   onSelectMeasure,
   showReference,
+  onShowReferenceChange,
   enableColors,
   zoom,
   onRowWidth,
@@ -280,8 +282,16 @@ export function SheetMusic({
         </div>
       </div>
 
-      {enableColors && showReference && (
-        <Reference className="fixed bottom-4 left-1/2 z-20 max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-wrap justify-center short:bottom-2" />
+      {enableColors && (
+        <Reference
+          hidden={!showReference}
+          onHiddenChange={
+            onShowReferenceChange
+              ? (hidden) => onShowReferenceChange(!hidden)
+              : undefined
+          }
+          className="fixed bottom-4 left-1/2 z-20 -translate-x-1/2 short:bottom-2"
+        />
       )}
     </div>
   );

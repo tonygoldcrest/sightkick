@@ -2,7 +2,7 @@ import { SngStream } from '@eliwhite/parse-sng';
 import path from 'path';
 import fs from 'fs';
 import { appState } from '../AppState';
-import { StorageSchema } from '../../types';
+import { Song, StorageSchema } from '../../types';
 import {
   buildSongFromDir,
   isUnderDirectory,
@@ -17,6 +17,22 @@ type Props = {
   artist: string;
   charter: string;
 };
+
+function adoptDownloadedSong(outputDir: string, md5: string): Song | null {
+  const songData = buildSongFromDir(outputDir, { id: md5 });
+
+  if (!songData) {
+    return null;
+  }
+
+  writeSongIdFile(outputDir, md5);
+  appState.store.set(`songs.${md5}`, songData);
+
+  return toSong({
+    ...songData,
+    updatedAt: fs.statSync(outputDir).mtime.toISOString(),
+  });
+}
 
 export async function downloadSong(
   event: Electron.IpcMainEvent,
@@ -44,7 +60,32 @@ export async function downloadSong(
     const outputDir = path.join(lastOpenedPath, folderName);
     const songs = (appState.store.get('songs') as StorageSchema['songs']) ?? {};
 
-    if (songs[md5] || fs.existsSync(outputDir)) {
+    if (songs[md5]) {
+      event.reply('download-song', {
+        success: false,
+        md5,
+        alreadyExists: true,
+      });
+
+      return;
+    }
+
+    // The folder can already be on disk when another copy of the app unpacked
+    // it, or when a previous attempt wrote the files and never saved the index.
+    // Adopt that folder so the song shows up in this library.
+    if (fs.existsSync(outputDir)) {
+      const adopted = adoptDownloadedSong(outputDir, md5);
+
+      if (adopted) {
+        event.reply('download-song', {
+          success: true,
+          md5,
+          song: adopted,
+        });
+
+        return;
+      }
+
       event.reply('download-song', {
         success: false,
         md5,

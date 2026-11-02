@@ -4,13 +4,19 @@ import {
   faDownload,
   faSpinner,
   faCheck,
+  faPlay,
+  faPause,
+  faTrash,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import appIcon from '../../../../assets/icon.png';
+import { stripColorMarkup } from '../../../colorMarkup';
 import { Song } from '../../../types';
 import { cn } from '../../cn';
-import { Button, Tooltip } from 'antd';
-import { useMemo } from 'react';
+import { Button, Popconfirm, Tooltip } from 'antd';
+import { popoverStyles } from '../../overlayStyles';
+import { useEffect, useMemo, useState } from 'react';
+import { NARROW_TITLE_MAX, shortenTitle } from './shortenTitle';
 import { SongMenu } from '../SongMenu';
 import { Stars } from '../Stars';
 import { IconButton } from '../IconButton';
@@ -31,6 +37,82 @@ export interface SongListItemProps {
   downloaded?: boolean;
   downloadingDisabled: boolean;
   focused?: boolean;
+  canPreview?: boolean;
+  previewing?: boolean;
+  onPreview?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onCharterClick?: (charter: string) => void;
+}
+
+const NARROW_WINDOW = '(max-width: 1100px)';
+
+function useNarrowWindow(): boolean {
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia(NARROW_WINDOW).matches
+      : false,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia(NARROW_WINDOW);
+    const update = () => setNarrow(media.matches);
+
+    update();
+    media.addEventListener('change', update);
+
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  return narrow;
+}
+
+function RemoveButton({ onConfirm }: { onConfirm: () => void }) {
+  return (
+    <Popconfirm
+      title="Remove this song from your library?"
+      description="The files will be deleted from your folder."
+      okText="Remove"
+      cancelText="Cancel"
+      okButtonProps={{ danger: true }}
+      placement="left"
+      icon={null}
+      styles={popoverStyles}
+      onConfirm={onConfirm}
+    >
+      <IconButton
+        data-testid="delete-song"
+        aria-label="Remove from library"
+        icon={faTrash}
+        type="danger"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      />
+    </Popconfirm>
+  );
+}
+
+function PreviewButton({
+  playing,
+  onClick,
+}: {
+  playing: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <IconButton
+      data-testid="preview-button"
+      aria-label={playing ? 'Stop preview' : 'Preview song'}
+      icon={playing ? faPause : faPlay}
+      type={playing ? 'primary' : 'default'}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onClick();
+      }}
+    />
+  );
 }
 
 export function SongListItem({
@@ -45,9 +127,17 @@ export function SongListItem({
   onSplit,
   downloadingDisabled,
   focused,
+  canPreview,
+  previewing,
+  onPreview,
+  onDelete,
+  onCharterClick,
 }: SongListItemProps) {
   const local = 'source' in songData ? undefined : songData;
   const { albumCover, id, name, artist, charter, drumDifficulty } = songData;
+  const charterLabel = charter ? stripColorMarkup(charter) : '';
+  const narrow = useNarrowWindow();
+  const displayName = narrow ? shortenTitle(name, NARROW_TITLE_MAX) : name;
   const score = useMemo(() => {
     const result = local?.scoreData?.[difficulty];
 
@@ -67,6 +157,7 @@ export function SongListItem({
             canSplit={(local.audio?.length ?? 0) === 1}
             splitting={splitting}
             onSplit={() => onSplit(id)}
+            onDelete={() => onDelete?.(id)}
           />
 
           <IconButton
@@ -110,16 +201,35 @@ export function SongListItem({
       );
     }
 
+    if (downloading) {
+      return (
+        <FontAwesomeIcon
+          className="text-text-dim px-1.5"
+          size="xl"
+          icon={faSpinner}
+          spin
+          data-testid="downloading-indicator"
+        />
+      );
+    }
+
     return (
-      <FontAwesomeIcon
-        className={cn(downloading ? 'text-text-dim' : 'text-accent', 'px-1.5')}
-        size="xl"
-        icon={downloading ? faSpinner : faCheck}
-        spin={downloading}
-        data-testid={
-          downloading ? 'downloading-indicator' : 'downloaded-indicator'
-        }
-      />
+      <div className="flex items-center gap-2">
+        {onPreview && canPreview ? (
+          <PreviewButton
+            playing={Boolean(previewing)}
+            onClick={() => onPreview(id)}
+          />
+        ) : (
+          <FontAwesomeIcon
+            className="text-accent px-1.5"
+            size="xl"
+            icon={faCheck}
+            data-testid="downloaded-indicator"
+          />
+        )}
+        {onDelete && <RemoveButton onConfirm={() => onDelete(id)} />}
+      </div>
     );
   }, [
     downloading,
@@ -131,6 +241,10 @@ export function SongListItem({
     downloadingDisabled,
     onSplit,
     splitting,
+    onPreview,
+    onDelete,
+    canPreview,
+    previewing,
   ]);
 
   return (
@@ -149,30 +263,65 @@ export function SongListItem({
           },
         )}
       >
-        <div className="flex items-center">
-          <img
-            src={albumCover ?? appIcon}
-            onError={(e) => {
-              e.currentTarget.src = appIcon;
-            }}
-            className="h-15 w-auto object-contain aspect-square rounded-lg shadow-frame"
-          />
+        <div className="flex min-w-0 flex-1 items-center overflow-hidden">
+          <div className="relative h-15 w-15 shrink-0">
+            <img
+              src={albumCover ?? appIcon}
+              onError={(e) => {
+                e.currentTarget.src = appIcon;
+              }}
+              className="h-15 w-15 object-cover aspect-square rounded-lg shadow-frame"
+            />
+            {local && onPreview && canPreview && (
+              <button
+                type="button"
+                data-testid="preview-button"
+                aria-label={previewing ? 'Stop preview' : 'Preview song'}
+                className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full border-0 bg-bg/90 text-text shadow-frame cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onPreview(id);
+                }}
+              >
+                <FontAwesomeIcon
+                  icon={previewing ? faPause : faPlay}
+                  size="sm"
+                />
+              </button>
+            )}
+          </div>
 
-          <div className="ml-2">
-            <div className="text-[18px] font-bold mb-1 text-text-body font-display">
-              {name}
+          <div className="ml-2 min-w-0">
+            <div
+              className="text-[18px] font-bold mb-1 text-text-body font-display truncate"
+              title={name}
+            >
+              {displayName}
             </div>
-            <div className="text-text-muted font-ui text-sm">{artist}</div>
+            <div className="text-text-muted font-ui text-sm truncate">
+              {artist}
+            </div>
           </div>
         </div>
 
-        <div className="flex ml-auto items-center gap-5">
-          {charter && (
-            <div className="flex items-end flex-col">
+        <div className="ml-auto flex shrink-0 items-center gap-5">
+          {charterLabel && (
+            <div className="flex shrink-0 flex-col items-end">
               <div className="text-text-dim text-xs">charter</div>
-              <div className="text-text-muted text-sm mt-1">
-                {charter.replace(/<\S+?>/g, '')}
-              </div>
+              <button
+                type="button"
+                data-testid="charter-link"
+                title={`Search charts by ${charterLabel}`}
+                className="mt-1 max-w-40 truncate border-0 bg-transparent p-0 text-left text-sm text-text-muted cursor-pointer hover:text-accent hover:underline"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onCharterClick?.(charterLabel);
+                }}
+              >
+                {charterLabel}
+              </button>
             </div>
           )}
 
