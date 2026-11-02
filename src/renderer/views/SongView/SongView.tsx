@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { TARGET_ROW_WIDTH } from '../../../chart-parser/renderer';
 import { App, Button, Divider, InputNumber, Layout, Spin, Switch } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -59,6 +60,10 @@ export function SongView() {
   const policy = useMemo(() => resolveModePolicy(gameMode), [gameMode]);
   const navigate = useNavigate();
   const { fileData, format, songData, trackData } = useSongLoader(id);
+  const [rowWidth, setRowWidth] = useState(TARGET_ROW_WIDTH);
+  const handleRowWidth = useCallback((width: number) => {
+    setRowWidth((current) => (Math.abs(current - width) < 4 ? current : width));
+  }, []);
   const { chart, parsedMidi, renderData, vexflowContainerRef } = useSheetMusic({
     fileData,
     format,
@@ -69,6 +74,7 @@ export function SongView() {
     showBarNumbers: isDev && showBarNumbers,
     enableColors,
     showTempo,
+    rowWidth,
   });
   const measures = useMemo(
     () => renderData.map((rd) => rd.measure),
@@ -306,10 +312,11 @@ export function SongView() {
         scoreData={scoreData}
       />
       <div
-        className="flex items-center p-4 gap-5"
+        className="flex flex-wrap items-center p-4 gap-5 min-w-0 short:gap-3 short:px-3 short:py-2 narrow:gap-3 narrow:px-3 narrow:py-2"
         style={{ background: 'var(--gradient-header)' }}
       >
         <Button
+          className="shrink-0"
           icon={<FontAwesomeIcon icon={faArrowLeft} />}
           data-testid="back-button"
           onClick={() => {
@@ -321,6 +328,7 @@ export function SongView() {
         />
 
         <Button
+          className="shrink-0 w-[50px]! h-[50px]! short:w-11! short:h-11! narrow:w-11! narrow:h-11!"
           type="primary"
           icon={<FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />}
           loading={audioLoading}
@@ -342,35 +350,36 @@ export function SongView() {
           }}
           shape="circle"
           size="large"
-          style={{ width: 50, height: 50 }}
         />
 
-        <div>
-          <div className="text-text-body font-ui text-[18px]">
+        <div className="min-w-0 narrow:flex-1">
+          <div className="text-text-body font-ui text-[18px] truncate">
             {songData?.name}
           </div>
-          <div className="text-text-faint flex items-center gap-1">
-            <div>{songData?.artist}</div>
+          <div className="text-text-faint flex items-center gap-1 min-w-0">
+            <div className="truncate">{songData?.artist}</div>
             <div>·</div>
             <div className="capitalize">{difficulty}</div>
           </div>
         </div>
 
-        <Playback
-          timeStore={timeStore}
-          disabled={!isReady}
-          duration={duration}
-          allowScrubbing={isDev || policy.allowScrubbing}
-          onChange={(value) => {
-            if (!isReady) {
-              return;
-            }
+        <div className="contents narrow:flex narrow:basis-full narrow:order-last narrow:min-w-0">
+          <Playback
+            timeStore={timeStore}
+            disabled={!isReady}
+            duration={duration}
+            allowScrubbing={isDev || policy.allowScrubbing}
+            onChange={(value) => {
+              if (!isReady) {
+                return;
+              }
 
-            seekSeconds((value / 100) * duration);
-          }}
-        />
+              seekSeconds((value / 100) * duration);
+            }}
+          />
+        </div>
         {(policy.speedControl || policy.looping) && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {policy.speedControl && (
               <div className="flex gap-2 items-center">
                 <div className="text-text-faint">Speed:</div>
@@ -417,35 +426,37 @@ export function SongView() {
             )}
           </div>
         )}
-        <SettingsButton
-          page="song-view"
-          volumeSliders={volumeSliders}
-          gameMode={gameMode}
-          clickControls={
-            <ClickControls
-              volume={clickVolume}
-              onVolumeChange={setClickVolume}
-              tone={clickTone}
-              onToneChange={setClickTone}
-            />
-          }
-          masterVolumeControl={
-            <AudioVolume
-              name="Master"
-              volume={masterVolume}
-              onChange={handleMasterChange}
-              canSolo={false}
-              onMuteClick={handleMasterMute}
-              isMuted={isMasterMuted}
-            />
-          }
-          onExportPdf={onExportPdf}
-          isExporting={isExporting}
-        />
+        <div className="shrink-0">
+          <SettingsButton
+            page="song-view"
+            volumeSliders={volumeSliders}
+            gameMode={gameMode}
+            clickControls={
+              <ClickControls
+                volume={clickVolume}
+                onVolumeChange={setClickVolume}
+                tone={clickTone}
+                onToneChange={setClickTone}
+              />
+            }
+            masterVolumeControl={
+              <AudioVolume
+                name="Master"
+                volume={masterVolume}
+                onChange={handleMasterChange}
+                canSolo={false}
+                onMuteClick={handleMasterMute}
+                isMuted={isMasterMuted}
+              />
+            }
+            onExportPdf={onExportPdf}
+            isExporting={isExporting}
+          />
+        </div>
       </div>
 
       <div className="relative grow flex min-h-0">
-        <Content className="grow p-6 m-0 overflow-auto flex flex-col items-center font-display text-ink">
+        <Content className="grow p-6 m-0 overflow-auto flex flex-col items-center font-display text-ink short:px-3 short:pt-3 short:pb-20 narrow:px-3 narrow:pt-3">
           {songData && chart && parsedMidi && (
             <SheetMusic
               engine={engine}
@@ -458,6 +469,7 @@ export function SongView() {
               songData={songData}
               isDev={isDev}
               zoom={zoom}
+              onRowWidth={handleRowWidth}
               enableColors={enableColors}
               showReference={showReference}
               vexflowContainerRef={vexflowContainerRef}

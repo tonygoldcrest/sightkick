@@ -180,8 +180,9 @@ export function SongListView() {
           className="border-b border-divider p-4 z-10 flex flex-col gap-4"
           style={{ background: 'var(--gradient-header)' }}
         >
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center narrow:flex-wrap">
             <SongFilter
+              className="narrow:min-w-full"
               nameFilter={nameFilter}
               onChangeFilter={setNameFilter}
               difficulty={difficulty}
