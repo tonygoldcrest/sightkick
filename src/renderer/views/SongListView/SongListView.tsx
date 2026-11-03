@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Spin } from 'antd';
 import { Outlet, useNavigate, useOutlet } from 'react-router-dom';
 import { SongFilter } from '../../components/SongFilter';
@@ -13,6 +13,7 @@ import { StemToolsProvider } from '../../context/StemToolsContext';
 import { useStemTools } from '../../hooks/useStemTools';
 import { useSongList } from '../../hooks/useSongList';
 import { useDownload } from '../../hooks/useDownload';
+import { useSongPreview } from '../../hooks/useSongPreview';
 import { useSongFilter } from '../../hooks/useSongFilter';
 import { useInputControls } from '../../hooks/useInputControls';
 import { useGameModeSelector } from '../../hooks/useGameModeSelector';
@@ -60,6 +61,29 @@ export function SongListView() {
   const { downloadingIds, handleDownload } = useDownload(
     onlineResults,
     addSong,
+  );
+  const { previewingId, togglePreview, stopPreview } = useSongPreview();
+  const previewableIds = useMemo(
+    () =>
+      new Set(
+        songList.filter((song) => song.audio.length > 0).map((song) => song.id),
+      ),
+    [songList],
+  );
+  const handlePreview = useCallback(
+    (id: string) => {
+      const song = songList.find((item) => item.id === id);
+
+      if (!song || song.audio.length === 0) {
+        return;
+      }
+
+      const mix = song.audio.find((track) => track.name === 'song');
+      const sources = mix ? [mix.src] : song.audio.map((track) => track.src);
+
+      togglePreview(id, sources);
+    },
+    [songList, togglePreview],
   );
   const [focusedSongIndex, setFocusedSongIndex] = useState<number | undefined>(
     undefined,
@@ -121,6 +145,7 @@ export function SongListView() {
     const gameMode = await gameModeSelector.open();
 
     if (gameMode) {
+      stopPreview();
       navigate(`/${id}?gameMode=${gameMode}`);
     }
   };
@@ -236,6 +261,9 @@ export function SongListView() {
                 onDownload={handleDownload}
                 onLikeChange={handleLikeChange}
                 onLoadMore={libraryMode === 'online' ? loadMore : undefined}
+                previewableIds={previewableIds}
+                previewingId={previewingId}
+                onPreview={handlePreview}
                 focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
               />
             ) : (

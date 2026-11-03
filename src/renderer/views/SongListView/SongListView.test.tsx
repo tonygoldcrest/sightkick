@@ -42,6 +42,7 @@ describe('SongListView — loading the library', () => {
     expect(screen.getByText('Name a')).toBeInTheDocument();
     expect(screen.getByText('Name b')).toBeInTheDocument();
     expect(screen.getByText('2 results')).toBeInTheDocument();
+    expect(screen.getAllByTestId('preview-button')).toHaveLength(2);
   });
 
   it('guides to select a folder when none is chosen', () => {
@@ -324,10 +325,64 @@ describe('SongListView — online mode', () => {
     });
 
     expect(
-      within(screen.getByTestId('song-item-x')).getByTestId(
-        'downloaded-indicator',
-      ),
+      within(screen.getByTestId('song-item-x')).getByTestId('preview-button'),
     ).toBeInTheDocument();
+  });
+
+  it('stops the preview when practice or perform is opened', async () => {
+    class PreviewAudio {
+      src: string;
+      duration = 20;
+      paused = true;
+      readyState = 1;
+      preload = 'none';
+      currentTime = 0;
+
+      constructor(src?: string) {
+        this.src = src ?? '';
+      }
+
+      addEventListener() {}
+
+      removeEventListener() {}
+
+      play() {
+        this.paused = false;
+
+        return Promise.resolve();
+      }
+
+      pause() {
+        this.paused = true;
+      }
+
+      removeAttribute() {}
+
+      load() {}
+    }
+
+    vi.stubGlobal('Audio', PreviewAudio);
+
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a')]);
+    fireEvent.click(
+      within(screen.getByTestId('song-item-a')).getByTestId('preview-button'),
+    );
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('song-item-a')).getByTestId('preview-button'),
+      ).toHaveAttribute('aria-label', 'Stop preview');
+    });
+
+    view.clickSong('a');
+    view.chooseGameMode('perform');
+
+    expect(await screen.findByTestId('song-view-stub')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('song-item-a')).getByTestId('preview-button'),
+    ).toHaveAttribute('aria-label', 'Preview song');
   });
 
   it('reports a failed download', async () => {

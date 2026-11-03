@@ -78,7 +78,19 @@ class AppState {
             return new Response('Forbidden', { status: 403 });
           }
 
-          return net.fetch(pathToFileURL(filePath).toString());
+          // Forward Range so <audio> can seek. Without it, a mid-song preview
+          // request is answered from byte 0 and playback starts at the beginning.
+          const headers = new Headers();
+          const range = request.headers.get('range');
+
+          if (range) {
+            headers.set('range', range);
+          }
+
+          return net.fetch(pathToFileURL(filePath).toString(), {
+            method: request.method,
+            headers,
+          });
         });
         this.setupIpc();
         this.createWindow();
