@@ -21,6 +21,7 @@ export interface SongListProps {
   scrollKey?: string;
   downloadingDisabled: boolean;
   focusedIndex?: number;
+  onDelete?: (id: string) => void;
 }
 
 const LOAD_MORE_THRESHOLD = 2;
@@ -40,6 +41,7 @@ export function SongList({
   onSplit,
   onLoadMore,
   focusedIndex,
+  onDelete,
 }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -109,6 +111,7 @@ export function SongList({
                 splitting={splittingIds.has(songData.id)}
                 downloadingDisabled={downloadingDisabled}
                 focused={virtualItem.index === focusedIndex}
+                onDelete={onDelete}
               />
             </div>
           );

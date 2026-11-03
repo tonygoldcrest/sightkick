@@ -9,6 +9,7 @@ const meta: Meta<typeof SongMenuContent> = {
     splitting: false,
     onOpenDirectory: () => {},
     onSplit: () => {},
+    onDelete: () => {},
   },
   argTypes: {
     showSplit: { control: 'boolean' },

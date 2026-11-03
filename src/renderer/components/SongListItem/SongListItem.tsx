@@ -4,12 +4,14 @@ import {
   faDownload,
   faSpinner,
   faCheck,
+  faTrash,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import appIcon from '../../../../assets/icon.png';
 import { Song } from '../../../types';
 import { cn } from '../../cn';
-import { Button, Tooltip } from 'antd';
+import { Button, Popconfirm, Tooltip } from 'antd';
+import { popoverStyles } from '../../overlayStyles';
 import { useMemo } from 'react';
 import { SongMenu } from '../SongMenu';
 import { Stars } from '../Stars';
@@ -31,6 +33,34 @@ export interface SongListItemProps {
   downloaded?: boolean;
   downloadingDisabled: boolean;
   focused?: boolean;
+  onDelete?: (id: string) => void;
+}
+
+function RemoveButton({ onConfirm }: { onConfirm: () => void }) {
+  return (
+    <Popconfirm
+      title="Remove this song from your library?"
+      description="The files will be deleted from your folder."
+      okText="Remove"
+      cancelText="Cancel"
+      okButtonProps={{ danger: true }}
+      placement="left"
+      icon={null}
+      styles={popoverStyles}
+      onConfirm={onConfirm}
+    >
+      <IconButton
+        data-testid="delete-song"
+        aria-label="Remove from library"
+        icon={faTrash}
+        type="danger"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      />
+    </Popconfirm>
+  );
 }
 
 export function SongListItem({
@@ -45,6 +75,7 @@ export function SongListItem({
   onSplit,
   downloadingDisabled,
   focused,
+  onDelete,
 }: SongListItemProps) {
   const local = 'source' in songData ? undefined : songData;
   const { albumCover, id, name, artist, charter, drumDifficulty } = songData;
@@ -67,6 +98,7 @@ export function SongListItem({
             canSplit={(local.audio?.length ?? 0) === 1}
             splitting={splitting}
             onSplit={() => onSplit(id)}
+            onDelete={() => onDelete?.(id)}
           />
 
           <IconButton
@@ -111,15 +143,23 @@ export function SongListItem({
     }
 
     return (
-      <FontAwesomeIcon
-        className={cn(downloading ? 'text-text-dim' : 'text-accent', 'px-1.5')}
-        size="xl"
-        icon={downloading ? faSpinner : faCheck}
-        spin={downloading}
-        data-testid={
-          downloading ? 'downloading-indicator' : 'downloaded-indicator'
-        }
-      />
+      <div className="flex items-center gap-2">
+        <FontAwesomeIcon
+          className={cn(
+            downloading ? 'text-text-dim' : 'text-accent',
+            'px-1.5',
+          )}
+          size="xl"
+          icon={downloading ? faSpinner : faCheck}
+          spin={downloading}
+          data-testid={
+            downloading ? 'downloading-indicator' : 'downloaded-indicator'
+          }
+        />
+        {!downloading && onDelete && (
+          <RemoveButton onConfirm={() => onDelete(id)} />
+        )}
+      </div>
     );
   }, [
     downloading,
@@ -131,6 +171,7 @@ export function SongListItem({
     downloadingDisabled,
     onSplit,
     splitting,
+    onDelete,
   ]);
 
   return (

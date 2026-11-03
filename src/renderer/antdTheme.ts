@@ -50,7 +50,8 @@ export const antdTheme: ThemeConfig = {
       colorBorderDisabled: themedark.color.surfaceRaised,
       colorTextDisabled: themedark.color.textFaint,
       primaryShadow: 'none',
-      dangerColor: themedark.color.red,
+      // Label color on a solid danger button. The fill is colorError, so this stays light.
+      dangerColor: themedark.color.text,
       colorBgContainer: themedark.color.surface,
       colorBorder: themedark.color.border,
       colorBgContainerDisabled: themedark.control.iconButtonBg,
