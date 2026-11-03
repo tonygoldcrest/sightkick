@@ -454,7 +454,7 @@ describe('practice mode', () => {
     const view = setupSongView({
       route: '/song-1?gameMode=practice',
       keyboard: {
-        controls: { right: ['keyboard:ArrowRight'] },
+        controls: { right: ['keyboard:KeyL'] },
       },
     });
 
@@ -464,7 +464,7 @@ describe('practice mode', () => {
       view.measureHighlights().some((el) => el.hasAttribute('data-focused')),
     ).toBe(false);
 
-    await view.pressKey('ArrowRight');
+    await view.pressKey('KeyL');
 
     expect(
       view.measureHighlights().some((el) => el.hasAttribute('data-focused')),
@@ -474,13 +474,13 @@ describe('practice mode', () => {
   it('advances the measure focus with repeated navigation', async () => {
     const view = setupSongView({
       route: '/song-1?gameMode=practice',
-      keyboard: { controls: { right: ['keyboard:ArrowRight'] } },
+      keyboard: { controls: { right: ['keyboard:KeyL'] } },
     });
 
     await view.loadSong();
 
-    await view.pressKey('ArrowRight');
-    await view.pressKey('ArrowRight');
+    await view.pressKey('KeyL');
+    await view.pressKey('KeyL');
 
     const focused = view
       .measureHighlights()
@@ -494,7 +494,7 @@ describe('practice mode', () => {
       route: '/song-1?gameMode=practice',
       keyboard: {
         controls: {
-          right: ['keyboard:ArrowRight'],
+          right: ['keyboard:KeyL'],
           confirm: ['keyboard:Enter'],
           back: ['keyboard:Escape'],
         },
@@ -503,13 +503,13 @@ describe('practice mode', () => {
 
     await view.loadSong();
 
-    await view.pressKey('ArrowRight');
+    await view.pressKey('KeyL');
     await view.pressKey('Enter');
 
     expect(screen.getByText('Looping Section')).toBeInTheDocument();
     expect(screen.getByText('Measure 1')).toBeInTheDocument();
 
-    await view.pressKey('ArrowRight');
+    await view.pressKey('KeyL');
 
     expect(screen.getByText('Measure 1 - 2')).toBeInTheDocument();
 
@@ -785,6 +785,50 @@ describe('the playback time display', () => {
 
     await waitFor(() => {
       expect(view.currentTimeText()).toBe('00:04');
+    });
+  });
+});
+
+describe('song to song arrows', () => {
+  it('opens the next song with the right arrow', async () => {
+    const view = setupSongView({
+      route: '/song-1?gameMode=practice',
+      playlist: ['song-1', 'song-2'],
+    });
+
+    await view.loadSong();
+    await view.pressKey('ArrowRight');
+
+    expect(view.ipc.sent).toContainEqual({
+      channel: 'load-song',
+      args: ['song-2'],
+    });
+  });
+
+  it('returns to the start with the left arrow, then opens the previous song', async () => {
+    const view = setupSongView({
+      route: '/song-1?gameMode=practice',
+      playlist: ['song-0', 'song-1', 'song-2'],
+    });
+
+    await view.loadSong();
+    view.seekToEnd();
+
+    await waitFor(() => {
+      expect(view.currentTimeText()).toBe('00:04');
+    });
+
+    await view.pressKey('ArrowLeft');
+
+    await waitFor(() => {
+      expect(view.currentTimeText()).toBe('00:00');
+    });
+
+    await view.pressKey('ArrowLeft');
+
+    expect(view.ipc.sent).toContainEqual({
+      channel: 'load-song',
+      args: ['song-0'],
     });
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  neighborSongId,
   nextDifficulty,
   nextSongIndex,
   sortForFocusedIndex,
@@ -30,6 +31,25 @@ describe('nextSongIndex', () => {
   it('returns 0 for an empty list', () => {
     expect(nextSongIndex(undefined, 0, 1)).toBe(0);
     expect(nextSongIndex(3, 0, -1)).toBe(0);
+  });
+});
+
+describe('neighborSongId', () => {
+  const ids = ['a', 'b', 'c'];
+
+  it('returns the song on either side', () => {
+    expect(neighborSongId(ids, 'b', 1)).toBe('c');
+    expect(neighborSongId(ids, 'b', -1)).toBe('a');
+  });
+
+  it('stops at the ends of the list', () => {
+    expect(neighborSongId(ids, 'a', -1)).toBeUndefined();
+    expect(neighborSongId(ids, 'c', 1)).toBeUndefined();
+  });
+
+  it('returns nothing when the current song is not in the list', () => {
+    expect(neighborSongId(ids, 'missing', 1)).toBeUndefined();
+    expect(neighborSongId(ids, undefined, -1)).toBeUndefined();
   });
 });
 

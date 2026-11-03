@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Spin } from 'antd';
 import { Outlet, useNavigate, useOutlet } from 'react-router-dom';
 import { SongFilter } from '../../components/SongFilter';
@@ -10,6 +10,7 @@ import { EmptySongState } from '../../components/EmptySongState';
 import { useApp } from '../../context/AppContext';
 import { useInput } from '../../context/InputContext';
 import { StemToolsProvider } from '../../context/StemToolsContext';
+import { SongPlaylistProvider } from '../../context/SongPlaylistContext';
 import { useStemTools } from '../../hooks/useStemTools';
 import { useSongList } from '../../hooks/useSongList';
 import { useDownload } from '../../hooks/useDownload';
@@ -171,93 +172,103 @@ export function SongListView() {
     !songOpen && !gameModeSelector.isOpen,
   );
 
+  const playlistIds = useMemo(
+    () =>
+      (libraryMode === 'local' ? filteredSongList : songList).map(
+        (song) => song.id,
+      ),
+    [libraryMode, filteredSongList, songList],
+  );
+
   return (
-    <StemToolsProvider value={stemTools}>
-      {gameModeSelector.element}
+    <SongPlaylistProvider ids={playlistIds}>
+      <StemToolsProvider value={stemTools}>
+        {gameModeSelector.element}
 
-      <div className="h-screen flex flex-col bg-bg">
-        <div
-          className="border-b border-divider p-4 z-10 flex flex-col gap-4"
-          style={{ background: 'var(--gradient-header)' }}
-        >
-          <div className="flex gap-2 items-center">
-            <SongFilter
-              nameFilter={nameFilter}
-              onChangeFilter={setNameFilter}
-              difficulty={difficulty}
-              setDifficulty={setDifficulty}
-              filteredSongsCount={
-                libraryMode === 'online' && onlineTotal !== undefined
-                  ? onlineTotal
-                  : filteredSongList.length
-              }
-              libraryMode={libraryMode}
-              onChangeLibraryMode={setLibraryMode}
-            />
-            <SortButton
-              sort={sort}
-              disabled={!sortAvailable}
-              onSortChange={setSort}
-              isOpen={isSortOpen}
-              onOpenChange={setIsSortOpen}
-              focusedIndex={isSortOpen ? focusedSortIndex : undefined}
-            />
-            <SettingsButton page="song-list" scanPercent={scanPercent} />
-          </div>
-          <SplittingQueue
-            splittingIds={splittingIds}
-            splitProgress={splitProgress}
-            songList={songList}
-          />
-        </div>
-
-        <div className="relative grow overflow-hidden w-full flex">
-          <div className="relative w-full max-w-250 grow overflow-hidden mx-auto bg-bg flex flex-col">
-            {filteredSongList.length > 0 ||
-            (libraryMode === 'online' && onlineLoading) ? (
-              <SongList
-                songList={filteredSongList}
-                scrollKey={nameFilter}
-                downloadingIds={downloadingIds}
-                downloadingDisabled={currentPath === null}
+        <div className="h-screen flex flex-col bg-bg">
+          <div
+            className="border-b border-divider p-4 z-10 flex flex-col gap-4"
+            style={{ background: 'var(--gradient-header)' }}
+          >
+            <div className="flex gap-2 items-center">
+              <SongFilter
+                nameFilter={nameFilter}
+                onChangeFilter={setNameFilter}
                 difficulty={difficulty}
-                onClickSong={(id) => {
-                  if (libraryMode === 'local') {
-                    play(id);
-                  }
-                }}
-                downloadedIds={
-                  libraryMode === 'online'
-                    ? new Set(songList.map((s) => s.id))
-                    : undefined
+                setDifficulty={setDifficulty}
+                filteredSongsCount={
+                  libraryMode === 'online' && onlineTotal !== undefined
+                    ? onlineTotal
+                    : filteredSongList.length
                 }
-                splittingIds={splittingIds}
-                onSplit={handleSplit}
-                onDownload={handleDownload}
-                onLikeChange={handleLikeChange}
-                onLoadMore={libraryMode === 'online' ? loadMore : undefined}
-                focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
-              />
-            ) : (
-              <EmptySongState
                 libraryMode={libraryMode}
-                hasFolder={currentPath !== null}
-                hasSongs={songList.length > 0}
+                onChangeLibraryMode={setLibraryMode}
               />
+              <SortButton
+                sort={sort}
+                disabled={!sortAvailable}
+                onSortChange={setSort}
+                isOpen={isSortOpen}
+                onOpenChange={setIsSortOpen}
+                focusedIndex={isSortOpen ? focusedSortIndex : undefined}
+              />
+              <SettingsButton page="song-list" scanPercent={scanPercent} />
+            </div>
+            <SplittingQueue
+              splittingIds={splittingIds}
+              splitProgress={splitProgress}
+              songList={songList}
+            />
+          </div>
+
+          <div className="relative grow overflow-hidden w-full flex">
+            <div className="relative w-full max-w-250 grow overflow-hidden mx-auto bg-bg flex flex-col">
+              {filteredSongList.length > 0 ||
+              (libraryMode === 'online' && onlineLoading) ? (
+                <SongList
+                  songList={filteredSongList}
+                  scrollKey={nameFilter}
+                  downloadingIds={downloadingIds}
+                  downloadingDisabled={currentPath === null}
+                  difficulty={difficulty}
+                  onClickSong={(id) => {
+                    if (libraryMode === 'local') {
+                      play(id);
+                    }
+                  }}
+                  downloadedIds={
+                    libraryMode === 'online'
+                      ? new Set(songList.map((s) => s.id))
+                      : undefined
+                  }
+                  splittingIds={splittingIds}
+                  onSplit={handleSplit}
+                  onDownload={handleDownload}
+                  onLikeChange={handleLikeChange}
+                  onLoadMore={libraryMode === 'online' ? loadMore : undefined}
+                  focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
+                />
+              ) : (
+                <EmptySongState
+                  libraryMode={libraryMode}
+                  hasFolder={currentPath !== null}
+                  hasSongs={songList.length > 0}
+                />
+              )}
+            </div>
+
+            {libraryMode === 'online' && onlineLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none z-10">
+                <Spin size="large" />
+              </div>
             )}
           </div>
 
-          {libraryMode === 'online' && onlineLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none z-10">
-              <Spin size="large" />
-            </div>
-          )}
+          <div className="fixed inset-0 pointer-events-none z-100">
+            <Outlet />
+          </div>
         </div>
-
-        <div className="fixed inset-0 pointer-events-none z-100">
-          <Outlet />
-        </div>
-      </div>
-    </StemToolsProvider>
+      </StemToolsProvider>
+    </SongPlaylistProvider>
   );
 }

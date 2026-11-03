@@ -8,6 +8,7 @@ import { antdTheme } from '../antdTheme';
 import { AppProvider } from '../context/AppContext';
 import { InputProvider } from '../context/InputContext';
 import { SongViewSettingsProvider } from '../context/SongViewSettingsContext';
+import { SongPlaylistProvider } from '../context/SongPlaylistContext';
 import {
   installIpcMock,
   installLocalStorage,
@@ -120,6 +121,7 @@ export interface SongViewOptions {
   route?: string;
   settings?: Record<string, unknown>;
   keyboard?: KeyboardSeed;
+  playlist?: readonly string[];
 }
 
 export interface SongViewHarness {
@@ -175,6 +177,7 @@ export function setupSongView({
   route = '/song-1',
   settings,
   keyboard,
+  playlist = [],
 }: SongViewOptions = {}): SongViewHarness {
   shimSvgBBox();
   installLocalStorage();
@@ -199,15 +202,17 @@ export function setupSongView({
           <AppProvider>
             <InputProvider>
               <SongViewSettingsProvider>
-                <MemoryRouter initialEntries={[route]}>
-                  <Routes>
-                    <Route
-                      path="/"
-                      element={<div data-testid="song-list-stub" />}
-                    />
-                    <Route path=":id" element={children} />
-                  </Routes>
-                </MemoryRouter>
+                <SongPlaylistProvider ids={playlist}>
+                  <MemoryRouter initialEntries={[route]}>
+                    <Routes>
+                      <Route
+                        path="/"
+                        element={<div data-testid="song-list-stub" />}
+                      />
+                      <Route path=":id" element={children} />
+                    </Routes>
+                  </MemoryRouter>
+                </SongPlaylistProvider>
               </SongViewSettingsProvider>
             </InputProvider>
           </AppProvider>
