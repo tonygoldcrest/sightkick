@@ -416,6 +416,80 @@ describe('SongListView — online mode', () => {
   });
 });
 
+describe('SongListView — preview arrows', () => {
+  it('previews the song above or below while a preview is playing', async () => {
+    class PreviewAudio {
+      src: string;
+      duration = 20;
+      paused = true;
+      readyState = 1;
+      preload = 'none';
+      currentTime = 0;
+
+      constructor(src?: string) {
+        this.src = src ?? '';
+      }
+
+      addEventListener() {}
+
+      removeEventListener() {}
+
+      play() {
+        this.paused = false;
+
+        return Promise.resolve();
+      }
+
+      pause() {
+        this.paused = true;
+      }
+
+      removeAttribute() {}
+
+      load() {}
+    }
+
+    vi.stubGlobal('Audio', PreviewAudio);
+
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a'), makeListSong('b'), makeListSong('c')]);
+    fireEvent.click(
+      within(screen.getByTestId('song-item-a')).getByTestId('preview-button'),
+    );
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('song-item-a')).getByTestId('preview-button'),
+      ).toHaveAttribute('aria-label', 'Stop preview');
+    });
+
+    view.typeKey('ArrowDown');
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('song-item-b')).getByTestId('preview-button'),
+      ).toHaveAttribute('aria-label', 'Stop preview');
+    });
+
+    view.typeKey('ArrowUp');
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('song-item-a')).getByTestId('preview-button'),
+      ).toHaveAttribute('aria-label', 'Stop preview');
+    });
+
+    fireEvent.wheel(window, { deltaY: 120 });
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('song-item-b')).getByTestId('preview-button'),
+      ).toHaveAttribute('aria-label', 'Stop preview');
+    });
+  });
+});
+
 describe('SongListView — settings', () => {
   it('rescans the folder from settings', () => {
     const view = setupSongListView();
