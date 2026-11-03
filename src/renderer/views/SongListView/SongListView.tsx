@@ -166,6 +166,7 @@ export function SongListView() {
     const gameMode = await gameModeSelector.open();
 
     if (gameMode) {
+      stopPreview();
       navigate(`/${id}?gameMode=${gameMode}`);
     }
   };
