@@ -109,6 +109,41 @@ describe('loadSongList', () => {
     expect(payload.songs.map((s) => s.id)).toEqual(['a']);
   });
 
+  it('repairs a charter that was cut off at a color tag', async () => {
+    const dir = path.join(root, 'inside');
+
+    fs.mkdirSync(dir);
+    fs.writeFileSync(
+      path.join(dir, 'song.ini'),
+      '[Song]\nname = Test\ncharter = <color=#ff0000>M<color=#0000ff>r\n',
+    );
+    fs.writeFileSync(path.join(dir, 'notes.chart'), '[Song]\n{\n}\n');
+    storeHolder.current = makeStore({
+      lastOpenedPath: root,
+      songs: {
+        a: {
+          id: 'a',
+          dir,
+          name: 'Test',
+          artist: 'Band',
+          charter: '<color=',
+          liked: true,
+        },
+      },
+    });
+
+    const event = makeEvent();
+
+    await loadSongList(event as never);
+
+    const payload = lastReply(event, 'load-song-list')!.args[0] as {
+      songs: { charter: string; liked?: boolean }[];
+    };
+
+    expect(payload.songs[0].charter).toBe('Mr');
+    expect(payload.songs[0].liked).toBe(true);
+  });
+
   it('replies with an error when the stored songs cannot be read', async () => {
     const base = makeStore({ lastOpenedPath: root });
 
