@@ -55,9 +55,17 @@ export const SettingsButton = memo(function Settings({
         onOpenChange={popoverOpenChange(setIsOpen)}
         trigger="click"
         placement="bottomRight"
-        styles={popoverStyles}
+        classNames={{ root: 'settings-popover' }}
+        styles={{
+          ...popoverStyles,
+          container: {
+            ...popoverStyles.container,
+            maxHeight: 'min(32rem, calc(100vh - 5rem))',
+            overflow: 'auto',
+          },
+        }}
         content={
-          <div className="min-w-90 flex flex-col gap-3">
+          <div className="@container flex w-[min(22.5rem,calc(100vw-1.5rem))] max-w-full min-w-0 flex-col gap-3 max-[900px]:w-full">
             {page === 'song-list' ? (
               <SongListSettings
                 scanPercent={scanPercent}

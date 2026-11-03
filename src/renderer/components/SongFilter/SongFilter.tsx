@@ -54,7 +54,7 @@ export function SongFilter({
           onChangeFilter(event.target.value);
         }}
         suffix={
-          <div className="flex gap-1 items-center">
+          <div className="flex flex-wrap gap-1 items-center">
             <div className="text-text-faint text-[13.5px]">
               {filteredSongsCount} results
             </div>
@@ -76,7 +76,7 @@ export function SongFilter({
                 </div>
               }
             >
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {ALL_DIFFICULTIES.map((d) => (
                   <Button
                     key={d}

@@ -26,11 +26,13 @@ export function AudioVolume({
 }: AudioVolumeProps) {
   return (
     <>
-      <div className="capitalize text-xs text-text">{name}</div>
+      <div className="min-w-0 max-w-full truncate text-xs capitalize text-text @max-[26rem]:col-span-3">
+        {name}
+      </div>
       <Slider
         value={volume}
         onChange={onChange}
-        className={cn({ 'col-span-2': !canSolo })}
+        className={cn('m-0 min-w-0', { 'col-span-2': !canSolo })}
       />
       <Button
         data-testid={`mute-${name}`}
