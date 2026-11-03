@@ -4,6 +4,8 @@ import {
   faDownload,
   faSpinner,
   faCheck,
+  faPlay,
+  faPause,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import appIcon from '../../../../assets/icon.png';
@@ -31,6 +33,31 @@ export interface SongListItemProps {
   downloaded?: boolean;
   downloadingDisabled: boolean;
   focused?: boolean;
+  canPreview?: boolean;
+  previewing?: boolean;
+  onPreview?: (id: string) => void;
+}
+
+function PreviewButton({
+  playing,
+  onClick,
+}: {
+  playing: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <IconButton
+      data-testid="preview-button"
+      aria-label={playing ? 'Stop preview' : 'Preview song'}
+      icon={playing ? faPause : faPlay}
+      type={playing ? 'primary' : 'default'}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onClick();
+      }}
+    />
+  );
 }
 
 export function SongListItem({
@@ -45,6 +72,9 @@ export function SongListItem({
   onSplit,
   downloadingDisabled,
   focused,
+  canPreview,
+  previewing,
+  onPreview,
 }: SongListItemProps) {
   const local = 'source' in songData ? undefined : songData;
   const { albumCover, id, name, artist, charter, drumDifficulty } = songData;
@@ -110,15 +140,33 @@ export function SongListItem({
       );
     }
 
+    if (downloading) {
+      return (
+        <FontAwesomeIcon
+          className="text-text-dim px-1.5"
+          size="xl"
+          icon={faSpinner}
+          spin
+          data-testid="downloading-indicator"
+        />
+      );
+    }
+
+    if (onPreview && canPreview) {
+      return (
+        <PreviewButton
+          playing={Boolean(previewing)}
+          onClick={() => onPreview(id)}
+        />
+      );
+    }
+
     return (
       <FontAwesomeIcon
-        className={cn(downloading ? 'text-text-dim' : 'text-accent', 'px-1.5')}
+        className="text-accent px-1.5"
         size="xl"
-        icon={downloading ? faSpinner : faCheck}
-        spin={downloading}
-        data-testid={
-          downloading ? 'downloading-indicator' : 'downloaded-indicator'
-        }
+        icon={faCheck}
+        data-testid="downloaded-indicator"
       />
     );
   }, [
@@ -131,6 +179,9 @@ export function SongListItem({
     downloadingDisabled,
     onSplit,
     splitting,
+    onPreview,
+    canPreview,
+    previewing,
   ]);
 
   return (
@@ -150,13 +201,33 @@ export function SongListItem({
         )}
       >
         <div className="flex items-center">
-          <img
-            src={albumCover ?? appIcon}
-            onError={(e) => {
-              e.currentTarget.src = appIcon;
-            }}
-            className="h-15 w-auto object-contain aspect-square rounded-lg shadow-frame"
-          />
+          <div className="relative h-15 w-15 shrink-0">
+            <img
+              src={albumCover ?? appIcon}
+              onError={(e) => {
+                e.currentTarget.src = appIcon;
+              }}
+              className="h-15 w-15 object-cover aspect-square rounded-lg shadow-frame"
+            />
+            {local && onPreview && canPreview && (
+              <button
+                type="button"
+                data-testid="preview-button"
+                aria-label={previewing ? 'Stop preview' : 'Preview song'}
+                className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full border-0 bg-bg/90 text-text shadow-frame cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onPreview(id);
+                }}
+              >
+                <FontAwesomeIcon
+                  icon={previewing ? faPause : faPlay}
+                  size="sm"
+                />
+              </button>
+            )}
+          </div>
 
           <div className="ml-2">
             <div className="text-[18px] font-bold mb-1 text-text-body font-display">
