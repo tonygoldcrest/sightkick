@@ -94,7 +94,6 @@ export function SongList({
                 transform: `translateY(${
                   virtualItem.start - rowVirtualizer.options.scrollMargin
                 }px)`,
-                height: `${virtualItem.size}px`,
               }}
             >
               <SongListItem

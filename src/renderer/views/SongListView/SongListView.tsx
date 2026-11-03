@@ -180,8 +180,9 @@ export function SongListView() {
           className="border-b border-divider p-4 z-10 flex flex-col gap-4"
           style={{ background: 'var(--gradient-header)' }}
         >
-          <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2 overflow-x-auto">
             <SongFilter
+              className="min-w-fit flex-1"
               nameFilter={nameFilter}
               onChangeFilter={setNameFilter}
               difficulty={difficulty}
@@ -194,15 +195,17 @@ export function SongListView() {
               libraryMode={libraryMode}
               onChangeLibraryMode={setLibraryMode}
             />
-            <SortButton
-              sort={sort}
-              disabled={!sortAvailable}
-              onSortChange={setSort}
-              isOpen={isSortOpen}
-              onOpenChange={setIsSortOpen}
-              focusedIndex={isSortOpen ? focusedSortIndex : undefined}
-            />
-            <SettingsButton page="song-list" scanPercent={scanPercent} />
+            <div className="flex shrink-0 items-center gap-2">
+              <SortButton
+                sort={sort}
+                disabled={!sortAvailable}
+                onSortChange={setSort}
+                isOpen={isSortOpen}
+                onOpenChange={setIsSortOpen}
+                focusedIndex={isSortOpen ? focusedSortIndex : undefined}
+              />
+              <SettingsButton page="song-list" scanPercent={scanPercent} />
+            </div>
           </div>
           <SplittingQueue
             splittingIds={splittingIds}

@@ -72,7 +72,7 @@ export function SongListItem({
           <IconButton
             data-testid="like-toggle"
             type={local.liked ? 'primary' : 'default'}
-            className="mt-auto"
+            className="mt-auto mobile:h-11 mobile:w-11"
             icon={local.liked ? faHeartSolid : faHeart}
             onClick={(e) => {
               e.preventDefault();
@@ -140,7 +140,7 @@ export function SongListItem({
         data-testid={`song-item-${id}`}
         data-focused={focused ? 'true' : undefined}
         className={cn(
-          'flex border border-border-soft grow no-underline bg-surface rounded-[11px] transition-all duration-100 ease-in-out cursor-default p-2',
+          'grid min-w-0 grow grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-x-5 rounded-[11px] border border-border-soft bg-surface p-2 no-underline transition-all duration-100 ease-in-out cursor-default mobile:grid-cols-[3.75rem_minmax(0,1fr)_auto] mobile:gap-x-2 mobile:gap-y-1',
           {
             'hover:bg-accent-soft-bg hover:border-accent-soft-border cursor-pointer':
               Boolean(local),
@@ -149,46 +149,50 @@ export function SongListItem({
           },
         )}
       >
-        <div className="flex items-center">
-          <img
-            src={albumCover ?? appIcon}
-            onError={(e) => {
-              e.currentTarget.src = appIcon;
-            }}
-            className="h-15 w-auto object-contain aspect-square rounded-lg shadow-frame"
-          />
+        <img
+          src={albumCover ?? appIcon}
+          onError={(e) => {
+            e.currentTarget.src = appIcon;
+          }}
+          className="aspect-square h-15 w-auto shrink-0 rounded-lg object-contain shadow-frame mobile:row-span-2"
+        />
 
-          <div className="ml-2">
-            <div className="text-[18px] font-bold mb-1 text-text-body font-display">
-              {name}
-            </div>
-            <div className="text-text-muted font-ui text-sm">{artist}</div>
+        <div className="min-w-0">
+          <div className="mb-1 truncate font-display text-[18px] font-bold text-text-body mobile:mb-0 mobile:text-base">
+            {name}
+          </div>
+          <div className="truncate font-ui text-sm text-text-muted">
+            {artist}
           </div>
         </div>
 
-        <div className="flex ml-auto items-center gap-5">
-          {charter && (
-            <div className="flex items-end flex-col">
-              <div className="text-text-dim text-xs">charter</div>
-              <div className="text-text-muted text-sm mt-1">
-                {charter.replace(/<\S+?>/g, '')}
+        {(charter || local) && (
+          <div className="flex min-w-0 items-center justify-end gap-5 mobile:col-start-2 mobile:row-start-2 mobile:w-full mobile:gap-3">
+            {charter && (
+              <div className="flex max-w-36 shrink flex-col items-end mobile:mr-auto mobile:min-w-0 mobile:max-w-none mobile:flex-1 mobile:flex-row mobile:items-baseline mobile:gap-1">
+                <div className="text-xs text-text-dim">charter</div>
+                <div className="mt-1 max-w-full truncate text-sm text-text-muted mobile:mt-0">
+                  {charter.replace(/<\S+?>/g, '')}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {local && (
-            <div className="flex flex-col gap-1 items-center">
-              <div className="text-xs text-text-dim">{difficulty}</div>
+            {local && (
+              <div className="flex shrink-0 flex-col items-center gap-1 mobile:flex-row mobile:gap-2">
+                <div className="text-xs text-text-dim">{difficulty}</div>
 
-              <Stars
-                rating={score ? score.starRating : 0}
-                perfect={Boolean(score && score.accuracy === 1)}
-                size="xs"
-                className="gap-1"
-              />
-            </div>
-          )}
+                <Stars
+                  rating={score ? score.starRating : 0}
+                  perfect={Boolean(score && score.accuracy === 1)}
+                  size="xs"
+                  className="gap-1"
+                />
+              </div>
+            )}
+          </div>
+        )}
 
+        <div className="flex shrink-0 items-center gap-5 mobile:col-start-3 mobile:row-span-2 mobile:row-start-1 mobile:gap-2">
           <DifficultyRing value={drumDifficulty} />
 
           {indicator}

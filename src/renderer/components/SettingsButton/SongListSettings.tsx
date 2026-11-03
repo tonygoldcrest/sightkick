@@ -73,6 +73,7 @@ export function SongListSettings({
         placement="bottom"
       >
         <Button
+          className="w-full"
           data-testid="setup-input"
           icon={<FontAwesomeIcon icon={faDrum} />}
           onClick={onSetupInput}
@@ -89,6 +90,7 @@ export function SongListSettings({
 
       <Tooltip title="Join the community" placement="bottom">
         <Button
+          className="w-full"
           icon={<FontAwesomeIcon icon={faDiscord} />}
           onClick={() => window.open(DISCORD_URL)}
         >

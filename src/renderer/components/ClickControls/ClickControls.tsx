@@ -50,7 +50,7 @@ export function ClickControls({
           style={{ background: 'var(--gradient-faint-fade)' }}
         />
       </div>
-      <div className="grid grid-cols-[max-content_1fr_max-content_max-content] items-center gap-x-2 gap-y-1">
+      <div className="grid min-w-0 grid-cols-[minmax(0,max-content)_minmax(0,1fr)_max-content_max-content] items-center gap-x-2 gap-y-2 @max-[26rem]:grid-cols-[minmax(0,1fr)_auto_auto]">
         <AudioVolume
           name="Volume"
           volume={volume}
@@ -60,8 +60,14 @@ export function ClickControls({
           onMuteClick={toggleMute}
         />
 
-        <div className="text-xs text-text">Tone</div>
-        <Slider value={tone} onChange={onToneChange} className="col-span-3" />
+        <div className="truncate text-xs text-text @max-[26rem]:col-span-3">
+          Tone
+        </div>
+        <Slider
+          value={tone}
+          onChange={onToneChange}
+          className="col-span-3 m-0 min-w-0"
+        />
       </div>
     </>
   );
