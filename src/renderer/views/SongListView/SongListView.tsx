@@ -113,6 +113,13 @@ export function SongListView() {
     setFocusedSortIndex(sortIndexForKey(sort.key));
     setIsSortOpen(true);
   };
+  const searchCharter = (charter: string) => {
+    setNameFilter(charter);
+
+    if (libraryMode !== 'online') {
+      setLibraryMode('online');
+    }
+  };
   const play = async (id: string) => {
     if (gameModeSelector.isOpen) {
       return;
@@ -236,6 +243,7 @@ export function SongListView() {
                 onDownload={handleDownload}
                 onLikeChange={handleLikeChange}
                 onLoadMore={libraryMode === 'online' ? loadMore : undefined}
+                onCharterClick={searchCharter}
                 focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
               />
             ) : (

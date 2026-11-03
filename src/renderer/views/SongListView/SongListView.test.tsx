@@ -361,6 +361,39 @@ describe('SongListView — online mode', () => {
   });
 });
 
+describe('SongListView — charter search', () => {
+  it('opens the global search for that charter', async () => {
+    const view = setupSongListView({ online: [makeEnchorChart('x')] });
+
+    view.loadSongs([makeListSong('a', { charter: 'MrDrummerboy97' })]);
+    fireEvent.click(screen.getByTestId('charter-link'));
+
+    expect(screen.getByTestId('song-search')).toHaveValue('MrDrummerboy97');
+    expect(screen.getByTestId('mode-online').className).toContain(
+      'ant-btn-primary',
+    );
+
+    expect(await screen.findByText('Name x')).toBeInTheDocument();
+  });
+
+  it('stays on the global search when a charter there is clicked', async () => {
+    const view = setupSongListView({
+      online: [makeEnchorChart('x', { charter: 'Harmonix' })],
+    });
+
+    view.loadSongs([], '/music');
+    view.selectMode('online');
+
+    await screen.findByText('Name x');
+    fireEvent.click(screen.getByTestId('charter-link'));
+
+    expect(screen.getByTestId('song-search')).toHaveValue('Harmonix');
+    expect(screen.getByTestId('mode-online').className).toContain(
+      'ant-btn-primary',
+    );
+  });
+});
+
 describe('SongListView — settings', () => {
   it('rescans the folder from settings', () => {
     const view = setupSongListView();

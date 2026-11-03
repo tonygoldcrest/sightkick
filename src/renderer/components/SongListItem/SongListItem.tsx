@@ -31,6 +31,7 @@ export interface SongListItemProps {
   downloaded?: boolean;
   downloadingDisabled: boolean;
   focused?: boolean;
+  onCharterClick?: (charter: string) => void;
 }
 
 export function SongListItem({
@@ -45,6 +46,7 @@ export function SongListItem({
   onSplit,
   downloadingDisabled,
   focused,
+  onCharterClick,
 }: SongListItemProps) {
   const local = 'source' in songData ? undefined : songData;
   const { albumCover, id, name, artist, charter, drumDifficulty } = songData;
@@ -170,9 +172,19 @@ export function SongListItem({
           {charter && (
             <div className="flex items-end flex-col">
               <div className="text-text-dim text-xs">charter</div>
-              <div className="text-text-muted text-sm mt-1">
+              <button
+                type="button"
+                data-testid="charter-link"
+                title={`Search charts by ${charter.replace(/<\S+?>/g, '')}`}
+                className="mt-1 max-w-40 truncate border-0 bg-transparent p-0 text-left text-sm text-text-muted cursor-pointer hover:text-accent hover:underline"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onCharterClick?.(charter.replace(/<\S+?>/g, ''));
+                }}
+              >
                 {charter.replace(/<\S+?>/g, '')}
-              </div>
+              </button>
             </div>
           )}
 
