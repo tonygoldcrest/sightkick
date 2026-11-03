@@ -56,6 +56,7 @@ export function SongViewSettings({
         >
           <Button
             data-testid="export-pdf"
+            className="w-full"
             icon={<FontAwesomeIcon icon={faFilePdf} />}
             loading={isExporting}
             onClick={onExportPdf}
@@ -102,12 +103,13 @@ export function SongViewSettings({
             label: <span data-testid="more-settings">More settings</span>,
             children: (
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center justify-between gap-3">
                   <SettingLabel
                     label="Enable colors"
                     tooltip="Color-code each drum so you can tell them apart at a glance."
                   />
                   <Switch
+                    className="shrink-0"
                     size="small"
                     data-testid="setting-colors"
                     checked={enableColors}
@@ -117,12 +119,13 @@ export function SongViewSettings({
                 {isDev && (
                   <>
                     <Divider />
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center justify-between gap-3">
                       <SettingLabel
                         label="Show bar numbers"
                         tooltip="Slap a number on every bar so you can find your spot fast."
                       />
                       <Switch
+                        className="shrink-0"
                         size="small"
                         data-testid="setting-bar-numbers"
                         checked={showBarNumbers}
@@ -134,12 +137,13 @@ export function SongViewSettings({
 
                 <Divider />
 
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center justify-between gap-3">
                   <SettingLabel
                     label="Show tempo"
                     tooltip="Write the BPM into the sheet wherever the tempo changes."
                   />
                   <Switch
+                    className="shrink-0"
                     size="small"
                     data-testid="setting-tempo"
                     checked={showTempo}
@@ -151,12 +155,13 @@ export function SongViewSettings({
 
                 {enableColors && (
                   <>
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center justify-between gap-3">
                       <SettingLabel
                         label="Show reference"
                         tooltip="Pop a little cheat sheet at the bottom showing which color is which drum."
                       />
                       <Switch
+                        className="shrink-0"
                         size="small"
                         data-testid="setting-reference"
                         checked={showReference}
@@ -168,12 +173,13 @@ export function SongViewSettings({
                   </>
                 )}
 
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center justify-between gap-3">
                   <SettingLabel
                     label="Count-in"
                     tooltip="A few clicks before the song starts so you're not caught off guard."
                   />
                   <Switch
+                    className="shrink-0"
                     size="small"
                     data-testid="setting-count-in"
                     checked={countIn}
@@ -183,7 +189,7 @@ export function SongViewSettings({
 
                 <Divider />
 
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center justify-between gap-3">
                   <SettingLabel label="Zoom" tooltip="Sheet music zoom" />
                   <InputNumber
                     mode="spinner"
@@ -239,7 +245,7 @@ export function SongViewSettings({
               style={{ background: 'var(--gradient-accent-fade)' }}
             />
           </div>
-          <div className="grid grid-cols-[max-content_1fr_max-content_max-content] items-center gap-x-2 gap-y-1">
+          <div className="grid min-w-0 grid-cols-[minmax(0,max-content)_minmax(0,1fr)_max-content_max-content] items-center gap-x-2 gap-y-2 @max-[26rem]:grid-cols-[minmax(0,1fr)_auto_auto]">
             {masterVolumeControl}
 
             {volumeSliders}
@@ -253,6 +259,7 @@ export function SongViewSettings({
 
       <Tooltip title="Join the community" placement="bottom">
         <Button
+          className="w-full"
           icon={<FontAwesomeIcon icon={faDiscord} />}
           onClick={() => window.open(DISCORD_URL)}
         >

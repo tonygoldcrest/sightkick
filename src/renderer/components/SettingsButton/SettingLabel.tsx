@@ -10,8 +10,8 @@ interface Props {
 
 export function SettingLabel({ label, tooltip }: Props) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="text-sm text-text-muted whitespace-nowrap">{label}</div>
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="min-w-0 text-sm text-text-muted">{label}</div>
 
       <Tooltip title={tooltip} placement="right">
         <FontAwesomeIcon icon={faInfoCircle} color={themedark.color.textDim} />

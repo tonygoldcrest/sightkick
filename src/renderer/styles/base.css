@@ -73,3 +73,16 @@ textarea,
 ::-webkit-scrollbar-corner {
   background: #141517;
 }
+
+/* The gear sits on the right. A wide popup aligned to it runs off the left
+   of a narrow window, so pin the panel to both edges instead. */
+@media (max-width: 900px) {
+  .settings-popover {
+    position: fixed !important;
+    right: 0.75rem !important;
+    left: 0.75rem !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+}

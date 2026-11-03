@@ -312,7 +312,7 @@ export function SongView() {
         scoreData={scoreData}
       />
       <div
-        className="flex flex-wrap items-center p-4 gap-5 min-w-0 short:gap-3 short:px-3 short:py-2 narrow:gap-3 narrow:px-3 narrow:py-2"
+        className="flex min-w-0 shrink-0 flex-wrap items-center gap-5 p-4 short:gap-3 short:px-3 short:py-2 narrow:grid narrow:w-full narrow:grid-cols-[auto_auto_minmax(0,1fr)_auto] narrow:gap-x-3 narrow:gap-y-2 narrow:p-3"
         style={{ background: 'var(--gradient-header)' }}
       >
         <Button
@@ -352,13 +352,7 @@ export function SongView() {
           size="large"
         />
 
-        <div
-          className={
-            policy.speedControl || policy.looping
-              ? 'min-w-0 narrow:flex-1'
-              : 'min-w-0 max-w-56 shrink'
-          }
-        >
+        <div className="min-w-0 narrow:col-start-3 narrow:row-start-1">
           <div className="text-text-body font-ui text-[18px] truncate">
             {songData?.name}
           </div>
@@ -369,13 +363,7 @@ export function SongView() {
           </div>
         </div>
 
-        <div
-          className={
-            policy.speedControl || policy.looping
-              ? 'contents narrow:flex narrow:basis-full narrow:order-last narrow:min-w-0'
-              : 'flex min-w-16 flex-1'
-          }
-        >
+        <div className="contents narrow:col-span-4 narrow:row-start-2 narrow:flex narrow:min-w-0">
           <Playback
             timeStore={timeStore}
             disabled={!isReady}
@@ -391,7 +379,7 @@ export function SongView() {
           />
         </div>
         {(policy.speedControl || policy.looping) && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 narrow:col-span-4 narrow:row-start-3">
             {policy.speedControl && (
               <div className="flex gap-2 items-center">
                 <div className="text-text-faint">Speed:</div>
@@ -438,7 +426,7 @@ export function SongView() {
             )}
           </div>
         )}
-        <div className="shrink-0">
+        <div className="shrink-0 narrow:col-start-4 narrow:row-start-1 narrow:justify-self-end">
           <SettingsButton
             page="song-view"
             volumeSliders={volumeSliders}
