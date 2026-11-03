@@ -232,6 +232,37 @@ describe('downloadSong', () => {
     });
   });
 
+  it('adopts a folder already on disk that this library has not indexed', async () => {
+    const outputDir = path.join(library, 'Artist - Song (Charter)');
+
+    fs.mkdirSync(outputDir);
+    fs.writeFileSync(
+      path.join(outputDir, 'song.ini'),
+      '[Song]\nname = Song\nartist = Artist\n',
+    );
+    fs.writeFileSync(path.join(outputDir, 'notes.chart'), '[Song]\n{\n}\n');
+    storeHolder.current = makeStore({ lastOpenedPath: library });
+
+    const fetchSpy = vi.fn();
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const event = makeEvent();
+
+    await downloadSong(event as never, baseProps);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(lastReply(event, 'download-song')!.args[0]).toMatchObject({
+      success: true,
+      md5: 'hash123',
+      song: expect.objectContaining({ id: 'hash123', name: 'Song' }),
+    });
+    expect(storeHolder.current!.get('songs.hash123')).toMatchObject({
+      id: 'hash123',
+      name: 'Song',
+    });
+  });
+
   it('skips when the destination folder already exists', async () => {
     storeHolder.current = makeStore({ lastOpenedPath: library });
     fs.mkdirSync(path.join(library, 'Artist - Song (Charter)'));
