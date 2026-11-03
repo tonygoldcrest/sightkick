@@ -140,7 +140,7 @@ export function SongListItem({
         data-testid={`song-item-${id}`}
         data-focused={focused ? 'true' : undefined}
         className={cn(
-          'flex border border-border-soft grow no-underline bg-surface rounded-[11px] transition-all duration-100 ease-in-out cursor-default p-2',
+          'flex min-w-0 border border-border-soft grow no-underline bg-surface rounded-[11px] transition-all duration-100 ease-in-out cursor-default p-2',
           {
             'hover:bg-accent-soft-bg hover:border-accent-soft-border cursor-pointer':
               Boolean(local),
@@ -149,28 +149,30 @@ export function SongListItem({
           },
         )}
       >
-        <div className="flex items-center">
+        <div className="flex min-w-0 flex-1 items-center overflow-hidden">
           <img
             src={albumCover ?? appIcon}
             onError={(e) => {
               e.currentTarget.src = appIcon;
             }}
-            className="h-15 w-auto object-contain aspect-square rounded-lg shadow-frame"
+            className="h-15 w-auto shrink-0 object-contain aspect-square rounded-lg shadow-frame"
           />
 
-          <div className="ml-2">
-            <div className="text-[18px] font-bold mb-1 text-text-body font-display">
+          <div className="ml-2 min-w-0">
+            <div className="mb-1 truncate text-[18px] font-bold text-text-body font-display">
               {name}
             </div>
-            <div className="text-text-muted font-ui text-sm">{artist}</div>
+            <div className="truncate text-text-muted font-ui text-sm">
+              {artist}
+            </div>
           </div>
         </div>
 
-        <div className="flex ml-auto items-center gap-5">
+        <div className="ml-auto flex shrink-0 items-center gap-5">
           {charter && (
-            <div className="flex items-end flex-col">
+            <div className="flex max-w-36 flex-col items-end">
               <div className="text-text-dim text-xs">charter</div>
-              <div className="text-text-muted text-sm mt-1">
+              <div className="mt-1 max-w-full truncate text-text-muted text-sm">
                 {charter.replace(/<\S+?>/g, '')}
               </div>
             </div>

@@ -352,18 +352,30 @@ export function SongView() {
           size="large"
         />
 
-        <div className="min-w-0 narrow:flex-1">
+        <div
+          className={
+            policy.speedControl || policy.looping
+              ? 'min-w-0 narrow:flex-1'
+              : 'min-w-0 max-w-56 shrink'
+          }
+        >
           <div className="text-text-body font-ui text-[18px] truncate">
             {songData?.name}
           </div>
           <div className="text-text-faint flex items-center gap-1 min-w-0">
             <div className="truncate">{songData?.artist}</div>
             <div>·</div>
-            <div className="capitalize">{difficulty}</div>
+            <div className="capitalize shrink-0">{difficulty}</div>
           </div>
         </div>
 
-        <div className="contents narrow:flex narrow:basis-full narrow:order-last narrow:min-w-0">
+        <div
+          className={
+            policy.speedControl || policy.looping
+              ? 'contents narrow:flex narrow:basis-full narrow:order-last narrow:min-w-0'
+              : 'flex min-w-16 flex-1'
+          }
+        >
           <Playback
             timeStore={timeStore}
             disabled={!isReady}

@@ -281,7 +281,7 @@ export function SheetMusic({
       </div>
 
       {enableColors && showReference && (
-        <Reference className="fixed bottom-4 left-1/2 z-20 max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-wrap justify-center short:bottom-2" />
+        <Reference className="fixed bottom-4 left-1/2 z-20 -translate-x-1/2 short:bottom-2" />
       )}
     </div>
   );
