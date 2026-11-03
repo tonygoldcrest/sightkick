@@ -6,6 +6,30 @@ import {
   SortState,
 } from '../../components/SortButton';
 
+export function neighborSongId(
+  ids: readonly string[],
+  currentId: string | undefined,
+  delta: 1 | -1,
+): string | undefined {
+  if (!currentId) {
+    return undefined;
+  }
+
+  const index = ids.indexOf(currentId);
+
+  if (index === -1) {
+    return undefined;
+  }
+
+  const next = index + delta;
+
+  if (next < 0 || next >= ids.length) {
+    return undefined;
+  }
+
+  return ids[next];
+}
+
 export function nextSongIndex(
   current: number | undefined,
   length: number,

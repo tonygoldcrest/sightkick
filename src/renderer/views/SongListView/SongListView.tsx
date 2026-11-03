@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Spin } from 'antd';
 import { Outlet, useNavigate, useOutlet } from 'react-router-dom';
 import { SongFilter } from '../../components/SongFilter';
@@ -13,10 +13,13 @@ import { StemToolsProvider } from '../../context/StemToolsContext';
 import { useStemTools } from '../../hooks/useStemTools';
 import { useSongList } from '../../hooks/useSongList';
 import { useDownload } from '../../hooks/useDownload';
+import { useSongPreview } from '../../hooks/useSongPreview';
+import { isTypingTarget } from '../../input';
 import { useSongFilter } from '../../hooks/useSongFilter';
 import { useInputControls } from '../../hooks/useInputControls';
 import { useGameModeSelector } from '../../hooks/useGameModeSelector';
 import {
+  neighborSongId,
   nextDifficulty,
   nextSongIndex,
   sortForFocusedIndex,
@@ -60,6 +63,29 @@ export function SongListView() {
   const { downloadingIds, handleDownload } = useDownload(
     onlineResults,
     addSong,
+  );
+  const { previewingId, togglePreview, stopPreview } = useSongPreview();
+  const previewableIds = useMemo(
+    () =>
+      new Set(
+        songList.filter((song) => song.audio.length > 0).map((song) => song.id),
+      ),
+    [songList],
+  );
+  const handlePreview = useCallback(
+    (id: string) => {
+      const song = songList.find((item) => item.id === id);
+
+      if (!song || song.audio.length === 0) {
+        return;
+      }
+
+      const mix = song.audio.find((track) => track.name === 'song');
+      const sources = mix ? [mix.src] : song.audio.map((track) => track.src);
+
+      togglePreview(id, sources);
+    },
+    [songList, togglePreview],
   );
   const [focusedSongIndex, setFocusedSongIndex] = useState<number | undefined>(
     undefined,
@@ -121,6 +147,7 @@ export function SongListView() {
     const gameMode = await gameModeSelector.open();
 
     if (gameMode) {
+      stopPreview();
       navigate(`/${id}?gameMode=${gameMode}`);
     }
   };
@@ -170,6 +197,114 @@ export function SongListView() {
         },
     !songOpen && !gameModeSelector.isOpen,
   );
+
+  const playlistIds = useMemo(
+    () =>
+      (libraryMode === 'local' ? filteredSongList : songList).map(
+        (song) => song.id,
+      ),
+    [libraryMode, filteredSongList, songList],
+  );
+  const previewNeighbor = useCallback(
+    (delta: 1 | -1) => {
+      if (!previewingId) {
+        return false;
+      }
+
+      const nextId = neighborSongId(playlistIds, previewingId, delta);
+
+      if (!nextId) {
+        return false;
+      }
+
+      const nextIndex = playlistIds.indexOf(nextId);
+
+      setFocusedSongIndex(nextIndex === -1 ? undefined : nextIndex);
+      handlePreview(nextId);
+
+      return true;
+    },
+    [previewingId, playlistIds, handlePreview],
+  );
+  const wheelLockRef = useRef(0);
+
+  useEffect(() => {
+    if (
+      songOpen ||
+      libraryMode !== 'local' ||
+      !previewingId ||
+      isSortOpen ||
+      gameModeSelector.isOpen
+    ) {
+      return undefined;
+    }
+
+    const onKey = (event: KeyboardEvent) => {
+      if (
+        event.repeat ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        isTypingTarget(event.target) ||
+        (event.code !== 'ArrowUp' && event.code !== 'ArrowDown')
+      ) {
+        return;
+      }
+
+      const moved = previewNeighbor(event.code === 'ArrowDown' ? 1 : -1);
+
+      if (!moved) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    const onWheel = (event: WheelEvent) => {
+      if (
+        isTypingTarget(event.target) ||
+        (event.deltaMode === 0 && Math.abs(event.deltaY) < 10) ||
+        Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      ) {
+        return;
+      }
+
+      const now = Date.now();
+
+      if (now - wheelLockRef.current < 280) {
+        event.preventDefault();
+
+        return;
+      }
+
+      const moved = previewNeighbor(event.deltaY > 0 ? 1 : -1);
+
+      if (!moved) {
+        return;
+      }
+
+      wheelLockRef.current = now;
+      event.preventDefault();
+    };
+
+    window.addEventListener('keydown', onKey, true);
+    window.addEventListener('wheel', onWheel, {
+      capture: true,
+      passive: false,
+    });
+
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('wheel', onWheel, true);
+    };
+  }, [
+    songOpen,
+    libraryMode,
+    previewingId,
+    isSortOpen,
+    gameModeSelector.isOpen,
+    previewNeighbor,
+  ]);
 
   return (
     <StemToolsProvider value={stemTools}>
@@ -236,6 +371,9 @@ export function SongListView() {
                 onDownload={handleDownload}
                 onLikeChange={handleLikeChange}
                 onLoadMore={libraryMode === 'online' ? loadMore : undefined}
+                previewableIds={previewableIds}
+                previewingId={previewingId}
+                onPreview={handlePreview}
                 focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
               />
             ) : (
