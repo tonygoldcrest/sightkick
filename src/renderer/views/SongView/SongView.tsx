@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { neighborSongId } from '../SongListView/helpers';
+import { useSongPlaylist } from '../../context/SongPlaylistContext';
+import { isTypingTarget } from '../../input';
 import { App, Button, Divider, InputNumber, Layout, Spin, Switch } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -58,6 +61,7 @@ export function SongView() {
   }, [searchParams]);
   const policy = useMemo(() => resolveModePolicy(gameMode), [gameMode]);
   const navigate = useNavigate();
+  const playlist = useSongPlaylist();
   const { fileData, format, songData, trackData } = useSongLoader(id);
   const { chart, parsedMidi, renderData, vexflowContainerRef } = useSheetMusic({
     fileData,
@@ -161,6 +165,19 @@ export function SongView() {
     setIsScoreModalOpen(false);
     navigate('/');
   };
+  const openNeighbor = useCallback(
+    (delta: 1 | -1) => {
+      const nextId = neighborSongId(playlist, id, delta);
+
+      if (!nextId) {
+        return;
+      }
+
+      setIsScoreModalOpen(false);
+      navigate(`/${nextId}?gameMode=${gameMode ?? 'perform'}`);
+    },
+    [playlist, id, gameMode, navigate],
+  );
   const onRetry = () => {
     setIsScoreModalOpen(false);
     playFromTick(0);
@@ -274,6 +291,58 @@ export function SongView() {
     !isLoading,
     isPlaying || isCounting ? kitControlIds : undefined,
   );
+
+  useEffect(() => {
+    if (isLoading) {
+      return undefined;
+    }
+
+    const onKey = (event: KeyboardEvent) => {
+      if (
+        event.repeat ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        isTypingTarget(event.target) ||
+        (event.code !== 'ArrowLeft' && event.code !== 'ArrowRight')
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      if (event.code === 'ArrowRight') {
+        openNeighbor(1);
+
+        return;
+      }
+
+      const atStart = timeStore.get() <= delaySeconds + 0.4;
+
+      if (!atStart) {
+        engine?.setLoopRegion(undefined);
+        onPracticeRangeChange(undefined);
+        seekSeconds(delaySeconds);
+
+        return;
+      }
+
+      openNeighbor(-1);
+    };
+
+    window.addEventListener('keydown', onKey, true);
+
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [
+    isLoading,
+    openNeighbor,
+    timeStore,
+    delaySeconds,
+    engine,
+    onPracticeRangeChange,
+    seekSeconds,
+  ]);
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('prevent-sleep');
