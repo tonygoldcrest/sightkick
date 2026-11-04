@@ -376,6 +376,22 @@ describe('SongListView — charter search', () => {
     expect(await screen.findByText('Name x')).toBeInTheDocument();
   });
 
+  it('searches the charter name inside a color tag', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([
+      makeListSong('a', { charter: '<color=#bada55>Charter</color>' }),
+    ]);
+
+    expect(screen.getByTestId('charter-link').textContent).toBe('Charter');
+    fireEvent.click(screen.getByTestId('charter-link'));
+
+    expect(screen.getByTestId('song-search')).toHaveValue('Charter');
+    expect(screen.getByTestId('mode-online').className).toContain(
+      'ant-btn-primary',
+    );
+  });
+
   it('stays on the global search when a charter there is clicked', async () => {
     const view = setupSongListView({
       online: [makeEnchorChart('x', { charter: 'Harmonix' })],

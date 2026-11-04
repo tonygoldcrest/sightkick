@@ -50,6 +50,10 @@ export function SongListItem({
 }: SongListItemProps) {
   const local = 'source' in songData ? undefined : songData;
   const { albumCover, id, name, artist, charter, drumDifficulty } = songData;
+  const charterName = useMemo(
+    () => (charter ? charter.replace(/<\S+?>/g, '') : ''),
+    [charter],
+  );
   const score = useMemo(() => {
     const result = local?.scoreData?.[difficulty];
 
@@ -169,21 +173,21 @@ export function SongListItem({
         </div>
 
         <div className="flex ml-auto items-center gap-5">
-          {charter && (
+          {charterName && (
             <div className="flex items-end flex-col">
               <div className="text-text-dim text-xs">charter</div>
               <button
                 type="button"
                 data-testid="charter-link"
-                title={`Search charts by ${charter.replace(/<\S+?>/g, '')}`}
+                title={`Search charts by ${charterName}`}
                 className="mt-1 max-w-40 truncate border-0 bg-transparent p-0 text-left text-sm text-text-muted cursor-pointer hover:text-accent hover:underline"
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  onCharterClick?.(charter.replace(/<\S+?>/g, ''));
+                  onCharterClick?.(charterName);
                 }}
               >
-                {charter.replace(/<\S+?>/g, '')}
+                {charterName}
               </button>
             </div>
           )}
