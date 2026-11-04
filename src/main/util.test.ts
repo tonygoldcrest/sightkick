@@ -192,6 +192,15 @@ describe('buildSongFromDir metadata', () => {
     expect(buildSongFromDir(dir, { id: 'explicit' })?.id).toBe('explicit');
   });
 
+  it('reads letters wrapped in color tags instead of stopping at the hash', () => {
+    writeSong(
+      CHART_WITH_HARD_AND_EXPERT,
+      '[Song]\nname = Test\ncharter = <color=#ff0000>M<color=#0000ff>r\n',
+    );
+
+    expect(buildSongFromDir(dir)?.charter).toBe('Mr');
+  });
+
   it('does not let song.ini override the app-controlled id and dir', () => {
     writeSong(
       CHART_WITH_HARD_AND_EXPERT,
