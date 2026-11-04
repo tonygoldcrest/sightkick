@@ -227,6 +227,28 @@ describe('SongListView — opening a song', () => {
   });
 });
 
+describe('SongListView — local library', () => {
+  it('removes a song without opening its folder', () => {
+    const view = setupSongListView();
+
+    view.loadSongs([makeListSong('a'), makeListSong('b')]);
+    view.openSongMenu('a');
+    fireEvent.click(screen.getByText('Remove from library'));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    expect(view.ipc.sent).toContainEqual({
+      channel: 'delete-song',
+      args: ['a'],
+    });
+    expect(view.sentChannels()).not.toContain('open-song-directory');
+
+    view.emit('delete-song', { success: true, id: 'a' });
+
+    expect(screen.queryByTestId('song-item-a')).not.toBeInTheDocument();
+    expect(screen.getByTestId('song-item-b')).toBeInTheDocument();
+  });
+});
+
 describe('SongListView — stem splitting', () => {
   it('queues a split, shows progress, then reports success', () => {
     const view = setupSongListView();
@@ -327,6 +349,29 @@ describe('SongListView — online mode', () => {
       within(screen.getByTestId('song-item-x')).getByTestId(
         'downloaded-indicator',
       ),
+    ).toBeInTheDocument();
+  });
+
+  it('removes a downloaded song from the library', async () => {
+    const view = setupSongListView({ online: [makeEnchorChart('x')] });
+
+    view.loadSongs([makeListSong('x')], '/music');
+    view.selectMode('online');
+
+    await screen.findByText('Name x');
+    fireEvent.click(
+      within(screen.getByTestId('song-item-x')).getByTestId('delete-song'),
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+
+    expect(
+      view.ipc.sent.some((message) => message.channel === 'delete-song'),
+    ).toBe(true);
+
+    view.emit('delete-song', { success: true, id: 'x' });
+
+    expect(
+      within(screen.getByTestId('song-item-x')).getByTestId('download-button'),
     ).toBeInTheDocument();
   });
 
