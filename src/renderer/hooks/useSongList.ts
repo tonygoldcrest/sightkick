@@ -165,7 +165,9 @@ export function useSongList() {
     [songList],
   );
   const addSong = useCallback((song: Song) => {
-    setSongList((prev) => [...prev, song]);
+    setSongList((prev) =>
+      prev.some((item) => item.id === song.id) ? prev : [...prev, song],
+    );
   }, []);
 
   return {

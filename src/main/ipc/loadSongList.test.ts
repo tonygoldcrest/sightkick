@@ -109,6 +109,38 @@ describe('loadSongList', () => {
     expect(payload.songs.map((s) => s.id)).toEqual(['a']);
   });
 
+  it('indexes a chart folder that is on disk but missing from the store', async () => {
+    const dir = path.join(root, 'Band - Hidden (Charter)');
+
+    fs.mkdirSync(dir);
+    fs.writeFileSync(
+      path.join(dir, 'song.ini'),
+      '[Song]\nname = Hidden\nartist = Band\n',
+    );
+    fs.writeFileSync(path.join(dir, 'notes.chart'), '[Song]\n{\n}\n');
+    storeHolder.current = makeStore({
+      lastOpenedPath: root,
+      songs: {},
+    });
+
+    const event = makeEvent();
+
+    await loadSongList(event as never);
+
+    const payload = lastReply(event, 'load-song-list')!.args[0] as {
+      songs: { name: string }[];
+    };
+
+    expect(payload.songs.map((song) => song.name)).toEqual(['Hidden']);
+
+    const stored = storeHolder.current!.get('songs') as Record<
+      string,
+      { name: string }
+    >;
+
+    expect(Object.values(stored).map((song) => song.name)).toEqual(['Hidden']);
+  });
+
   it('replies with an error when the stored songs cannot be read', async () => {
     const base = makeStore({ lastOpenedPath: root });
 
