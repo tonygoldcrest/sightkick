@@ -22,6 +22,7 @@ export interface SongListProps {
   downloadingDisabled: boolean;
   focusedIndex?: number;
   onCharterClick?: (charter: string) => void;
+  onArtistClick?: (artist: string) => void;
 }
 
 const LOAD_MORE_THRESHOLD = 2;
@@ -42,6 +43,7 @@ export function SongList({
   onLoadMore,
   focusedIndex,
   onCharterClick,
+  onArtistClick,
 }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -112,6 +114,7 @@ export function SongList({
                 downloadingDisabled={downloadingDisabled}
                 focused={virtualItem.index === focusedIndex}
                 onCharterClick={onCharterClick}
+                onArtistClick={onArtistClick}
               />
             </div>
           );

@@ -32,6 +32,7 @@ export interface SongListItemProps {
   downloadingDisabled: boolean;
   focused?: boolean;
   onCharterClick?: (charter: string) => void;
+  onArtistClick?: (artist: string) => void;
 }
 
 export function SongListItem({
@@ -47,12 +48,17 @@ export function SongListItem({
   downloadingDisabled,
   focused,
   onCharterClick,
+  onArtistClick,
 }: SongListItemProps) {
   const local = 'source' in songData ? undefined : songData;
   const { albumCover, id, name, artist, charter, drumDifficulty } = songData;
   const charterName = useMemo(
     () => (charter ? charter.replace(/<\S+?>/g, '') : ''),
     [charter],
+  );
+  const artistName = useMemo(
+    () => (artist ? artist.replace(/<\S+?>/g, '') : ''),
+    [artist],
   );
   const score = useMemo(() => {
     const result = local?.scoreData?.[difficulty];
@@ -168,7 +174,21 @@ export function SongListItem({
             <div className="text-[18px] font-bold mb-1 text-text-body font-display">
               {name}
             </div>
-            <div className="text-text-muted font-ui text-sm">{artist}</div>
+            {artistName ? (
+              <button
+                type="button"
+                data-testid="artist-link"
+                title={`Search songs by ${artistName}`}
+                className="truncate border-0 bg-transparent p-0 text-left font-ui text-sm text-text-muted cursor-pointer hover:text-accent hover:underline"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onArtistClick?.(artistName);
+                }}
+              >
+                {artistName}
+              </button>
+            ) : null}
           </div>
         </div>
 

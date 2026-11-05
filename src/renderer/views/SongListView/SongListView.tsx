@@ -113,12 +113,8 @@ export function SongListView() {
     setFocusedSortIndex(sortIndexForKey(sort.key));
     setIsSortOpen(true);
   };
-  const searchCharter = (charter: string) => {
-    setNameFilter(charter);
-
-    if (libraryMode !== 'online') {
-      setLibraryMode('online');
-    }
+  const searchCurrentList = (query: string) => {
+    setNameFilter(query);
   };
   const play = async (id: string) => {
     if (gameModeSelector.isOpen) {
@@ -243,7 +239,8 @@ export function SongListView() {
                 onDownload={handleDownload}
                 onLikeChange={handleLikeChange}
                 onLoadMore={libraryMode === 'online' ? loadMore : undefined}
-                onCharterClick={searchCharter}
+                onCharterClick={searchCurrentList}
+                onArtistClick={searchCurrentList}
                 focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
               />
             ) : (
