@@ -5,6 +5,7 @@ import { ChartParser } from '../../chart-parser/parser';
 import { renderMusic } from '../../chart-parser/renderer';
 import { ParsedChart, RenderData } from '../../chart-parser/types';
 import { SHEET_MUSIC_COLORS } from '../constants';
+import { StemDirection } from '../types';
 
 interface UseSheetMusicParams {
   fileData: Buffer | undefined;
@@ -16,6 +17,7 @@ interface UseSheetMusicParams {
   showBarNumbers: boolean;
   enableColors: boolean;
   showTempo: boolean;
+  stemDirection: StemDirection;
 }
 
 interface UseSheetMusicResult {
@@ -35,6 +37,7 @@ export function useSheetMusic({
   showBarNumbers,
   enableColors,
   showTempo,
+  stemDirection,
 }: UseSheetMusicParams): UseSheetMusicResult {
   const { notification } = App.useApp();
   const vexflowContainerRef = useRef<HTMLDivElement>(null);
@@ -85,9 +88,10 @@ export function useSheetMusic({
         showBarNumbers,
         enableColors,
         showTempo,
+        stemDirection,
       ),
     );
-  }, [parsedMidi, showBarNumbers, enableColors, showTempo]);
+  }, [parsedMidi, showBarNumbers, enableColors, showTempo, stemDirection]);
 
   return {
     chart,

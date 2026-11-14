@@ -11,22 +11,39 @@ function lcm(a: number, b: number): number {
   return (a / gcd(a, b)) * b;
 }
 
-function cellToken({ lane, tom }: Cell): string {
-  return CYMBAL_LANES.has(lane) && tom ? `${lane}:tom` : lane;
+function cellToken({ lane, tom, accent }: Cell): string {
+  const parts: string[] = [lane];
+
+  if (CYMBAL_LANES.has(lane) && tom) {
+    parts.push('tom');
+  }
+
+  if (accent) {
+    parts.push('accent');
+  }
+
+  return parts.join(':');
 }
 
 function parseCell(token: string): Cell | undefined {
-  const [lane, flag] = token.split(':') as [Lane, string | undefined];
+  const [lane, ...flags] = token.split(':') as [Lane, ...string[]];
 
   if (!(lane in TYPE_BY_LANE)) {
     return undefined;
   }
 
-  return { lane, tom: flag === 'tom' };
+  return {
+    lane,
+    tom: flags.includes('tom'),
+    ...(flags.includes('accent') ? { accent: true } : {}),
+  };
 }
 
-function cellFlags({ lane, tom }: Cell): number {
-  return CYMBAL_LANES.has(lane) && !tom ? noteFlags.cymbal : 0;
+function cellFlags({ lane, tom, accent }: Cell): number {
+  return (
+    (CYMBAL_LANES.has(lane) && !tom ? noteFlags.cymbal : 0) |
+    (accent ? noteFlags.accent : 0)
+  );
 }
 
 function measureTicks([numerator, denominator]: [number, number], ppq: number) {
@@ -138,9 +155,12 @@ function eventToCell(type: number, flags: number): Cell | undefined {
     return undefined;
   }
 
+  const accent = (flags & noteFlags.accent) !== 0;
+
   return {
     lane,
     tom: CYMBAL_LANES.has(lane) && (flags & noteFlags.cymbal) === 0,
+    ...(accent ? { accent: true } : {}),
   };
 }
 

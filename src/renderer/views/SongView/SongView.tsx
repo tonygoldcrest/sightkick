@@ -45,6 +45,7 @@ export function SongView() {
     countIn,
     showReference,
     zoom,
+    stemDirection,
   } = useSongViewSettings();
   const { notification, message } = App.useApp();
   const [scoreData, setScoreData] = useState<ScoreData>();
@@ -69,6 +70,7 @@ export function SongView() {
     showBarNumbers: isDev && showBarNumbers,
     enableColors,
     showTempo,
+    stemDirection,
   });
   const measures = useMemo(
     () => renderData.map((rd) => rd.measure),

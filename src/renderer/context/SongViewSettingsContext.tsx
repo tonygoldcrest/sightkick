@@ -5,7 +5,7 @@ import {
   useEffect,
   useMemo,
 } from 'react';
-import { PlayheadStyle, PLAYHEAD_STYLES } from '../types';
+import { PlayheadStyle, PLAYHEAD_STYLES, StemDirection } from '../types';
 import { usePersisted } from '../hooks/usePersisted';
 
 interface SongViewSettingsValue {
@@ -23,6 +23,8 @@ interface SongViewSettingsValue {
   setCountIn: (v: boolean) => void;
   zoom: number;
   setZoom: (z: number) => void;
+  stemDirection: StemDirection;
+  setStemDirection: (d: StemDirection) => void;
 }
 
 const SongViewSettingsContext = createContext<SongViewSettingsValue | null>(
@@ -53,6 +55,10 @@ export function SongViewSettingsProvider({
   );
   const [countIn, setCountIn] = usePersisted('settings.countIn', true);
   const [zoom, setZoom] = usePersisted<number>('settings.zoom', 1);
+  const [stemDirection, setStemDirection] = usePersisted<StemDirection>(
+    'settings.stemDirection',
+    -1,
+  );
 
   useEffect(() => {
     if (!PLAYHEAD_STYLES.includes(playheadStyle)) {
@@ -76,6 +82,8 @@ export function SongViewSettingsProvider({
       setCountIn,
       zoom,
       setZoom,
+      stemDirection,
+      setStemDirection,
     }),
     [
       playheadStyle,
@@ -92,6 +100,8 @@ export function SongViewSettingsProvider({
       setCountIn,
       zoom,
       setZoom,
+      stemDirection,
+      setStemDirection,
     ],
   );
 

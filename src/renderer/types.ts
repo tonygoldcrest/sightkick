@@ -12,6 +12,8 @@ export const PLAYHEAD_STYLES = ['Cursor', 'Measure'] as const;
 
 export type PlayheadStyle = (typeof PLAYHEAD_STYLES)[number];
 
+export type StemDirection = 1 | -1;
+
 export type ControlCategory = 'shared' | 'library' | 'game';
 
 export type MappingElement = {

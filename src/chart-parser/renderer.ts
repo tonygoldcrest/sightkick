@@ -21,6 +21,7 @@ import {
 import { ChartParser } from './parser';
 import { Measure, RenderData } from './types';
 import { KEY_TO_ELEMENT } from './constants';
+import { StemDirection } from '../renderer/types';
 
 export interface SheetMusicColors {
   note: string;
@@ -35,7 +36,6 @@ const MEASURE_TRAILING_PAD = 20;
 const UNCOLORED_NOTE_CLASS = 'vf-note-uncolored';
 const UNCOLORED_ACCENT_CLASS = 'vf-accent-uncolored';
 const REST_NOTE_CLASS = 'vf-note-rest';
-const STEM_DIRECTION = -1;
 const REST_KEY = 'b/4';
 const ACCENT_SCALE = Flow.NOTATION_FONT_SCALE;
 const ACCENT_SCALE_RIGHT = Flow.NOTATION_FONT_SCALE * 0.8;
@@ -47,6 +47,7 @@ export function renderMusic(
   showBarNumbers: boolean = true,
   enableColors: boolean = false,
   showTempo: boolean = true,
+  stemDirection: StemDirection = -1,
 ): RenderData[] {
   if (!container) {
     return [];
@@ -54,10 +55,11 @@ export function renderMusic(
 
   container.replaceChildren();
 
-  const lineHeight = showBarNumbers ? 180 : 130;
+  const lineHeight =
+    showBarNumbers || (stemDirection === 1 && showTempo) ? 180 : 130;
   const renderData: RenderData[] = [];
   const widths = song.measures.map((measure) =>
-    requiredMeasureWidth(measure, showTempo),
+    requiredMeasureWidth(measure, showTempo, stemDirection),
   );
   const rows = packRows(widths);
 
@@ -97,13 +99,14 @@ export function renderMusic(
         measure,
         index,
         x,
-        0,
+        stemDirection === 1 ? 10 : 0,
         measureWidth,
         index === song.measures.length - 1,
         showBarNumbers,
         enableColors,
         showTempo,
         colors,
+        stemDirection,
       );
 
       renderData[index] = { measure, stave, renderedNotes, yOffset };
@@ -163,13 +166,17 @@ function staveHeaderOffset(
   return stave.getNoteStartX() - stave.getX();
 }
 
-function requiredMeasureWidth(measure: Measure, showTempo: boolean): number {
+function requiredMeasureWidth(
+  measure: Measure,
+  showTempo: boolean,
+  stemDirection: StemDirection,
+): number {
   const headerOffset = staveHeaderOffset(
     new Stave(0, 0, TARGET_ROW_WIDTH),
     measure,
     showTempo,
   );
-  const { voice } = buildVoice(measure);
+  const { voice } = buildVoice(measure, stemDirection);
   const formatter = new Formatter().joinVoices([voice]);
   const minNoteWidth = formatter.preCalculateMinTotalWidth([voice]);
   const content = Number.isFinite(minNoteWidth) ? minNoteWidth : 0;
@@ -180,7 +187,7 @@ function requiredMeasureWidth(measure: Measure, showTempo: boolean): number {
   );
 }
 
-function buildVoice(measure: Measure) {
+function buildVoice(measure: Measure, stemDirection: StemDirection) {
   const tupletGroups = new Map<number, StaveNote[]>();
   const staveNotes = measure.notes.map((note) => {
     const isMeasureRest = note.isRest && measure.notes.length === 1;
@@ -190,7 +197,7 @@ function buildVoice(measure: Measure) {
         note.isRest ? 'r' : ''
       }`,
       align_center: isMeasureRest,
-      stem_direction: STEM_DIRECTION,
+      stem_direction: stemDirection,
     });
 
     if (note.dots > 0) {
@@ -206,7 +213,7 @@ function buildVoice(measure: Measure) {
             keys,
             duration: '8',
             slash: true,
-            stem_direction: STEM_DIRECTION,
+            stem_direction: stemDirection,
           }),
       );
       const graceGroup = new GraceNoteGroup(graceNotes, false);
@@ -250,7 +257,7 @@ function buildVoice(measure: Measure) {
           num_notes: meta.numNotes,
           notes_occupied: meta.notesOccupied,
           ratioed: false,
-          location: STEM_DIRECTION,
+          location: stemDirection,
         }),
     );
   const voice = new Voice({
@@ -261,7 +268,7 @@ function buildVoice(measure: Measure) {
     .addTickables(staveNotes);
   const beams = Beam.generateBeams(staveNotes, {
     flat_beams: true,
-    stem_direction: STEM_DIRECTION,
+    stem_direction: stemDirection,
     groups: measure.isCompound
       ? [new Fraction(3, measure.timeSig[1])]
       : undefined,
@@ -343,6 +350,7 @@ function drawAccents(
   staveNotes: StaveNote[],
   enableColors: boolean,
   noteColor: string,
+  stemDirection: StemDirection,
 ) {
   const gap = stave.getSpacingBetweenLines();
   const topLineY = stave.getYForLine(0);
@@ -365,11 +373,15 @@ function drawAccents(
         note.notes.length === 1 ? note.notes[0] : undefined,
         enableColors,
       );
+      const topY =
+        stemDirection === 1
+          ? Math.min(...ys, topLineY, staveNote.getStemExtents().topY)
+          : Math.min(...ys, topLineY);
 
       drawAccentGlyph(
         context,
         x,
-        Math.min(...ys, topLineY) - gap,
+        topY - gap,
         0.5,
         1,
         ACCENT_SCALE,
@@ -390,6 +402,7 @@ function drawAccents(
       const { x } = staveNote.getModifierStartXY(
         ModifierPosition.RIGHT,
         keyIndex,
+        { forceFlagRight: true },
       );
 
       drawAccentGlyph(
@@ -420,8 +433,10 @@ function renderMeasure(
   enableColors: boolean,
   showTempo: boolean,
   colors: SheetMusicColors,
+  stemDirection: StemDirection,
 ) {
   const stave = new Stave(xOffset, yOffset, width);
+  const textYOffset = stemDirection === 1 ? -45 : 0;
 
   if (endMeasure) {
     stave.setEndBarType(Barline.type.END);
@@ -436,12 +451,13 @@ function renderMeasure(
   }
 
   if (showTempo && measure.tempo) {
-    stave.setTempo(measure.tempo, 0);
+    stave.setTempo(measure.tempo, textYOffset);
   }
 
   if (showBarNumbers) {
     stave.setText(`${index + 1}`, ModifierPosition.ABOVE, {
       justification: TextJustification.LEFT,
+      shift_y: textYOffset,
     });
   }
 
@@ -453,7 +469,10 @@ function renderMeasure(
     .setContext(context)
     .draw();
 
-  const { voice, beams, tuplets, staveNotes } = buildVoice(measure);
+  const { voice, beams, tuplets, staveNotes } = buildVoice(
+    measure,
+    stemDirection,
+  );
   const headerOffset = stave.getNoteStartX() - stave.getX();
 
   new Formatter()
@@ -468,7 +487,15 @@ function renderMeasure(
   });
 
   applyNoteClasses(staveNotes, enableColors);
-  drawAccents(context, stave, measure, staveNotes, enableColors, colors.note);
+  drawAccents(
+    context,
+    stave,
+    measure,
+    staveNotes,
+    enableColors,
+    colors.note,
+    stemDirection,
+  );
 
   const renderedNotes = staveNotes.map((staveNote, i) => ({
     tick: measure.notes[i].tick,

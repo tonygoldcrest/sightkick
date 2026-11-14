@@ -7,6 +7,7 @@ import { renderMusic } from '../../../chart-parser/renderer';
 import { RenderData } from '../../../chart-parser/types';
 import { Song } from '../../../types';
 import { SHEET_MUSIC_COLORS } from '../../constants';
+import { StemDirection } from '../../types';
 
 const STORY_SONG = {
   name: 'Parser',
@@ -256,9 +257,24 @@ res=192 ts=4/4
 624 yellow
 672 kick yellow
 720 yellow
+
+# accents (single, beamed, full chord, partial chord)
+res=480 ts=4/4
+0 snare:accent
+480 kick:accent snare:accent yellow:accent
+960 kick snare:accent yellow
+1200 snare yellow:accent
+1440 snare:accent
+1680 yellow:accent
 `;
 
-function SheetHarness({ dsl }: { dsl: string }) {
+function SheetHarness({
+  dsl,
+  stemDirection,
+}: {
+  dsl: string;
+  stemDirection: StemDirection;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [renderData, setRenderData] = useState<RenderData[]>([]);
   const parser = useMemo(() => {
@@ -282,9 +298,10 @@ function SheetHarness({ dsl }: { dsl: string }) {
         false,
         true,
         true,
+        stemDirection,
       ),
     );
-  }, [parser]);
+  }, [parser, stemDirection]);
 
   if (!parser) {
     return null;
@@ -305,10 +322,16 @@ function SheetHarness({ dsl }: { dsl: string }) {
   );
 }
 
-function Sheet({ dsl }: { dsl: string }) {
+function Sheet({
+  dsl,
+  stemDirection = -1,
+}: {
+  dsl: string;
+  stemDirection?: StemDirection;
+}) {
   return (
     <div style={{ padding: 24, background: '#fff', overflow: 'auto' }}>
-      <SheetHarness dsl={dsl} />
+      <SheetHarness dsl={dsl} stemDirection={stemDirection} />
     </div>
   );
 }
@@ -316,12 +339,20 @@ function Sheet({ dsl }: { dsl: string }) {
 const meta: Meta<typeof Sheet> = {
   title: 'Song View/Sheet Music',
   component: Sheet,
+  args: {
+    dsl: DSL,
+    stemDirection: -1,
+  },
+  argTypes: {
+    stemDirection: {
+      control: { type: 'inline-radio', labels: { '-1': 'Down', '1': 'Up' } },
+      options: [-1, 1],
+    },
+  },
 };
 
 export default meta;
 
 type Story = StoryObj<typeof Sheet>;
 
-export const Parser: Story = {
-  render: () => <Sheet dsl={DSL} />,
-};
+export const Parser: Story = {};

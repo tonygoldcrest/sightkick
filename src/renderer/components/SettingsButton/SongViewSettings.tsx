@@ -44,6 +44,8 @@ export function SongViewSettings({
     setCountIn,
     zoom,
     setZoom,
+    stemDirection,
+    setStemDirection,
   } = useSongViewSettings();
   const { isDev } = useApp();
 
@@ -205,6 +207,33 @@ export function SongViewSettings({
                       },
                     }}
                   />
+                </div>
+
+                <Divider />
+
+                <div className="flex items-center justify-between gap-3">
+                  <SettingLabel
+                    label="Stem direction"
+                    tooltip="Where note stems point"
+                  />
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      data-testid="stem-direction-up"
+                      type={stemDirection === 1 ? 'primary' : 'default'}
+                      onClick={() => setStemDirection(1)}
+                    >
+                      Up
+                    </Button>
+
+                    <Button
+                      data-testid="stem-direction-down"
+                      type={stemDirection === -1 ? 'primary' : 'default'}
+                      onClick={() => setStemDirection(-1)}
+                    >
+                      Down
+                    </Button>
+                  </div>
                 </div>
               </div>
             ),

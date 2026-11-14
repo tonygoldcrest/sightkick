@@ -3,6 +3,7 @@ export type Lane = 'kick' | 'snare' | 'yellow' | 'blue' | 'green';
 export interface Cell {
   lane: Lane;
   tom: boolean;
+  accent?: boolean;
 }
 
 export interface DslBlock {
