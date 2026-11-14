@@ -14,4 +14,5 @@ if (os.platform() === 'darwin') {
   }
 }
 
+execSync('install-electron', { stdio: 'inherit', env });
 execSync('electron-builder install-app-deps', { stdio: 'inherit', env });
