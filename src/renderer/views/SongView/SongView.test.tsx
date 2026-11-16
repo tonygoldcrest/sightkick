@@ -327,20 +327,25 @@ describe('drumming and scoring', () => {
     ]);
   });
 
-  it('restarts the song from the top on retry', async () => {
+  it('restarts the song from the top on retry and stops the background audio', async () => {
     const view = setupSongView({ settings: { countIn: false } });
 
     await view.loadSong();
 
     view.clickPlay();
     await view.finishSong();
+
+    const [firstRunSource] = view.startedSources();
+
+    expect(firstRunSource).toBeDefined();
 
     view.clickTestId('score-retry');
 
+    expect(firstRunSource.stopped).toBe(true);
     expect(view.startedSources().length).toBeGreaterThan(0);
   });
 
-  it('returns to the library on next song', async () => {
+  it('stops the background audio and returns to the library on next song', async () => {
     const view = setupSongView({ settings: { countIn: false } });
 
     await view.loadSong();
@@ -348,8 +353,11 @@ describe('drumming and scoring', () => {
     view.clickPlay();
     await view.finishSong();
 
+    expect(view.startedSources().length).toBeGreaterThan(0);
+
     view.clickTestId('score-next');
 
+    expect(view.startedSources()).toHaveLength(0);
     expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
   });
 

@@ -268,8 +268,8 @@ export class Transport {
 
     const startTime = this.tickToTime(tick);
 
-    this.setPosition(startTime);
     this.onSeekCb(tick);
+    this.setPosition(startTime);
     this.nextBeatIndex = this.firstBeatIndexAtOrAfter(startTime);
 
     void this.beginPlayback(tick, startTime, generation);
@@ -380,8 +380,6 @@ export class Transport {
     const wasActive = this.state === 'playing' || this.state === 'counting-in';
 
     this.clearScheduling();
-    this.setPosition(seconds);
-    this.nextBeatIndex = this.firstBeatIndexAtOrAfter(seconds);
 
     if (this.chart) {
       this.onSeekCb(
@@ -392,6 +390,9 @@ export class Transport {
         ),
       );
     }
+
+    this.setPosition(seconds);
+    this.nextBeatIndex = this.firstBeatIndexAtOrAfter(seconds);
 
     if (!wasActive) {
       this.audioPlayer.stop();
@@ -522,6 +523,20 @@ export class Transport {
     if (!this.loopRegion) {
       this.setPosition(rawTime);
 
+      const lastMeasure = this.measures[this.measures.length - 1];
+
+      if (
+        this.chart &&
+        lastMeasure &&
+        secondsToTicks(
+          rawTime - this.delaySeconds,
+          this.chart.resolution,
+          this.chart.tempos,
+        ) >= lastMeasure.endTick
+      ) {
+        this.handleEnded();
+      }
+
       return;
     }
 
@@ -615,7 +630,7 @@ export class Transport {
   }
 
   private handleEnded(): void {
-    if (this.loopRegion) {
+    if (this.loopRegion || this.state === 'ended') {
       return;
     }
 

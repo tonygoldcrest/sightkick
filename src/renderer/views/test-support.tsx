@@ -278,9 +278,8 @@ export function setupSongView({
 
     async finishSong() {
       await act(async () => {
-        audio.bufferSources
-          .filter((source) => source.starts.length > 0)
-          .forEach((source) => source.emitEnded());
+        audio.currentTime += 10;
+        await new Promise((resolve) => requestAnimationFrame(resolve));
       });
     },
 
