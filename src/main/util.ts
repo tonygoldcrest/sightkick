@@ -178,6 +178,7 @@ export function buildSongFromDir(
     format,
     audio,
     drumDifficulties,
+    updatedAt: fs.statSync(dir).mtime.toISOString(),
     ...(existing?.liked !== undefined ? { liked: existing.liked } : {}),
     ...(existing?.scoreData !== undefined
       ? { scoreData: existing.scoreData }

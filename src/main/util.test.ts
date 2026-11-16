@@ -164,6 +164,7 @@ describe('buildSongFromDir metadata', () => {
     expect(song?.liked).toBe(true);
     expect(song?.scoreData).toEqual({ expert: { score: 10 } });
     expect(song?.albumCover).toBe(toAssetUrl(path.join(dir, 'album.jpg')));
+    expect(song?.updatedAt).toBe(fs.statSync(dir).mtime.toISOString());
   });
 
   it('reports no album cover when no image is present', () => {

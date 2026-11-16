@@ -7,7 +7,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { cn } from '../../cn';
 import { SortKey, SortState } from './types';
-import { DIRECTIONAL_KEYS, SORT_OPTIONS } from './constants';
+import {
+  defaultDirectionForKey,
+  DIRECTIONAL_KEYS,
+  SORT_OPTIONS,
+} from './constants';
 
 interface Props {
   sort: SortState;
@@ -32,7 +36,7 @@ export function SortMenu({ sort, onSortChange, focusedIndex }: Props) {
         direction: sort.direction === 'asc' ? 'desc' : 'asc',
       });
     } else {
-      onSortChange({ key, direction: 'asc' });
+      onSortChange({ key, direction: defaultDirectionForKey(key) });
     }
   };
   const dirIcon = (key: SortKey) => {
@@ -40,11 +44,10 @@ export function SortMenu({ sort, onSortChange, focusedIndex }: Props) {
       return null;
     }
 
-    if (sort.key === key) {
-      return sort.direction === 'asc' ? faArrowUp : faArrowDown;
-    }
+    const direction =
+      sort.key === key ? sort.direction : defaultDirectionForKey(key);
 
-    return faArrowUp;
+    return direction === 'asc' ? faArrowUp : faArrowDown;
   };
 
   return (

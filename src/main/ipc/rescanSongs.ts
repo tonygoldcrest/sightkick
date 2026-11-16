@@ -8,7 +8,6 @@ import {
   toSong,
 } from '../util';
 import { glob } from 'glob';
-import fs from 'fs';
 import path from 'path';
 
 export async function rescanSongs(event: IpcMainEvent, newDir = true) {
@@ -111,12 +110,7 @@ async function runRescan(event: IpcMainEvent, newDir: boolean) {
   appState.store.set('songs', { ...otherSongs, ...rescannedSongs });
 
   event.reply('rescan-songs', {
-    songs: Object.values(rescannedSongs).map((s) =>
-      toSong({
-        ...s,
-        updatedAt: fs.statSync(s.dir).mtime.toISOString(),
-      }),
-    ),
+    songs: Object.values(rescannedSongs).map((s) => toSong(s)),
     lastOpenedPath: selectedPath,
   });
 }

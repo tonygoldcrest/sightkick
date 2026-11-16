@@ -136,20 +136,32 @@ describe('SongListView — filtering and sorting', () => {
     }
   });
 
-  it('reorders the list when a sort option is chosen', () => {
+  it('sorts newest songs first by default and when choosing last added', () => {
     const view = setupSongListView();
+    const order = () =>
+      screen.getAllByText(/Alpha|Charlie/).map((el) => el.textContent);
 
     view.loadSongs([
-      makeListSong('a', { name: 'Charlie' }),
-      makeListSong('b', { name: 'Alpha' }),
+      makeListSong('a', {
+        name: 'Alpha',
+        updatedAt: '2020-01-01T00:00:00.000Z',
+      }),
+      makeListSong('b', {
+        name: 'Charlie',
+        updatedAt: '2024-01-01T00:00:00.000Z',
+      }),
     ]);
+
+    expect(order()).toEqual(['Charlie', 'Alpha']);
+
     view.chooseSort('name');
+    expect(order()).toEqual(['Alpha', 'Charlie']);
 
-    const rendered = screen
-      .getAllByText(/Charlie|Alpha/)
-      .map((el) => el.textContent);
+    view.chooseSort('lastAdded');
+    expect(order()).toEqual(['Charlie', 'Alpha']);
 
-    expect(rendered).toEqual(['Alpha', 'Charlie']);
+    view.chooseSort('lastAdded');
+    expect(order()).toEqual(['Alpha', 'Charlie']);
   });
 });
 
@@ -629,8 +641,16 @@ describe('SongListView — sort menu navigation', () => {
     const view = setupSongListView();
 
     view.loadSongs([
-      makeListSong('a', { name: 'Charlie', liked: true }),
-      makeListSong('b', { name: 'Alpha', liked: false }),
+      makeListSong('a', {
+        name: 'Charlie',
+        liked: false,
+        updatedAt: '2024-01-01T00:00:00.000Z',
+      }),
+      makeListSong('b', {
+        name: 'Alpha',
+        liked: true,
+        updatedAt: '2020-01-01T00:00:00.000Z',
+      }),
     ]);
 
     expect(

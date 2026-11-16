@@ -159,9 +159,13 @@ describe('downloadSong', () => {
       JSON.parse(fs.readFileSync(path.join(outputDir, '.sightkick'), 'utf-8')),
     ).toEqual({ id: 'hash123' });
 
-    const stored = storeHolder.current.get('songs.hash123') as { id: string };
+    const stored = storeHolder.current.get('songs.hash123') as {
+      id: string;
+      updatedAt?: string;
+    };
 
     expect(stored.id).toBe('hash123');
+    expect(stored.updatedAt).toMatch(/^\d{4}-/);
 
     const reply = lastReply(event, 'download-song')!.args[0] as {
       success: boolean;
@@ -170,7 +174,7 @@ describe('downloadSong', () => {
 
     expect(reply.success).toBe(true);
     expect(reply.song.id).toBe('hash123');
-    expect(reply.song.updatedAt).toMatch(/^\d{4}-/);
+    expect(reply.song.updatedAt).toBe(stored.updatedAt);
   });
 
   it('strips filesystem-illegal characters from the folder name', async () => {

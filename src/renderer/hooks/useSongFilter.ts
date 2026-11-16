@@ -11,8 +11,8 @@ export function useSongFilter(songList: Song[], difficulty: Difficulty) {
   const [nameFilter, setNameFilter] = useState('');
   const [libraryMode, setLibraryMode] = useState<LibraryMode>('local');
   const [sort, setSort] = usePersisted<SortState>('settings.sort', {
-    key: 'favorite',
-    direction: 'asc',
+    key: 'lastAdded',
+    direction: 'desc',
   });
   const {
     results: onlineResults,

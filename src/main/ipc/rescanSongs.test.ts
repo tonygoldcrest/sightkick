@@ -92,6 +92,15 @@ describe('rescanSongs', () => {
     expect(final.songs.map((s) => s.name).sort()).toEqual(['Song A', 'Song B']);
     expect(final.lastOpenedPath).toBe(library);
     expect(final.songs[0].updatedAt).toMatch(/^\d{4}-/);
+
+    const storedSongs = Object.values(
+      storeHolder.current.get('songs') as Record<
+        string,
+        { updatedAt?: string }
+      >,
+    );
+
+    expect(storedSongs[0].updatedAt).toBe(final.songs[0].updatedAt);
   });
 
   it('reuses the stored library path when not asked for a new directory', async () => {

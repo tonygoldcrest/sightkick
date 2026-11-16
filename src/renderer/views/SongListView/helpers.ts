@@ -1,6 +1,7 @@
 import { Difficulty } from 'scan-chart';
 import { ALL_DIFFICULTIES } from '../../../constants';
 import {
+  defaultDirectionForKey,
   DIRECTIONAL_KEYS,
   SORT_OPTIONS,
   SortState,
@@ -38,7 +39,10 @@ export function sortForFocusedIndex(
 
   return {
     key,
-    direction: currentSort.key === key ? currentSort.direction : 'asc',
+    direction:
+      currentSort.key === key
+        ? currentSort.direction
+        : defaultDirectionForKey(key),
   };
 }
 

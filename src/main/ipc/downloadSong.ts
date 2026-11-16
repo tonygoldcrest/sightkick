@@ -134,10 +134,7 @@ export async function downloadSong(
     event.reply('download-song', {
       success: true,
       md5,
-      song: toSong({
-        ...songData,
-        updatedAt: fs.statSync(outputDir).mtime.toISOString(),
-      }),
+      song: toSong(songData),
     });
   } catch (err) {
     event.reply('download-song', {

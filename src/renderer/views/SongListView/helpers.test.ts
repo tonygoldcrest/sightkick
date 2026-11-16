@@ -60,11 +60,15 @@ describe('sortForFocusedIndex', () => {
     });
   });
 
-  it('resets to ascending when moving to a different key', () => {
+  it('uses each key default direction when moving to a different key', () => {
     const current: SortState = { key: 'name', direction: 'desc' };
 
     expect(sortForFocusedIndex(2, current)).toEqual({
       key: 'lastAdded',
+      direction: 'desc',
+    });
+    expect(sortForFocusedIndex(3, current)).toEqual({
+      key: 'difficulty',
       direction: 'asc',
     });
   });
