@@ -3,6 +3,7 @@ import { GameMode, PlayheadStyle } from './types';
 export interface ModePolicy {
   player: 'default' | 'speed';
   scoring: boolean;
+  finishAfterLastNote: boolean;
   allowScrubbing: boolean;
   looping: boolean;
   speedControl: boolean;
@@ -14,6 +15,7 @@ export const MODE_POLICIES: Record<GameMode, ModePolicy> = {
   perform: {
     player: 'default',
     scoring: true,
+    finishAfterLastNote: true,
     allowScrubbing: false,
     looping: false,
     speedControl: false,
@@ -22,6 +24,7 @@ export const MODE_POLICIES: Record<GameMode, ModePolicy> = {
   practice: {
     player: 'speed',
     scoring: false,
+    finishAfterLastNote: false,
     allowScrubbing: true,
     looping: true,
     speedControl: true,

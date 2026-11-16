@@ -179,7 +179,7 @@ export class FakeAudioContext {
   }
 
   decodeAudioData(data: ArrayBuffer) {
-    return Promise.resolve(new FakeAudioBuffer(1, data.byteLength, 1));
+    return Promise.resolve(makeBuffer([new Array(data.byteLength).fill(1)], 1));
   }
 }
 

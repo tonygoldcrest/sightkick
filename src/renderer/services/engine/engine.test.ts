@@ -441,6 +441,39 @@ describe('Engine', () => {
     );
   });
 
+  it('clears a hit on the opening note when restarting from tick zero', async () => {
+    const n0 = staveNote(['c/5']);
+    const n1 = staveNote(['c/5']);
+    const { engine } = await setup({
+      renderData: [
+        measureData(
+          0,
+          1920,
+          [rendered(0, n0), rendered(480, n1)],
+          [
+            { tick: 0, isRest: false, notes: ['c/5'] } as Note,
+            { tick: 480, isRest: false, notes: ['c/5'] } as Note,
+          ],
+        ),
+      ],
+    });
+
+    engine.setRendererRefs({
+      cursorEl: document.createElement('div'),
+      highlightEls: [],
+    });
+    engine.setMapping({ snare: ['midi:38'] });
+    engine.playFromTick(0);
+    emitInput('midi:38');
+
+    expect(hasClass(n0, 'vf-note-hit')).toBe(true);
+
+    engine.seekSeconds(1);
+    engine.playFromTick(0);
+
+    expect(uncolored(n0)).toBe(true);
+  });
+
   it('does not register input hits before playback starts', async () => {
     const note = staveNote(['c/5']);
     const { engine } = await setup({

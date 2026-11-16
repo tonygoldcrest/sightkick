@@ -468,6 +468,48 @@ describe('Transport', () => {
     expect(onEnded).toHaveBeenCalledTimes(1);
   });
 
+  it('ends after the last measure plus the hit tolerance and keeps updating timeStore while audio plays', async () => {
+    const { engine, onEnded, player } = await setup();
+
+    engine.playFromTick(0);
+    player.currentTime = 4.05;
+    flushFrame();
+
+    expect(engine.getSnapshot().isEnded).toBe(false);
+    expect(onEnded).not.toHaveBeenCalled();
+
+    player.currentTime = 4.1;
+    flushFrame();
+
+    expect(engine.getSnapshot().isEnded).toBe(true);
+    expect(onEnded).toHaveBeenCalledTimes(1);
+
+    player.currentTime = 6;
+    flushFrame();
+
+    expect(engine.timeStore.get()).toBe(6);
+
+    player.onEnded();
+
+    expect(onEnded).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not end after the last measure when finishAfterLastNote is disabled', async () => {
+    const { engine, onEnded, player } = await setup(
+      {},
+      { finishAfterLastNote: false },
+    );
+
+    engine.playFromTick(0);
+    player.currentTime = 6;
+    flushFrame();
+
+    expect(engine.getSnapshot().isEnded).toBe(false);
+    expect(engine.getSnapshot().isPlaying).toBe(true);
+    expect(onEnded).not.toHaveBeenCalled();
+    expect(engine.timeStore.get()).toBe(6);
+  });
+
   it('notifies subscribers on state changes until unsubscribed', async () => {
     const { engine } = await setup();
     const listener = vi.fn();

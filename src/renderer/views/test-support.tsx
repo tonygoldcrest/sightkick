@@ -134,6 +134,7 @@ export interface SongViewHarness {
   clickTestId(testId: string): void;
   clickTrackMuteToggle(): HTMLElement;
   completeCountIn(): Promise<void>;
+  advancePlayback(seconds: number): Promise<void>;
   finishSong(): Promise<void>;
   startedSources(): FakeBufferSource[];
   sentChannels(): string[];
@@ -182,7 +183,7 @@ export function setupSongView({
   const ipc = installIpcMock();
   const audio = installWebAudio();
 
-  installFetchByByteLength(() => 8);
+  installFetchByByteLength(() => 4);
 
   if (settings) {
     seedSettings(settings);
@@ -276,12 +277,15 @@ export function setupSongView({
       });
     },
 
-    async finishSong() {
+    async advancePlayback(seconds: number) {
       await act(async () => {
-        audio.bufferSources
-          .filter((source) => source.starts.length > 0)
-          .forEach((source) => source.emitEnded());
+        audio.currentTime += seconds;
+        await new Promise((resolve) => requestAnimationFrame(resolve));
       });
+    },
+
+    async finishSong() {
+      await this.advancePlayback(10);
     },
 
     startedSources() {

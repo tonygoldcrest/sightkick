@@ -116,6 +116,7 @@ export function SongView() {
     delaySeconds,
     minDurationSeconds,
     countInEnabled: countIn,
+    finishAfterLastNote: policy.finishAfterLastNote,
     player: policy.player,
     playheadStyle: policy.playheadOverride ?? playheadStyle,
     mapping: inputMapping,

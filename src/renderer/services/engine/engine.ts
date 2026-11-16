@@ -87,6 +87,7 @@ export class Engine {
       measures: context.measures,
       delaySeconds: context.delaySeconds,
       countInEnabled: context.countInEnabled,
+      finishAfterLastNote: context.finishAfterLastNote,
       minDurationSeconds: context.minDurationSeconds,
     });
     this.judge.setContext({

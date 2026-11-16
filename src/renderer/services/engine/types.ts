@@ -24,6 +24,7 @@ export interface EngineContext {
   renderData: RenderData[];
   delaySeconds: number;
   countInEnabled: boolean;
+  finishAfterLastNote?: boolean;
   minDurationSeconds: number;
   mapping: InputMapping;
 }
@@ -84,6 +85,7 @@ export interface TransportContext {
   measures: Measure[];
   delaySeconds: number;
   countInEnabled: boolean;
+  finishAfterLastNote?: boolean;
   minDurationSeconds: number;
 }
 

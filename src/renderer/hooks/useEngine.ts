@@ -24,6 +24,7 @@ interface UseEngineParams {
   delaySeconds: number;
   minDurationSeconds: number;
   countInEnabled: boolean;
+  finishAfterLastNote: boolean;
   playheadStyle: PlayheadStyle;
   mapping: InputMapping;
   player: PlayerMode;
@@ -73,6 +74,7 @@ export function useEngine({
   delaySeconds,
   minDurationSeconds,
   countInEnabled,
+  finishAfterLastNote,
   playheadStyle,
   mapping,
   player,
@@ -129,6 +131,7 @@ export function useEngine({
       renderData,
       delaySeconds,
       countInEnabled,
+      finishAfterLastNote,
       minDurationSeconds,
       mapping,
     });
@@ -140,6 +143,7 @@ export function useEngine({
     delaySeconds,
     minDurationSeconds,
     countInEnabled,
+    finishAfterLastNote,
     mapping,
   ]);
 

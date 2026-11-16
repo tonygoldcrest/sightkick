@@ -327,20 +327,25 @@ describe('drumming and scoring', () => {
     ]);
   });
 
-  it('restarts the song from the top on retry', async () => {
+  it('restarts the song from the top on retry and stops the background audio', async () => {
     const view = setupSongView({ settings: { countIn: false } });
 
     await view.loadSong();
 
     view.clickPlay();
     await view.finishSong();
+
+    const [firstRunSource] = view.startedSources();
+
+    expect(firstRunSource).toBeDefined();
 
     view.clickTestId('score-retry');
 
+    expect(firstRunSource.stopped).toBe(true);
     expect(view.startedSources().length).toBeGreaterThan(0);
   });
 
-  it('returns to the library on next song', async () => {
+  it('stops the background audio and returns to the library on next song', async () => {
     const view = setupSongView({ settings: { countIn: false } });
 
     await view.loadSong();
@@ -348,8 +353,11 @@ describe('drumming and scoring', () => {
     view.clickPlay();
     await view.finishSong();
 
+    expect(view.startedSources().length).toBeGreaterThan(0);
+
     view.clickTestId('score-next');
 
+    expect(view.startedSources()).toHaveLength(0);
     expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
   });
 
@@ -366,6 +374,41 @@ describe('drumming and scoring', () => {
     await view.pressKey('Enter');
 
     expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
+  });
+
+  it('waits for the hit tolerance window after the last measure before showing the score modal', async () => {
+    const view = setupSongView({ settings: { countIn: false } });
+
+    await view.loadSong(makeSong(), SINGLE_NOTE_CHART);
+
+    view.clickPlay();
+    await view.advancePlayback(2);
+
+    expect(screen.queryByTestId('score-modal')).not.toBeInTheDocument();
+
+    await view.advancePlayback(0.1);
+
+    expect(screen.getByTestId('score-modal')).toBeInTheDocument();
+  });
+
+  it('continues updating the playback time in the background while the score modal is open', async () => {
+    const view = setupSongView({ settings: { countIn: false } });
+
+    await view.loadSong(makeSong(), SINGLE_NOTE_CHART);
+
+    view.clickPlay();
+    await view.advancePlayback(2.1);
+
+    expect(screen.getByTestId('score-modal')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(view.currentTimeText()).toBe('00:02');
+    });
+
+    await view.advancePlayback(1);
+
+    await waitFor(() => {
+      expect(view.currentTimeText()).toBe('00:03');
+    });
   });
 });
 
@@ -648,6 +691,28 @@ describe('practice loop selection', () => {
     await waitFor(() => {
       expect(view.startedSources().length).toBeGreaterThan(0);
     });
+  });
+
+  it('keeps playing past the last measure when looping is off', async () => {
+    const view = setupSongView({
+      route: '/song-1?gameMode=practice',
+      settings: { countIn: false },
+    });
+
+    await view.loadSong(makeSong(), SINGLE_NOTE_CHART);
+    view.clickTestId('loop-toggle');
+    view.clickPlay();
+
+    await waitFor(() => {
+      expect(view.startedSources().length).toBeGreaterThan(0);
+    });
+
+    await view.advancePlayback(3.5);
+
+    await waitFor(() => {
+      expect(view.currentTimeText()).toBe('00:03');
+    });
+    expect(view.startedSources().length).toBeGreaterThan(0);
   });
 });
 
