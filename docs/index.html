@@ -3,33 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SightKick – Learn drums by playing real songs | Free electronic drum kit game</title>
-  <meta name="description" content="Free drum practice game: sheet music for thousands of songs, mute the drum track, play along on your electronic drum kit, and get scored in real time. macOS, Windows, and Linux.">
+  <title>SightKick – Learn drums by playing real songs | Free drum learning game</title>
+  <meta name="description" content="Free, open source game to learn drums on your electronic drum kit: drum sheet music for thousands of Clone Hero and YARG songs, stem muting, and live MIDI scoring. macOS, Windows, and Linux.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sightkick.dev/">
   <meta property="og:title" content="SightKick – Learn drums by playing real songs">
-  <meta property="og:description" content="Free drum practice game: sheet music for thousands of songs, mute the drum track, and play along on your electronic drum kit.">
+  <meta property="og:description" content="Free drum learning game: sheet music for thousands of songs, mute the drum track, and play along on your electronic drum kit.">
   <meta property="og:image" content="https://cdn.sightkick.dev/images/hero.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SightKick – Learn drums by playing real songs">
-  <meta name="twitter:description" content="Free drum practice game: sheet music for thousands of songs, mute the drum track, and play along on your electronic drum kit.">
+  <meta name="twitter:description" content="Free drum learning game: sheet music for thousands of songs, mute the drum track, and play along on your electronic drum kit.">
   <meta name="twitter:image" content="https://cdn.sightkick.dev/images/hero.png">
   <link rel="canonical" href="https://sightkick.dev/">
   <link rel="icon" href="https://cdn.sightkick.dev/images/sightkick-logo.png">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
+    "@type": ["SoftwareApplication", "VideoGame"],
     "name": "SightKick",
     "alternateName": ["Sidekick Drums", "SightKick Drums"],
-    "description": "A free drum practice game. Renders thousands of community songs as standard sheet music: mute the recorded drums, plug in your electronic drum kit, and get scored on accuracy in real time.",
-    "applicationCategory": "MusicApplication",
+    "description": "A free, open source game to learn drums on an electronic drum kit. Renders thousands of community rhythm game charts (Clone Hero and YARG format) as standard drum sheet music: mute the recorded drums, plug in your electronic drum kit, and get scored on accuracy as you play.",
+    "applicationCategory": ["GameApplication", "MusicApplication", "EducationalApplication"],
+    "genre": ["Rhythm Game", "Drum Learning Game", "Music Education"],
     "operatingSystem": "macOS, Windows, Linux",
     "featureList": [
-      "Drum sheet music rendered from community song charts",
+      "Standard drum sheet music rendered from Clone Hero and YARG song charts",
       "Multi-stem audio mixer with per-track volume control",
       "AI-powered drum track separation from mixed audio",
-      "MIDI electronic drum kit support with real-time hit detection and scoring",
+      "MIDI electronic drum kit support with hit detection and scoring",
       "Practice mode with section looping and playback speed control (0.3x to 2x)",
       "Multiple playhead modes: cursor, measure, or off",
       "In-app song search and download from Enchor library",
@@ -68,7 +69,7 @@
       {
         "@type": "Question",
         "name": "Where do the songs come from?",
-        "acceptedAnswer": { "@type": "Answer", "text": "From Enchor, a community library of songs charted for rhythm games. You search and download right inside the app. The charts are made by fans, so quality varies, but for well-known songs they're usually solid." }
+        "acceptedAnswer": { "@type": "Answer", "text": "From Enchor, the community library of songs charted for rhythm games like Clone Hero and YARG. You search and download right inside the app, or point SightKick at a song folder you already have. The charts are made by fans, so quality varies, but for well-known songs they're usually solid." }
       },
       {
         "@type": "Question",
@@ -77,13 +78,18 @@
       },
       {
         "@type": "Question",
+        "name": "Can you learn drums with a game?",
+        "acceptedAnswer": { "@type": "Answer", "text": "You won't learn stick grip or posture from a screen, and a few lessons will save you bad habits early on. Where a game helps is the hours of repetition after that: keeping time with a band, coordinating all four limbs, and sight-reading drum charts at speed. Because SightKick uses standard drum notation instead of arcade lanes, the reading skill carries over when the game is off." }
+      },
+      {
+        "@type": "Question",
         "name": "Can I try it without a drum kit?",
         "acceptedAnswer": { "@type": "Answer", "text": "Yes. Map the keyboard instead of pads and give it a go. It won't do much for your drumming, but it shows you how everything works before you commit to dragging your kit next to the computer." }
       },
       {
         "@type": "Question",
-        "name": "How is it different from Melodics or Drumeo?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Those are lesson platforms with subscriptions, and they're good at teaching technique. SightKick doesn't teach; it's a practice game. You pick songs you actually like and play them until the score stops being embarrassing." }
+        "name": "How is it different from Clone Hero, YARG, Melodics, or Drumeo?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Clone Hero and YARG are great rhythm games, but they use a scrolling highway of colored gems that doesn't transfer to reading sheet music. SightKick uses those same song charts, but renders them as standard drum notation. Melodics and Drumeo are subscription platforms built around structured lessons and exercises; SightKick is a free game where you pick songs you like, loop the hard sections at a slower speed, and play through from Easy to Expert." }
       },
       {
         "@type": "Question",
@@ -136,6 +142,7 @@
     <a href="#features" class="nav-link">Features</a>
     <a href="#workflow" class="nav-link">How it works</a>
     <a href="#faq" class="nav-link">FAQ</a>
+    <a href="alternatives.html" class="nav-link">Compare</a>
     <a href="https://ko-fi.com/tonygoldcrest" target="_blank" rel="noopener" class="nav-link">
       <svg class="icon" width="14" height="14"><use href="#i-kofi"/></svg>Support
     </a>
@@ -219,7 +226,7 @@
           </div>
           <div class="feat-title">Thousands of songs</div>
         </div>
-        <div class="feat-body">Search and download straight from the <a href="https://www.enchor.us/" target="_blank" rel="noopener">Enchor</a> community library, all with drum charts. The charts aren't always perfect, but they're usually close enough. Most come in several difficulties, from Easy to Expert.</div>
+        <div class="feat-body">Search and download straight from the <a href="https://www.enchor.us/" target="_blank" rel="noopener">Enchor</a> community library, or point SightKick at a Clone Hero or YARG song folder you already have. Most charts come in several difficulties, from Easy to Expert.</div>
       </div>
 
       <div class="feat">
@@ -405,7 +412,7 @@
 
       <details class="faq-item">
         <summary>Where do the songs come from?</summary>
-        <p class="faq-body">From <a href="https://www.enchor.us/" target="_blank" rel="noopener">Enchor</a>, a community library of songs charted for rhythm games. You search and download right inside the app. The charts are made by fans, so quality varies, but for well-known songs they're usually solid.</p>
+        <p class="faq-body">From <a href="https://www.enchor.us/" target="_blank" rel="noopener">Enchor</a>, the community library of songs charted for rhythm games like Clone Hero and YARG. You search and download right inside the app, or point SightKick at a song folder you already have. The charts are made by fans, so quality varies, but for well-known songs they're usually solid.</p>
       </details>
 
       <details class="faq-item">
@@ -414,13 +421,18 @@
       </details>
 
       <details class="faq-item">
+        <summary>Can you learn drums with a game?</summary>
+        <p class="faq-body">You won't learn stick grip or posture from a screen, and a few lessons will save you bad habits early on. Where a game helps is the hours of repetition after that: keeping time with a band, coordinating all four limbs, and sight-reading drum charts at speed. Because SightKick uses standard drum notation instead of arcade lanes, the reading skill carries over when the game is off.</p>
+      </details>
+
+      <details class="faq-item">
         <summary>Can I try it without a drum kit?</summary>
         <p class="faq-body">Yes. Map the keyboard instead of pads and give it a go. It won't do much for your drumming, but it shows you how everything works before you commit to dragging your kit next to the computer.</p>
       </details>
 
       <details class="faq-item">
-        <summary>How is it different from Melodics or Drumeo?</summary>
-        <p class="faq-body">Those are lesson platforms with subscriptions, and they're good at teaching technique. SightKick doesn't teach; it's a practice game. You pick songs you actually like and play them until the score stops being embarrassing. There's a <a href="alternatives.html">longer comparison here</a>.</p>
+        <summary>How is it different from Clone Hero, YARG, Melodics, or Drumeo?</summary>
+        <p class="faq-body">Clone Hero and YARG are great rhythm games, but they use a scrolling highway of colored gems that doesn't transfer to reading sheet music. SightKick uses those same song charts, but renders them as standard drum notation. Melodics and Drumeo are subscription platforms built around structured lessons and exercises; SightKick is a free game where you pick songs you like, loop the hard sections at a slower speed, and play through from Easy to Expert. There's a <a href="alternatives.html">longer comparison here</a>.</p>
       </details>
 
       <details class="faq-item">
@@ -484,7 +496,7 @@
     <span class="footer-copy">MIT License, Anton Korolkov</span>
   </div>
   <div class="footer-links">
-    <a href="alternatives.html" class="footer-link">vs Melodics &amp; Drumeo</a>
+    <a href="alternatives.html" class="footer-link">vs Clone Hero, Melodics &amp; Drumeo</a>
     <a href="https://github.com/tonygoldcrest/sightkick" class="footer-link" target="_blank" rel="noopener">GitHub</a>
     <a href="https://github.com/tonygoldcrest/sightkick/releases" class="footer-link" target="_blank" rel="noopener">Releases</a>
     <a href="https://www.enchor.us/" class="footer-link" target="_blank" rel="noopener">Enchor</a>

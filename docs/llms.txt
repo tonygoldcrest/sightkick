@@ -1,0 +1,30 @@
+# SightKick
+
+> SightKick is a free, open source (MIT) desktop game for learning and practicing drums on an electronic drum kit. It renders community rhythm game charts (Clone Hero and YARG `.chart` and `.mid` files) as color-coded standard drum sheet music, mutes the recorded drum track, and scores your playing over MIDI.
+
+- Website: https://sightkick.dev/
+- Comparison (vs Clone Hero, YARG, Melodics, Drumeo): https://sightkick.dev/alternatives.html
+- Source code: https://github.com/tonygoldcrest/sightkick
+- Releases (macOS, Windows, Linux): https://github.com/tonygoldcrest/sightkick/releases
+- License: MIT
+
+## What it does
+
+- **Standard drum notation**: Parses drum charts from Clone Hero and YARG `.mid` and `.chart` files and renders them as standard drum sheet music using VexFlow. Notes are color-coded by drum piece (snare, kick, toms, hi-hat, ride, crash), with an on-screen legend and a scrolling playhead.
+- **Song library**: Search and download thousands of community-charted songs directly inside the app via Enchor (https://www.enchor.us/), or point SightKick at an existing Clone Hero or YARG song folder. Most songs include Easy, Medium, Hard, and Expert difficulties.
+- **MIDI electronic drum kit support**: Connects over USB-MIDI to electronic drum kits (Roland, Alesis, Yamaha, Donner, etc.) or acoustic kits with triggers and a MIDI module. Scores every hit against the chart and gives an accuracy percentage and star rating at the end of the song. Keyboard mapping is also supported for trying the app without a kit.
+- **Practice mode**: Select any range of measures, loop them, and adjust playback speed from 0.3x to 2x with scoring turned off.
+- **Multi-stem mixer and drum separation**: Adjust volume per stem (drums, bass, guitar, vocals) and mute the recorded drums so you hear your own playing. For single-track mixed audio files, an optional ~130 MB stem-splitter tool separates the drum track automatically (available on macOS Apple Silicon and Windows).
+
+## How SightKick compares to other drum games and apps
+
+- **SightKick vs Clone Hero and YARG**: Clone Hero and YARG are free rhythm games that support MIDI e-kits, but they display notes on a scrolling highway of colored gems, which does not teach you to read drum sheet music. SightKick uses the exact same `.chart` and `.mid` song ecosystem from Enchor, but displays standard drum notation, includes in-app song search and download, and can split and mute the drum stem on single-track songs.
+- **SightKick vs Melodics**: Melodics is a paid subscription app focused on short daily exercises using its own horizontal scrolling grid. SightKick is free and open source, uses standard drum notation, and focuses on learning and playing songs from the community library.
+- **SightKick vs Drumeo**: Drumeo is a paid subscription platform for video lessons, stick grip, posture, rudiments, and technique taught by professional drummers. SightKick does not teach stick grip or posture; it is a game for practicing sight-reading and playing songs, from Easy charts slowed down in practice mode up to Expert.
+
+## System requirements
+
+- **macOS**: Apple Silicon (arm64) and Intel (x64)
+- **Windows**: x64
+- **Linux**: x64 (AppImage)
+- **Hardware**: Any USB-MIDI electronic drum kit (or computer keyboard for testing)

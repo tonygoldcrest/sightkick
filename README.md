@@ -1,9 +1,10 @@
 # <img width="64" height="64" alt="SightKick Logo Github" src="https://cdn.sightkick.dev/images/sightkick-logo.png" /> SightKick
 
-A game for learning drums with sheet music for thousands of songs. Mute the drum track, play along with your kit, and chase your best score.
+A free, open source game for learning drums with sheet music for thousands of songs. Mute the drum track, play along on your electronic drum kit, and chase your best score.
 
 <h1 align="center">
   <a href="https://sightkick.dev">Guide</a> |
+  <a href="https://sightkick.dev/alternatives.html">Compare</a> |
   <a href="https://github.com/tonygoldcrest/sightkick/releases">Download</a> |
   <a href="https://discord.gg/mqVSKx5N6K">Discord</a>
 </h1>
@@ -17,9 +18,9 @@ A game for learning drums with sheet music for thousands of songs. Mute the drum
 
 ## Features
 
-* **Sheet music rendering**: drum charts from Clone Hero `.mid`/`.chart` files are rendered as standard notation in real time
+* **Sheet music rendering**: drum charts from Clone Hero and YARG `.mid`/`.chart` files are rendered as standard notation
 * **Thousands of songs**: browse and download from the Enchor community library directly inside the app
-* **MIDI e-kit support**: connect your electronic drum kit and get real-time hit detection scored against the chart, with a star rating at the end of each song
+* **MIDI e-kit support**: connect your electronic drum kit and get hit detection scored against the chart, with a star rating at the end of each song
 * **Practice mode**: select a section, loop it, and slow playback down (0.3x to 2x) with scoring off
 * **Stem mixer**: mute the recorded drums and hear your own playing; adjust levels per stem
 * **Stem splitting**: separate a mixed recording into individual tracks automatically (macOS Apple Silicon and Windows; ~130 MB one-time download)
