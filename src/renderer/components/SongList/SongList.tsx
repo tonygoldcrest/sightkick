@@ -23,6 +23,7 @@ export interface SongListProps {
   focusedIndex?: number;
   onCharterClick?: (charter: string) => void;
   onArtistClick?: (artist: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 const LOAD_MORE_THRESHOLD = 2;
@@ -44,6 +45,7 @@ export function SongList({
   focusedIndex,
   onCharterClick,
   onArtistClick,
+  onDelete,
 }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +117,7 @@ export function SongList({
                 focused={virtualItem.index === focusedIndex}
                 onCharterClick={onCharterClick}
                 onArtistClick={onArtistClick}
+                onDelete={onDelete}
               />
             </div>
           );

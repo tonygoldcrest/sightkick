@@ -39,6 +39,7 @@ export function SongListView() {
     handleSplit,
     handleLikeChange,
     addSong,
+    deleteSong,
   } = useSongList();
   const scanPercent =
     scanProgress && scanProgress.total > 0
@@ -241,6 +242,7 @@ export function SongListView() {
                 onLoadMore={libraryMode === 'online' ? loadMore : undefined}
                 onCharterClick={searchCurrentList}
                 onArtistClick={searchCurrentList}
+                onDelete={deleteSong}
                 focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
               />
             ) : (
