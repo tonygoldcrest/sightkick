@@ -148,6 +148,33 @@ describe('rescanSongs', () => {
     expect(songs.existing.liked).toBe(true);
   });
 
+  it('repairs a charter that was stored cut off at a color tag', async () => {
+    const dir = writeSong(library, 'Colored');
+
+    fs.writeFileSync(
+      path.join(dir, 'song.ini'),
+      '[Song]\nname = Colored\ncharter = <color=#ff0000>M<color=#0000ff>r\n',
+    );
+    storeHolder.current = makeStore({
+      lastOpenedPath: library,
+      songs: {
+        a: { id: 'a', dir, name: 'Colored', charter: '<color=', liked: true },
+      },
+    });
+
+    const event = makeEvent();
+
+    await rescanSongs(event as never, false);
+
+    const songs = storeHolder.current.get('songs') as Record<
+      string,
+      { charter?: string; liked?: boolean }
+    >;
+
+    expect(songs.a.charter).toBe('Mr');
+    expect(songs.a.liked).toBe(true);
+  });
+
   it('replies with an error when the scan throws', async () => {
     const base = makeStore({});
 
