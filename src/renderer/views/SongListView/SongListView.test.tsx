@@ -754,3 +754,105 @@ describe('SongListView — library folder', () => {
     });
   });
 });
+
+describe('SongListView — preview on select', () => {
+  class PreviewAudio {
+    static instances: PreviewAudio[] = [];
+
+    src: string;
+    duration = 20;
+    paused = true;
+    readyState = 1;
+    preload = 'none';
+    currentTime = 0;
+
+    constructor(src?: string) {
+      this.src = src ?? '';
+      PreviewAudio.instances.push(this);
+    }
+
+    addEventListener() {}
+
+    removeEventListener() {}
+
+    play() {
+      this.paused = false;
+
+      return Promise.resolve();
+    }
+
+    pause() {
+      this.paused = true;
+    }
+
+    removeAttribute() {}
+
+    load() {}
+  }
+
+  const playing = () =>
+    PreviewAudio.instances.filter((a) => !a.paused).map((a) => a.src);
+  const songs = () => [
+    makeListSong('a', { audio: [{ src: 'a.ogg', name: 'song' }] }),
+    makeListSong('b', { audio: [{ src: 'b.ogg', name: 'song' }] }),
+  ];
+
+  afterEach(() => {
+    PreviewAudio.instances = [];
+  });
+
+  it('plays the song selected with the kit from its middle', async () => {
+    vi.stubGlobal('Audio', PreviewAudio);
+
+    const view = setupSongListView();
+
+    view.loadSongs(songs());
+    view.press('down');
+
+    await waitFor(() => expect(playing()).toEqual(['a.ogg']));
+    expect(PreviewAudio.instances[0].currentTime).toBe(10);
+  });
+
+  it('switches the preview when the selection moves', async () => {
+    vi.stubGlobal('Audio', PreviewAudio);
+
+    const view = setupSongListView();
+
+    view.loadSongs(songs());
+    view.press('down');
+    await waitFor(() => expect(playing()).toEqual(['a.ogg']));
+
+    view.press('down');
+    await waitFor(() => expect(playing()).toEqual(['b.ogg']));
+  });
+
+  it('stays quiet when preview on select is turned off', async () => {
+    vi.stubGlobal('Audio', PreviewAudio);
+
+    const view = setupSongListView({ settings: { autoPreview: false } });
+
+    view.loadSongs(songs());
+    view.press('down');
+    await new Promise((resolve) => {
+      setTimeout(resolve, 500);
+    });
+
+    expect(PreviewAudio.instances).toHaveLength(0);
+  });
+
+  it('stops the preview when practice or perform is opened', async () => {
+    vi.stubGlobal('Audio', PreviewAudio);
+
+    const view = setupSongListView();
+
+    view.loadSongs(songs());
+    view.press('down');
+    await waitFor(() => expect(playing()).toEqual(['a.ogg']));
+
+    view.press('confirm');
+    view.chooseGameMode('perform');
+
+    expect(await screen.findByTestId('song-view-stub')).toBeInTheDocument();
+    expect(playing()).toEqual([]);
+  });
+});

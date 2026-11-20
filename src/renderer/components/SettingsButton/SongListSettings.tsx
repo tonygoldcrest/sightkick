@@ -1,4 +1,4 @@
-import { Button, Divider, Progress } from 'antd';
+import { Button, Divider, Progress, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowsRotate,
@@ -9,6 +9,7 @@ import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { StemToolsPanel } from '../../context/StemToolsContext';
 import { useApp } from '../../context/AppContext';
 import { Tooltip } from '../Tooltip';
+import { SettingLabel } from './SettingLabel';
 import { SupportButton } from '../SupportButton/SupportButton';
 import { DISCORD_URL } from './constants';
 
@@ -23,7 +24,7 @@ export function SongListSettings({
   onSetupInput,
   currentInputName,
 }: Props) {
-  const { currentPath } = useApp();
+  const { currentPath, autoPreview, setAutoPreview } = useApp();
   const isScanning = scanPercent !== undefined;
   const selectFolder = () =>
     window.electron.ipcRenderer.sendMessage('rescan-songs');
@@ -80,6 +81,21 @@ export function SongListSettings({
           {currentInputName ?? 'Setup input'}
         </Button>
       </Tooltip>
+
+      <Divider />
+
+      <div className="flex items-center justify-between gap-3">
+        <SettingLabel
+          label="Preview on select"
+          tooltip="Play a song from its middle while it is selected in your library."
+        />
+        <Switch
+          size="small"
+          data-testid="setting-auto-preview"
+          checked={autoPreview}
+          onChange={setAutoPreview}
+        />
+      </div>
 
       <Divider />
 

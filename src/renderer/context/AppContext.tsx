@@ -16,6 +16,8 @@ interface AppContextValue {
   setCurrentPath: (p: string | null) => void;
   supportDismissed: boolean;
   setSupportDismissed: (d: boolean) => void;
+  autoPreview: boolean;
+  setAutoPreview: (v: boolean) => void;
   isDev: boolean;
 }
 
@@ -30,6 +32,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [supportDismissed, setSupportDismissed] = usePersisted(
     'settings.supportDismissed',
     false,
+  );
+  const [autoPreview, setAutoPreview] = usePersisted(
+    'settings.autoPreview',
+    true,
   );
   const [isDev, setIsDev] = useState(false);
 
@@ -49,6 +55,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentPath,
       supportDismissed,
       setSupportDismissed,
+      autoPreview,
+      setAutoPreview,
       isDev,
     }),
     [
@@ -58,6 +66,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentPath,
       supportDismissed,
       setSupportDismissed,
+      autoPreview,
+      setAutoPreview,
       isDev,
     ],
   );

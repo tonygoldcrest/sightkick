@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Spin } from 'antd';
 import { Outlet, useNavigate, useOutlet } from 'react-router-dom';
 import { SongFilter } from '../../components/SongFilter';
@@ -13,20 +13,26 @@ import { StemToolsProvider } from '../../context/StemToolsContext';
 import { useStemTools } from '../../hooks/useStemTools';
 import { useSongList } from '../../hooks/useSongList';
 import { useDownload } from '../../hooks/useDownload';
+import { useSongPreview } from '../../hooks/useSongPreview';
 import { useSongFilter } from '../../hooks/useSongFilter';
 import { useInputControls } from '../../hooks/useInputControls';
 import { useGameModeSelector } from '../../hooks/useGameModeSelector';
 import {
   nextDifficulty,
   nextSongIndex,
+  previewSources,
   sortForFocusedIndex,
   sortIndexForKey,
   toggledSortForIndex,
   wrapSortIndex,
 } from './helpers';
 
+// Wait for the selection to settle so stepping through the list does not
+// load every song on the way.
+const PREVIEW_DELAY_MS = 300;
+
 export function SongListView() {
-  const { currentPath, difficulty, setDifficulty } = useApp();
+  const { currentPath, difficulty, setDifficulty, autoPreview } = useApp();
   const { controlMapping } = useInput();
   const navigate = useNavigate();
   const songOpen = useOutlet() !== null;
@@ -72,6 +78,36 @@ export function SongListView() {
   const [prevSort, setPrevSort] = useState(sort);
   const [prevSortAvailable, setPrevSortAvailable] = useState(sortAvailable);
   const gameModeSelector = useGameModeSelector();
+  const { playPreview, stopPreview } = useSongPreview();
+  const focusedSong =
+    focusedSongIndex === undefined
+      ? undefined
+      : filteredSongList[focusedSongIndex];
+  const previewId =
+    autoPreview && !songOpen && libraryMode === 'local'
+      ? focusedSong?.id
+      : undefined;
+  // A string key so a fresh song list with the same audio does not restart it.
+  const sourcesKey = previewId ? previewSources(focusedSong).join('\n') : '';
+  const sources = useMemo(
+    () => (sourcesKey ? sourcesKey.split('\n') : []),
+    [sourcesKey],
+  );
+
+  useEffect(() => {
+    if (!previewId || sources.length === 0) {
+      stopPreview();
+
+      return undefined;
+    }
+
+    const timer = setTimeout(
+      () => playPreview(previewId, sources),
+      PREVIEW_DELAY_MS,
+    );
+
+    return () => clearTimeout(timer);
+  }, [previewId, sources, playPreview, stopPreview]);
 
   if (
     nameFilter !== prevNameFilter ||
@@ -124,6 +160,7 @@ export function SongListView() {
     const gameMode = await gameModeSelector.open();
 
     if (gameMode) {
+      stopPreview();
       navigate(`/${id}?gameMode=${gameMode}`);
     }
   };
@@ -226,6 +263,11 @@ export function SongListView() {
                 difficulty={difficulty}
                 onClickSong={(id) => {
                   if (libraryMode === 'local') {
+                    const index = filteredSongList.findIndex(
+                      (song) => song.id === id,
+                    );
+
+                    setFocusedSongIndex(index === -1 ? undefined : index);
                     play(id);
                   }
                 }}
