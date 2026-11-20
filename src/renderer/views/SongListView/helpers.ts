@@ -1,5 +1,7 @@
 import { Difficulty } from 'scan-chart';
 import { ALL_DIFFICULTIES } from '../../../constants';
+import { OnlineSong } from '../../types';
+import { Song } from '../../../types';
 import {
   defaultDirectionForKey,
   DIRECTIONAL_KEYS,
@@ -72,4 +74,16 @@ export function nextDifficulty(current: Difficulty): Difficulty {
   const index = ALL_DIFFICULTIES.indexOf(current);
 
   return ALL_DIFFICULTIES[(index + 1) % ALL_DIFFICULTIES.length];
+}
+
+// The full mix when the song has one, otherwise every stem played together.
+// Online results have no local audio and cannot be previewed.
+export function previewSources(song: Song | OnlineSong | undefined): string[] {
+  if (!song || !('audio' in song) || song.audio.length === 0) {
+    return [];
+  }
+
+  const mix = song.audio.find((track) => track.name === 'song');
+
+  return mix ? [mix.src] : song.audio.map((track) => track.src);
 }

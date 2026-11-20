@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   nextDifficulty,
   nextSongIndex,
+  previewSources,
   sortForFocusedIndex,
   sortIndexForKey,
   toggledSortForIndex,
@@ -110,5 +111,41 @@ describe('nextDifficulty', () => {
     const last = ALL_DIFFICULTIES[ALL_DIFFICULTIES.length - 1];
 
     expect(nextDifficulty(last)).toBe(ALL_DIFFICULTIES[0]);
+  });
+});
+
+describe('previewSources', () => {
+  const local = (audio: { name: string; src: string }[]) =>
+    ({ id: 'a', audio }) as unknown as Parameters<typeof previewSources>[0];
+
+  it('plays only the full mix when the song has one', () => {
+    expect(
+      previewSources(
+        local([
+          { name: 'drums', src: 'drums.ogg' },
+          { name: 'song', src: 'song.ogg' },
+        ]),
+      ),
+    ).toEqual(['song.ogg']);
+  });
+
+  it('plays every stem when there is no full mix', () => {
+    expect(
+      previewSources(
+        local([
+          { name: 'drums', src: 'drums.ogg' },
+          { name: 'guitar', src: 'guitar.ogg' },
+        ]),
+      ),
+    ).toEqual(['drums.ogg', 'guitar.ogg']);
+  });
+
+  it('has nothing to play for a missing or online song', () => {
+    expect(previewSources(undefined)).toEqual([]);
+    expect(
+      previewSources({ id: 'o', source: 'online' } as unknown as Parameters<
+        typeof previewSources
+      >[0]),
+    ).toEqual([]);
   });
 });
