@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { Difficulty, parseChartFile } from 'scan-chart';
 import { AudioData, Song, SongData } from '../types';
 import { ALL_DIFFICULTIES } from '../constants';
+import { stripColorMarkup } from '../colorMarkup';
 
 export const SONG_ID_FILE = '.sightkick';
 
@@ -31,10 +32,10 @@ export function toSong(stored: SongData): Song {
     id: stored.id,
     dir: stored.dir,
     albumCover: stored.albumCover ?? undefined,
-    name: stored.name ?? '',
-    artist: stored.artist ?? '',
-    album: stored.album ?? '',
-    charter: stored.charter ?? '',
+    name: stripColorMarkup(stored.name ?? ''),
+    artist: stripColorMarkup(stored.artist ?? ''),
+    album: stripColorMarkup(stored.album ?? ''),
+    charter: stripColorMarkup(stored.charter ?? ''),
     genre: stored.genre ?? '',
     year: stored.year ?? '',
     fiveLaneDrums: stored.five_lane_drums === 'True',
@@ -132,9 +133,7 @@ export function buildSongFromDir(
   }
 
   const info = ini.parse(
-    fs
-      .readFileSync(songIniPath, 'utf-8')
-      .replace(/<color=[^>]*>(.*?)<\/color>/g, '$1'),
+    stripColorMarkup(fs.readFileSync(songIniPath, 'utf-8')),
   );
   const supportedImageExtensions = ['png', 'jpg', 'jpeg'];
   const albumCoverPath = supportedImageExtensions

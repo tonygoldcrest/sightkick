@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
 import { uniqBy } from 'es-toolkit';
 import { Difficulty } from 'scan-chart';
+import { stripColorMarkup } from '../../colorMarkup';
 import { OnlineSong } from '../types';
 
 type PageResult = { songs: OnlineSong[]; total: number | undefined };
@@ -53,9 +54,9 @@ function mapSongs(data: Record<string, unknown>[]): OnlineSong[] {
         albumCover: chart.albumArtMd5
           ? `https://files.enchor.us/${chart.albumArtMd5}.jpg`
           : undefined,
-        name: String(chart.name ?? ''),
-        artist: String(chart.artist ?? ''),
-        charter: String(chart.charter ?? ''),
+        name: stripColorMarkup(String(chart.name ?? '')),
+        artist: stripColorMarkup(String(chart.artist ?? '')),
+        charter: stripColorMarkup(String(chart.charter ?? '')),
         drumDifficulty:
           typeof chart.diff_drums === 'number' ? chart.diff_drums : 0,
       }),
