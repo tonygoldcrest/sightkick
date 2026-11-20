@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Spin } from 'antd';
 import { Outlet, useNavigate, useOutlet } from 'react-router-dom';
 import { SongFilter } from '../../components/SongFilter';
@@ -128,12 +128,6 @@ export function SongListView() {
       navigate(`/${id}?gameMode=${gameMode}`);
     }
   };
-  const handleDelete = useCallback(
-    (id: string) => {
-      deleteSong(id);
-    },
-    [deleteSong],
-  );
 
   useInputControls(
     controlMapping,
@@ -248,7 +242,7 @@ export function SongListView() {
                 onLoadMore={libraryMode === 'online' ? loadMore : undefined}
                 onCharterClick={searchCurrentList}
                 onArtistClick={searchCurrentList}
-                onDelete={handleDelete}
+                onDelete={deleteSong}
                 focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
               />
             ) : (
