@@ -4,6 +4,7 @@ import {
   createRef,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
 } from 'react';
@@ -33,6 +34,7 @@ export interface SheetMusicProps {
   enableColors: boolean;
   showReference: boolean;
   zoom: number;
+  onRowWidth?: (width: number) => void;
 }
 
 export function SheetMusic({
@@ -50,7 +52,9 @@ export function SheetMusic({
   showReference,
   enableColors,
   zoom,
+  onRowWidth,
 }: SheetMusicProps) {
+  const rowHostRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const highlightsRef = useMemo(
     () => renderData.map(() => createRef<HTMLDivElement>()),
@@ -94,6 +98,30 @@ export function SheetMusic({
 
     return () => window.removeEventListener('mouseup', endDrag);
   }, []);
+
+  useLayoutEffect(() => {
+    const host = rowHostRef.current;
+
+    if (!host || !onRowWidth) {
+      return;
+    }
+
+    const publish = () => {
+      const width = Math.floor(host.clientWidth);
+
+      if (width >= 160) {
+        onRowWidth(width);
+      }
+    };
+
+    publish();
+
+    const observer = new ResizeObserver(publish);
+
+    observer.observe(host);
+
+    return () => observer.disconnect();
+  }, [onRowWidth]);
 
   useEffect(() => {
     engine?.setRendererRefs({
@@ -201,7 +229,7 @@ export function SheetMusic({
   ]);
 
   return (
-    <div className="min-w-max" style={{ zoom }}>
+    <div className="w-full max-w-[1280px]" style={{ zoom }}>
       {gameMode === 'practice' && isLooping && practiceRange && (
         <div className="fixed top-35 ml-10 bg-bg rounded-md z-100 px-4 py-3 flex items-center gap-2">
           <div className="text-accent bg-accent-soft-bg p-2 border border-accent-soft-border rounded-md w-10 h-10 flex items-center justify-center">
@@ -223,18 +251,18 @@ export function SheetMusic({
           />
         </div>
       )}
-      <div className="flex flex-col items-center min-w-max bg-paper rounded-[11px] p-10">
-        <h1 className="my-0 mx-auto text-4xl text-ink font-semibold">
+      <div className="flex w-full flex-col items-center bg-paper rounded-[11px] px-10 py-8 short:px-4 short:py-4 narrow:px-4 narrow:py-4">
+        <h1 className="my-0 mx-auto max-w-full text-center text-4xl text-ink font-semibold short:text-[1.7rem] narrow:text-[1.7rem]">
           {songData.name}
         </h1>
-        <div className="ml-auto text-[15px] italic font-bold flex flex-col items-end text-ink">
+        <div className="ml-auto text-[15px] italic font-bold flex flex-col items-end text-ink short:flex-row short:gap-3 short:text-[13px] narrow:text-[13px]">
           <div>Music by {songData.artist}</div>
           <div>Arranged by {songData.charter}</div>
         </div>
-        <div className="min-w-max relative z-0">
+        <div ref={rowHostRef} className="relative z-0 w-full max-w-[1200px]">
           <div
             ref={vexflowContainerRef}
-            className="min-w-max pointer-events-none **:pointer-events-none"
+            className="pointer-events-none **:pointer-events-none"
           />
           {measureHighlights}
           <div
@@ -253,7 +281,7 @@ export function SheetMusic({
       </div>
 
       {enableColors && showReference && (
-        <Reference className="fixed bottom-10 left-1/2 -translate-x-1/2" />
+        <Reference className="fixed bottom-4 left-1/2 z-20 -translate-x-1/2 short:bottom-2" />
       )}
     </div>
   );

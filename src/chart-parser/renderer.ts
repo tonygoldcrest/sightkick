@@ -48,6 +48,7 @@ export function renderMusic(
   enableColors: boolean = false,
   showTempo: boolean = true,
   stemDirection: StemDirection = -1,
+  targetRowWidth: number = TARGET_ROW_WIDTH,
 ): RenderData[] {
   if (!container) {
     return [];
@@ -61,12 +62,12 @@ export function renderMusic(
   const widths = song.measures.map((measure) =>
     requiredMeasureWidth(measure, showTempo, stemDirection),
   );
-  const rows = packRows(widths);
+  const rows = packRows(widths, targetRowWidth);
 
   rows.forEach((rowIndices, rowNum) => {
     const yOffset = rowNum * lineHeight;
     const rowMin = rowIndices.reduce((sum, index) => sum + widths[index], 0);
-    const rowWidth = Math.max(TARGET_ROW_WIDTH, rowMin);
+    const rowWidth = Math.max(targetRowWidth, rowMin);
     const scale = rowMin > 0 ? rowWidth / rowMin : 1;
     const rowEl = document.createElement('div');
 
@@ -117,7 +118,10 @@ export function renderMusic(
   return renderData;
 }
 
-export function packRows(widths: number[]): number[][] {
+export function packRows(
+  widths: number[],
+  targetWidth: number = TARGET_ROW_WIDTH,
+): number[][] {
   const rows: number[][] = [];
   let current: number[] = [];
   let accumulated = 0;
@@ -126,7 +130,7 @@ export function packRows(widths: number[]): number[][] {
     if (
       current.length > 0 &&
       (current.length >= MAX_MEASURES_PER_ROW ||
-        accumulated + width > TARGET_ROW_WIDTH)
+        accumulated + width > targetWidth)
     ) {
       rows.push(current);
       current = [];
